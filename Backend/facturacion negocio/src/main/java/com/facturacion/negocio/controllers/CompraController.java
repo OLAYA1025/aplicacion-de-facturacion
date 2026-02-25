@@ -3,7 +3,11 @@ package com.facturacion.negocio.controllers;
 import com.facturacion.negocio.domain.Compra;
 import com.facturacion.negocio.dto.request.CrearCompraRequestDTO;
 import com.facturacion.negocio.dto.response.CompraResponseDTO;
+import com.facturacion.negocio.dto.response.CompraResumenResponseDTO;
+import com.facturacion.negocio.enumerated.EstadoCompra;
 import com.facturacion.negocio.services.CompraService;
+import org.springframework.data.domain.Page;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -11,13 +15,12 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.net.URI;
-import java.util.ArrayList;
-import java.util.List;
-
+import java.time.LocalDate;
 @RestController
 @RequestMapping("/compra")
 public class CompraController {
@@ -51,13 +54,23 @@ public class CompraController {
     }
 
     @GetMapping
-    public ResponseEntity<List<CompraResponseDTO>> listarCompras() {
-        List<Compra> compras = compraService.listarCompras();
-        List<CompraResponseDTO> response = new ArrayList<>();
-        for (Compra compra : compras) {
-            response.add(CompraResponseDTO.from(compra));
-        }
-        return ResponseEntity.ok(response);
+    public ResponseEntity<Page<CompraResumenResponseDTO>> listarCompras(
+            @RequestParam(defaultValue = "0") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(defaultValue = "id") String ordenarPor,
+            @RequestParam(defaultValue = "desc") String direccion,
+            @RequestParam(required = false) EstadoCompra estado,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate desde,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate hasta) {
+        return ResponseEntity.ok(compraService.listarCompras(
+                page,
+                size,
+                ordenarPor,
+                direccion,
+                desde,
+                hasta,
+                estado
+        ));
     }
 
     @PostMapping("/{id}/confirmar")

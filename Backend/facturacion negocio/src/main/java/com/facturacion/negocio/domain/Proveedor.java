@@ -1,7 +1,10 @@
 package com.facturacion.negocio.domain;
 
+import com.facturacion.negocio.enumerated.TipoDocumento;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 
 import java.util.Objects;
@@ -22,14 +25,19 @@ public class Proveedor {
     @Column(length = 150)
     private String correo;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "tipo_documento", nullable = false)
+    private TipoDocumento tipoDocumento;
+
     protected Proveedor() {
     }
 
-    public Proveedor(Long id, String nombre, String telefono, String correo) {
+    public Proveedor(Long id, String nombre, String telefono, String correo, TipoDocumento tipoDocumento) {
         this.id = Objects.requireNonNull(id, "id requerido");
         this.nombre = Objects.requireNonNull(nombre, "nombre requerido");
         this.telefono = telefono;
         this.correo = correo;
+        this.tipoDocumento = Objects.requireNonNull(tipoDocumento, "tipoDocumento requerido");
     }
 
     public Long getId() {
@@ -62,5 +70,20 @@ public class Proveedor {
 
     public void setCorreo(String correo) {
         this.correo = correo;
+    }
+
+    public TipoDocumento getTipoDocumento() {
+        return tipoDocumento;
+    }
+
+    public void setTipoDocumento(TipoDocumento tipoDocumento) {
+        this.tipoDocumento = Objects.requireNonNull(tipoDocumento, "tipoDocumento requerido");
+    }
+
+    public void actualizar(String nombre, String telefono, String correo, TipoDocumento tipoDocumento) {
+        this.nombre = Objects.requireNonNull(nombre, "nombre requerido");
+        this.telefono = telefono;
+        this.correo = correo;
+        this.tipoDocumento = Objects.requireNonNull(tipoDocumento, "tipoDocumento requerido");
     }
 }

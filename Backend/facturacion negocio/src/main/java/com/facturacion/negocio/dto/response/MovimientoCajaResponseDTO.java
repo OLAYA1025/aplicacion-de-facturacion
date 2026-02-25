@@ -1,5 +1,7 @@
 package com.facturacion.negocio.dto.response;
 
+import com.facturacion.negocio.domain.MovimientoCaja;
+import com.facturacion.negocio.domain.Usuario;
 import com.facturacion.negocio.enumerated.TipoMovimiento;
 
 import java.math.BigDecimal;
@@ -29,6 +31,17 @@ public class MovimientoCajaResponseDTO {
         this.motivo = motivo;
         this.fecha = fecha;
     }
+
+    public static MovimientoCajaResponseDTO from(MovimientoCaja movimientoCaja) {
+        MovimientoCajaResponseDTO movimientoCajaResponseDTO = new MovimientoCajaResponseDTO();
+        movimientoCajaResponseDTO.setId(movimientoCaja.getId());
+        movimientoCajaResponseDTO.setMonto(movimientoCaja.getMonto());
+        movimientoCajaResponseDTO.setTipo(movimientoCaja.getTipo());
+        movimientoCajaResponseDTO.setUsername(movimientoCaja.getUsuario().getUsername());
+        movimientoCajaResponseDTO.setMotivo(movimientoCaja.getMotivo());
+        return movimientoCajaResponseDTO;
+    }
+
 
     public Long getId() {
         return id;

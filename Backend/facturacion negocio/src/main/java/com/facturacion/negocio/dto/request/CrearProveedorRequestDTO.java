@@ -1,11 +1,14 @@
 package com.facturacion.negocio.dto.request;
 
+import com.facturacion.negocio.enumerated.TipoDocumento;
+
 public class CrearProveedorRequestDTO {
 
     private Long id;
     private String nombre;
     private String telefono;
     private String correo;
+    private TipoDocumento tipoDocumento;
 
     public Long getId() {
         return id;
@@ -37,5 +40,13 @@ public class CrearProveedorRequestDTO {
 
     public void setCorreo(String correo) {
         this.correo = correo;
+    }
+
+    public TipoDocumento getTipoDocumento() {
+        return tipoDocumento;
+    }
+
+    public void setTipoDocumento(TipoDocumento tipoDocumento) {
+        this.tipoDocumento = tipoDocumento;
     }
 }

@@ -6,22 +6,35 @@ import com.facturacion.negocio.domain.MovimientoInventario;
 import com.facturacion.negocio.domain.Producto;
 import com.facturacion.negocio.domain.Proveedor;
 import com.facturacion.negocio.dto.request.DetalleCompraRequestDTO;
+import com.facturacion.negocio.dto.response.CompraResumenResponseDTO;
+import com.facturacion.negocio.enumerated.EstadoCompra;
 import com.facturacion.negocio.enumerated.TipoMovimientoInventario;
 import com.facturacion.negocio.repository.CompraRepository;
 import com.facturacion.negocio.repository.MovimientoInventarioRepository;
 import com.facturacion.negocio.repository.ProductoRepository;
 import com.facturacion.negocio.repository.ProveedorRepository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
 @Service
 public class CompraService {
+
+    private static final Set<String> CAMPOS_ORDEN_PERMITIDOS =
+            Set.of("id", "fechaCreacion", "total", "estado", "numeroFactura");
 
     private final CompraRepository compraRepository;
     private final ProveedorRepository proveedorRepository;
@@ -100,8 +113,71 @@ public class CompraService {
     }
 
     @Transactional(readOnly = true)
-    public List<Compra> listarCompras() {
-        return compraRepository.findAllConDetalles();
+    public Page<CompraResumenResponseDTO> listarCompras(int page,
+                                                        int size,
+                                                        String ordenarPor,
+                                                        String direccion,
+                                                        LocalDate desde,
+                                                        LocalDate hasta,
+                                                        EstadoCompra estado) {
+        if (page < 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "page invalido");
+        }
+        if (size <= 0 || size > 200) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "size invalido");
+        }
+        if (ordenarPor == null || ordenarPor.isBlank() || !CAMPOS_ORDEN_PERMITIDOS.contains(ordenarPor)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "ordenarPor invalido");
+        }
+        String direccionNormalizada = direccion == null ? null : direccion.trim().toLowerCase();
+        if ("des".equals(direccionNormalizada)) {
+            direccionNormalizada = "desc";
+        }
+        Sort.Direction sortDirection = Sort.Direction.fromOptionalString(direccionNormalizada)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "direccion invalida"));
+        Pageable pageable = PageRequest.of(page, size, Sort.by(sortDirection, ordenarPor));
+
+        if (desde != null && hasta != null && desde.isAfter(hasta)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "rango de fechas invalido");
+        }
+        LocalDateTime desdeInclusive = desde != null ? desde.atStartOfDay() : null;
+        LocalDateTime hastaExclusiva = hasta != null ? hasta.plusDays(1).atStartOfDay() : null;
+
+        if (estado != null && desdeInclusive != null && hastaExclusiva != null) {
+            return compraRepository
+                    .findByEstadoAndFechaCreacionGreaterThanEqualAndFechaCreacionLessThan(
+                            estado, desdeInclusive, hastaExclusiva, pageable)
+                    .map(CompraResumenResponseDTO::from);
+        }
+        if (estado != null && desdeInclusive != null) {
+            return compraRepository
+                    .findByEstadoAndFechaCreacionGreaterThanEqual(estado, desdeInclusive, pageable)
+                    .map(CompraResumenResponseDTO::from);
+        }
+        if (estado != null && hastaExclusiva != null) {
+            return compraRepository
+                    .findByEstadoAndFechaCreacionLessThan(estado, hastaExclusiva, pageable)
+                    .map(CompraResumenResponseDTO::from);
+        }
+        if (estado != null) {
+            return compraRepository.findByEstado(estado, pageable).map(CompraResumenResponseDTO::from);
+        }
+        if (desdeInclusive != null && hastaExclusiva != null) {
+            return compraRepository
+                    .findByFechaCreacionGreaterThanEqualAndFechaCreacionLessThan(desdeInclusive, hastaExclusiva, pageable)
+                    .map(CompraResumenResponseDTO::from);
+        }
+        if (desdeInclusive != null) {
+            return compraRepository
+                    .findByFechaCreacionGreaterThanEqual(desdeInclusive, pageable)
+                    .map(CompraResumenResponseDTO::from);
+        }
+        if (hastaExclusiva != null) {
+            return compraRepository
+                    .findByFechaCreacionLessThan(hastaExclusiva, pageable)
+                    .map(CompraResumenResponseDTO::from);
+        }
+        return compraRepository.findAll(pageable).map(CompraResumenResponseDTO::from);
     }
 
     @Transactional
@@ -145,27 +221,12 @@ public class CompraService {
         if (compra.isAnulada()) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "La compra ya esta anulada");
         }
-
-        Compra compraConDetalles = compraRepository.findByIdConDetalles(compra.getId())
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Compra no encontrada"));
-
-        if (compraConDetalles.isConfirmada()) {
-            for (CompraDetalle detalle : compraConDetalles.getDetalles()) {
-                Producto producto = detalle.getProducto();
-                producto.disminuirStock(detalle.getCantidad());
-                movimientoInventarioRepository.save(new MovimientoInventario(
-                        producto,
-                        TipoMovimientoInventario.ANULACION_COMPRA,
-                        -detalle.getCantidad(),
-                        "COMPRA",
-                        compraConDetalles.getId(),
-                        "Anulacion compra factura " + compraConDetalles.getNumeroFactura()
-                ));
-            }
+        if (compra.isConfirmada()) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "No se puede anular una compra confirmada");
         }
 
-        compraConDetalles.anular();
-        return compraRepository.save(compraConDetalles);
+        compra.anular(obtenerUsernameAutenticado());
+        return compraRepository.save(compra);
     }
 
     private String normalizarFactura(String numeroFactura) {
@@ -173,5 +234,17 @@ public class CompraService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "numeroFactura invalido");
         }
         return numeroFactura.trim();
+    }
+
+    private String obtenerUsernameAutenticado() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || !auth.isAuthenticated()) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "No autenticado");
+        }
+        String username = auth.getName();
+        if (username == null || username.isBlank() || "anonymousUser".equalsIgnoreCase(username)) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "No autenticado");
+        }
+        return username.trim();
     }
 }

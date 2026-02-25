@@ -5,6 +5,8 @@ import com.facturacion.negocio.domain.MovimientoCaja;
 import com.facturacion.negocio.domain.Pedido;
 import com.facturacion.negocio.domain.Usuario;
 import com.facturacion.negocio.dto.response.CajaResumenResponseDTO;
+import com.facturacion.negocio.enumerated.EstadoPedido;
+import com.facturacion.negocio.enumerated.MetodoPago;
 import com.facturacion.negocio.enumerated.TipoMovimiento;
 import com.facturacion.negocio.repository.*;
 import jakarta.transaction.Transactional;
@@ -45,11 +47,26 @@ public class CajaService {
 
     public CajaResumenResponseDTO  obtenerCajaResumen() {
         Caja cajaAbierta = obtenerCajaAbierta();
-        BigDecimal montoInicial = cajaAbierta.getMontoInicial();
-        BigDecimal ingresos = movimientoCajaRepository.calcularTotalesByTipoAndCaja(TipoMovimiento.INGRESO,cajaAbierta);
-        BigDecimal egresos = movimientoCajaRepository.calcularTotalesByTipoAndCaja(TipoMovimiento.EGRESO,cajaAbierta);
-        BigDecimal retiros = movimientoCajaRepository.calcularTotalesByTipoAndCaja(TipoMovimiento.RETIRO,cajaAbierta);
-        return   new CajaResumenResponseDTO(montoInicial,ingresos,egresos,retiros);
+        BigDecimal montoInicial = valorSeguro(cajaAbierta.getMontoInicial());
+        List<Pedido> pedidosCaja = pedidoRepository.findPedidosByCaja(cajaAbierta.getId());
+
+        BigDecimal ingresosEfectivo = calcularIngresosPorMetodo(pedidosCaja, MetodoPago.EFECTIVO);
+        BigDecimal ingresosTransferencia = calcularIngresosPorMetodo(pedidosCaja, MetodoPago.TRANSFERENCIA);
+        BigDecimal ingresosTarjeta = calcularIngresosPorMetodo(pedidosCaja, MetodoPago.TARJETA);
+        BigDecimal ingresos = ingresosEfectivo.add(ingresosTransferencia).add(ingresosTarjeta);
+
+        BigDecimal egresos = valorSeguro(movimientoCajaRepository.calcularTotalesByTipoAndCaja(TipoMovimiento.EGRESO,cajaAbierta));
+        BigDecimal retiros = valorSeguro(movimientoCajaRepository.calcularTotalesByTipoAndCaja(TipoMovimiento.RETIRO,cajaAbierta));
+
+        return new CajaResumenResponseDTO(
+                montoInicial,
+                ingresos,
+                ingresosEfectivo,
+                ingresosTransferencia,
+                ingresosTarjeta,
+                egresos,
+                retiros
+        );
 
     }
 
@@ -201,5 +218,19 @@ public class CajaService {
 
 
 
+
+    private BigDecimal calcularIngresosPorMetodo(List<Pedido> pedidos, MetodoPago metodoPago) {
+        BigDecimal total = BigDecimal.ZERO;
+        for (Pedido pedido : pedidos) {
+            if (pedido.getEstado() == EstadoPedido.PAGO && pedido.getMetodoPago() == metodoPago) {
+                total = total.add(valorSeguro(pedido.calcularTotal()));
+            }
+        }
+        return total;
+    }
+
+    private BigDecimal valorSeguro(BigDecimal valor) {
+        return valor == null ? BigDecimal.ZERO : valor;
+    }
 
 }

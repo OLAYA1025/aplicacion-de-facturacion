@@ -1,6 +1,7 @@
 package com.facturacion.negocio.dto.response;
 
 import com.facturacion.negocio.domain.Proveedor;
+import com.facturacion.negocio.enumerated.TipoDocumento;
 
 public class ProveedorResponseDTO {
 
@@ -8,6 +9,7 @@ public class ProveedorResponseDTO {
     private String nombre;
     private String telefono;
     private String correo;
+    private TipoDocumento tipoDocumento;
 
     public static ProveedorResponseDTO from(Proveedor proveedor) {
         ProveedorResponseDTO dto = new ProveedorResponseDTO();
@@ -15,6 +17,7 @@ public class ProveedorResponseDTO {
         dto.nombre = proveedor.getNombre();
         dto.telefono = proveedor.getTelefono();
         dto.correo = proveedor.getCorreo();
+        dto.tipoDocumento = proveedor.getTipoDocumento();
         return dto;
     }
 
@@ -32,5 +35,9 @@ public class ProveedorResponseDTO {
 
     public String getCorreo() {
         return correo;
+    }
+
+    public TipoDocumento getTipoDocumento() {
+        return tipoDocumento;
     }
 }

@@ -18,9 +18,11 @@ public class CompraResponseDTO {
     private EstadoCompra estado;
     private LocalDateTime fechaCreacion;
     private LocalDateTime fechaConfirmacion;
+    private LocalDateTime fechaAnulacion;
     private BigDecimal subtotal;
     private BigDecimal total;
     private String observacion;
+    private String anuladoPor;
     private List<CompraDetalleResponseDTO> detalles;
 
     public static CompraResponseDTO from(Compra compra) {
@@ -32,9 +34,11 @@ public class CompraResponseDTO {
         dto.estado = compra.getEstado();
         dto.fechaCreacion = compra.getFechaCreacion();
         dto.fechaConfirmacion = compra.getFechaConfirmacion();
+        dto.fechaAnulacion = compra.getFechaAnulacion();
         dto.subtotal = compra.getSubtotal();
         dto.total = compra.getTotal();
         dto.observacion = compra.getObservacion();
+        dto.anuladoPor = compra.getAnuladoPor();
         dto.detalles = new ArrayList<>();
         for (CompraDetalle detalle : compra.getDetalles()) {
             dto.detalles.add(CompraDetalleResponseDTO.from(detalle));
@@ -70,6 +74,10 @@ public class CompraResponseDTO {
         return fechaConfirmacion;
     }
 
+    public LocalDateTime getFechaAnulacion() {
+        return fechaAnulacion;
+    }
+
     public BigDecimal getSubtotal() {
         return subtotal;
     }
@@ -80,6 +88,10 @@ public class CompraResponseDTO {
 
     public String getObservacion() {
         return observacion;
+    }
+
+    public String getAnuladoPor() {
+        return anuladoPor;
     }
 
     public List<CompraDetalleResponseDTO> getDetalles() {

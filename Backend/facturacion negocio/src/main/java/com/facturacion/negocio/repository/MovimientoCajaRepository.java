@@ -5,6 +5,8 @@ import com.facturacion.negocio.domain.MovimientoCaja;
 import com.facturacion.negocio.domain.Usuario;
 import com.facturacion.negocio.dto.response.MovimientoCajaResponseDTO;
 import com.facturacion.negocio.enumerated.TipoMovimiento;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -12,6 +14,7 @@ import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Repository
@@ -27,12 +30,24 @@ public interface MovimientoCajaRepository extends JpaRepository<MovimientoCaja, 
     @Query("SELECT COALESCE(SUM(m.monto),0) FROM MovimientoCaja m WHERE m.tipo = :tipoMovimiento")
     BigDecimal calcularTotalByMovimiento(@Param("tipoMovimiento") TipoMovimiento tipoMovimiento);
 
+    @Query("SELECT COALESCE(SUM(m.monto),0) FROM MovimientoCaja m " +
+            "WHERE m.tipo = :tipoMovimiento AND m.fecha >= :desde AND m.fecha < :hasta")
+    BigDecimal calcularTotalByMovimientoAndFechaRango(@Param("tipoMovimiento") TipoMovimiento tipoMovimiento,
+                                                       @Param("desde") LocalDateTime desde,
+                                                       @Param("hasta") LocalDateTime hasta);
 
     @Query("SELECT m FROM MovimientoCaja m where m.tipo = :tipoMovimiento AND m.fecha BETWEEN :desde AND :hasta")
     List<MovimientoCaja> findByTipoMovimientoAndDateBetween(
             @Param("tipoMovimiento") TipoMovimiento tipoMovimiento,
             @Param("desde") LocalDate desde,
             @Param("hasta") LocalDate hasta);
+
+    Page<MovimientoCaja> findByTipoAndFechaGreaterThanEqualAndFechaLessThanOrderByFechaDesc(
+            TipoMovimiento tipo,
+            LocalDateTime desdeInclusive,
+            LocalDateTime hastaExclusive,
+            Pageable pageable
+    );
 
     @Query("SELECT m FROM MovimientoCaja m WHERE m.fecha BETWEEN :desde AND :hasta")
     List<MovimientoCaja> findByDateBetween(
@@ -47,7 +62,7 @@ public interface MovimientoCajaRepository extends JpaRepository<MovimientoCaja, 
 
     @Query("SELECT new com.facturacion.negocio.dto.response.MovimientoCajaResponseDTO(" +
             "m.id, m.monto, m.tipo, m.usuario.username, m.motivo, m.fecha) " +
-            "FROM MovimientoCaja m WHERE m.caja = :caja")
+            "FROM MovimientoCaja m WHERE m.caja = :caja ORDER BY m.fecha DESC")
     List<MovimientoCajaResponseDTO> findResumenByCaja(@Param("caja") Caja caja);
     /*
     List<MovimientoCaja> findByTipoMovimientoAndUsuario(

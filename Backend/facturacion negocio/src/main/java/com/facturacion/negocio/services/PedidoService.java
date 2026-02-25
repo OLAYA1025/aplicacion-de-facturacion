@@ -110,7 +110,7 @@ public class PedidoService {
                 .orElseThrow(() ->
                         new ResponseStatusException(
                                 HttpStatus.CONFLICT,
-                                "No hay caja abierta para crear el pedido")
+                                "No puede crear un pedido en una caja cerrada")
                 );
         if(!caja.isAbierta()){
             throw new ResponseStatusException(

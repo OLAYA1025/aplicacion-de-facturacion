@@ -1,10 +1,15 @@
 package com.facturacion.negocio.dto.request;
 
 import com.facturacion.negocio.enumerated.MetodoPago;
+import com.facturacion.negocio.enumerated.TipoDocumentoFiscal;
 
 public class PedidoUsuarioRequestDTO {
     private Long usuarioId;
     private MetodoPago metodoPago;
+
+    private TipoDocumentoFiscal tipoDocumentoFiscal; // DEE_POS / FEV
+
+    private ClienteFiscalDTO cliente;
 
     public Long getUsuarioId() {
         return usuarioId;
@@ -20,5 +25,21 @@ public class PedidoUsuarioRequestDTO {
 
     public void setMetodoPago(MetodoPago metodoPago) {
         this.metodoPago = metodoPago;
+    }
+
+    public TipoDocumentoFiscal getTipoDocumentoFiscal() {
+        return tipoDocumentoFiscal;
+    }
+
+    public void setTipoDocumentoFiscal(TipoDocumentoFiscal tipoDocumentoFiscal) {
+        this.tipoDocumentoFiscal = tipoDocumentoFiscal;
+    }
+
+    public ClienteFiscalDTO getCliente() {
+        return cliente;
+    }
+
+    public void setCliente(ClienteFiscalDTO cliente) {
+        this.cliente = cliente;
     }
 }

@@ -41,6 +41,9 @@ public class Pedido {
     @ManyToOne
     private Usuario usuario;
 
+    @OneToOne(mappedBy = "pedido", fetch = FetchType.LAZY, cascade = CascadeType.ALL, orphanRemoval = true)
+    private DocumentoFiscal documentoFiscal;
+
     protected Pedido() {}
 
     public Pedido(String nombre, List<DetallePedido> detallePedidos, Caja caja) {
@@ -154,5 +157,14 @@ public class Pedido {
             return "Pedido #" + pedidoId;
         }
         return nombre.trim();
+    }
+
+    public DocumentoFiscal getDocumentoFiscal() { return documentoFiscal; }
+
+    public void setDocumentoFiscal(DocumentoFiscal documentoFiscal) {
+        this.documentoFiscal = documentoFiscal;
+        if (documentoFiscal != null) {
+            documentoFiscal.setPedido(this);
+        }
     }
 }

@@ -3,10 +3,13 @@ package com.facturacion.negocio.repository;
 import com.facturacion.negocio.domain.DetallePedido;
 import com.facturacion.negocio.domain.Pedido;
 import com.facturacion.negocio.domain.Producto;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
@@ -19,7 +22,21 @@ public interface DetallePedidoRepository extends JpaRepository<DetallePedido, Lo
             Producto producto
     );
 
-
-
+    @Query("""
+            SELECT d.producto.codigo AS productoCodigo,
+                   d.producto.nombre AS productoNombre,
+                   SUM(d.cantidad) AS cantidadVendida
+            FROM DetallePedido d
+            WHERE d.pedido.estado = com.facturacion.negocio.enumerated.EstadoPedido.PAGO
+              AND d.pedido.fecha >= :desde
+              AND d.pedido.fecha < :hasta
+            GROUP BY d.producto.codigo, d.producto.nombre
+            ORDER BY SUM(d.cantidad) DESC, d.producto.nombre ASC
+            """)
+    List<TopProductoVendidoProjection> findTopProductosVendidos(
+            @Param("desde") LocalDateTime desde,
+            @Param("hasta") LocalDateTime hasta,
+            Pageable pageable
+    );
 
 }

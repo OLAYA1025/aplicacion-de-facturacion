@@ -1,8 +1,10 @@
 package com.facturacion.negocio.repository;
 
 import com.facturacion.negocio.domain.Caja;
-import com.facturacion.negocio.domain.Usuario;
+import com.facturacion.negocio.enumerated.EstadoCaja;
 import jakarta.persistence.LockModeType;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
@@ -10,7 +12,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 import java.util.List;
 import java.util.Optional;
@@ -52,6 +54,31 @@ AND c.fechaCierre = (
 )
 """)
     Optional<Caja> obtenerUltimaCajaCerrada();
+
+    List<Caja> findByEstadoAndFechaCierreGreaterThanEqualAndFechaCierreLessThan(
+            EstadoCaja estado,
+            LocalDateTime desdeInclusive,
+            LocalDateTime hastaExclusive
+    );
+
+    List<Caja> findByEstadoAndFechaCierreGreaterThanEqualAndFechaCierreLessThanOrderByFechaCierreDesc(
+            EstadoCaja estado,
+            LocalDateTime desdeInclusive,
+            LocalDateTime hastaExclusive
+    );
+
+    Page<Caja> findByEstadoAndFechaCierreGreaterThanEqualAndFechaCierreLessThanOrderByFechaCierreDesc(
+            EstadoCaja estado,
+            LocalDateTime desdeInclusive,
+            LocalDateTime hastaExclusive,
+            Pageable pageable
+    );
+
+    long countByEstadoAndFechaCierreGreaterThanEqualAndFechaCierreLessThan(
+            EstadoCaja estado,
+            LocalDateTime desdeInclusive,
+            LocalDateTime hastaExclusive
+    );
 
 
     /*

@@ -148,7 +148,9 @@ public class PedidoController {
         if (request == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "body invalido");
         }
-        Pedido pedido = pedidoService.cobrarPedido(id, request.getUsuarioId(), request.getMetodoPago());
+        Pedido pedido = pedidoService.cobrarPedido(id,
+                request.getUsuarioId(),
+                request.getMetodoPago());
         List<DetallePedido> detalles = pedidoService.obtenerDetalles(id);
         return ResponseEntity.ok(PedidoResponseDTO.from(pedido, detalles));
     }

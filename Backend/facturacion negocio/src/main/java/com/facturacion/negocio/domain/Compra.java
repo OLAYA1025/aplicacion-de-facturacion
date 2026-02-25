@@ -47,6 +47,8 @@ public class Compra {
 
     private LocalDateTime fechaConfirmacion;
 
+    private LocalDateTime fechaAnulacion;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private EstadoCompra estado;
@@ -62,6 +64,9 @@ public class Compra {
 
     @Column(length = 255)
     private String observacion;
+
+    @Column(name = "anulado_por", length = 80)
+    private String anuladoPor;
 
     protected Compra() {
     }
@@ -96,6 +101,10 @@ public class Compra {
         return fechaConfirmacion;
     }
 
+    public LocalDateTime getFechaAnulacion() {
+        return fechaAnulacion;
+    }
+
     public EstadoCompra getEstado() {
         return estado;
     }
@@ -114,6 +123,10 @@ public class Compra {
 
     public String getObservacion() {
         return observacion;
+    }
+
+    public String getAnuladoPor() {
+        return anuladoPor;
     }
 
     public boolean isBorrador() {
@@ -146,11 +159,17 @@ public class Compra {
         this.fechaConfirmacion = LocalDateTime.now();
     }
 
-    public void anular() {
+    public void anular(String anuladoPor) {
         if (isAnulada()) {
             throw new IllegalStateException("La compra ya esta anulada");
         }
+        String usuarioAnulacion = anuladoPor == null ? "" : anuladoPor.trim();
+        if (usuarioAnulacion.isEmpty()) {
+            throw new IllegalArgumentException("anuladoPor invalido");
+        }
         this.estado = EstadoCompra.ANULADA;
+        this.anuladoPor = usuarioAnulacion;
+        this.fechaAnulacion = LocalDateTime.now();
     }
 
     private void recalcularTotales() {
