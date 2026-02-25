@@ -1,0 +1,289 @@
+<div
+  *ngIf="visible"
+  class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+>
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg transform scale-100 transition-all">
+    <div class="bg-emerald-500 px-6 py-5 flex items-center justify-between rounded-t-2xl">
+      <div class="flex items-center gap-3">
+        <div class="p-2 bg-white/20 rounded-xl">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke-width="2"
+            stroke="currentColor"
+            class="w-6 h-6 text-white"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M2.25 18.75a60.07 60.07 0 0 1 15.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 0 1 3 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 0 0-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 0 1-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 0 0 3 15h-.75M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm3 0h.008v.008H18V10.5Zm-12 0h.008v.008H6V10.5Z"
+            />
+          </svg>
+        </div>
+        <h3 class="text-2xl font-bold text-white">Cobrar Pedido</h3>
+      </div>
+      <button (click)="cerrar.emit()" class="p-2 bg-white/20 hover:bg-white/30 rounded-xl transition-colors">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke-width="2.5"
+          stroke="currentColor"
+          class="w-6 h-6 text-white"
+        >
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
+
+    <div class="p-6">
+      <div class="mb-6 bg-gray-50 rounded-xl p-5 border-2 border-gray-200">
+        <div class="flex items-center justify-between mb-3">
+          <span class="text-sm font-semibold text-gray-600">Cliente</span>
+          <span class="font-bold text-gray-900 text-lg">{{ pedido?.nombre }}</span>
+        </div>
+        <div class="flex items-center justify-between pt-3 border-t border-gray-300">
+          <span class="text-sm font-semibold text-gray-600">Total a cobrar</span>
+          <span class="text-3xl font-black bg-emerald-600 bg-clip-text text-transparent">
+            {{ formatearMonto(pedido?.total || 0) }}
+          </span>
+        </div>
+      </div>
+
+      <div class="mb-6">
+        <label class="text-sm font-bold text-gray-900 mb-4 flex items-center gap-2">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke-width="1.5"
+            stroke="currentColor"
+            class="w-5 h-5 text-indigo-600"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25v10.5A2.25 2.25 0 0 0 4.5 19.5Z"
+            />
+          </svg>
+          Método de Pago
+        </label>
+
+        <div class="space-y-3">
+          <label
+            class="flex items-center gap-4 p-4 border-2 rounded-xl cursor-pointer transition-all hover:shadow-md"
+            [class.border-green-500]="metodoPagoSeleccionado === 'EFECTIVO'"
+            [class.bg-green-50]="metodoPagoSeleccionado === 'EFECTIVO'"
+            [class.shadow-lg]="metodoPagoSeleccionado === 'EFECTIVO'"
+            [class.border-gray-200]="metodoPagoSeleccionado !== 'EFECTIVO'"
+          >
+            <input
+              type="radio"
+              name="metodoPago"
+              value="EFECTIVO"
+              [ngModel]="metodoPagoSeleccionado"
+              (ngModelChange)="onMetodoPagoChange($event)"
+              class="w-5 h-5 text-green-600"
+            />
+            <div class="flex items-center gap-3 flex-1">
+              <div class="p-3 bg-green-100 rounded-xl">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke-width="2"
+                  stroke="currentColor"
+                  class="w-6 h-6 text-green-600"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M2.25 18.75a60.07 60.07 0 0 1 15.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 0 1 3 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 0 0-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 0 1-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 0 0 3 15h-.75M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm3 0h.008v.008H18V10.5Zm-12 0h.008v.008H6V10.5Z"
+                  />
+                </svg>
+              </div>
+              <div>
+                <p class="font-bold text-gray-900">Efectivo</p>
+                <p class="text-xs text-gray-600">Pago en efectivo</p>
+              </div>
+            </div>
+          </label>
+
+          <label
+            class="flex items-center gap-4 p-4 border-2 rounded-xl cursor-pointer transition-all hover:shadow-md"
+            [class.border-blue-500]="metodoPagoSeleccionado === 'TARJETA'"
+            [class.bg-indigo-50]="metodoPagoSeleccionado === 'TARJETA'"
+            [class.shadow-lg]="metodoPagoSeleccionado === 'TARJETA'"
+            [class.border-gray-200]="metodoPagoSeleccionado !== 'TARJETA'"
+          >
+            <input
+              type="radio"
+              name="metodoPago"
+              value="TARJETA"
+              [ngModel]="metodoPagoSeleccionado"
+              (ngModelChange)="onMetodoPagoChange($event)"
+              class="w-5 h-5 text-blue-600"
+            />
+            <div class="flex items-center gap-3 flex-1">
+              <div class="p-3 bg-blue-100 rounded-xl">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke-width="2"
+                  stroke="currentColor"
+                  class="w-6 h-6 text-blue-600"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25v10.5A2.25 2.25 0 0 0 4.5 19.5Z"
+                  />
+                </svg>
+              </div>
+              <div>
+                <p class="font-bold text-gray-900">Tarjeta</p>
+                <p class="text-xs text-gray-600">Débito o crédito</p>
+              </div>
+            </div>
+          </label>
+
+          <label
+            class="flex items-center gap-4 p-4 border-2 rounded-xl cursor-pointer transition-all hover:shadow-md"
+            [class.border-purple-500]="metodoPagoSeleccionado === 'TRANSFERENCIA'"
+            [class.bg-purple-50]="metodoPagoSeleccionado === 'TRANSFERENCIA'"
+            [class.shadow-lg]="metodoPagoSeleccionado === 'TRANSFERENCIA'"
+            [class.border-gray-200]="metodoPagoSeleccionado !== 'TRANSFERENCIA'"
+          >
+            <input
+              type="radio"
+              name="metodoPago"
+              value="TRANSFERENCIA"
+              [ngModel]="metodoPagoSeleccionado"
+              (ngModelChange)="onMetodoPagoChange($event)"
+              class="w-5 h-5 text-purple-600"
+            />
+            <div class="flex items-center gap-3 flex-1">
+              <div class="p-3 bg-purple-100 rounded-xl">
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke-width="2"
+                  stroke="currentColor"
+                  class="w-6 h-6 text-purple-600"
+                >
+                  <path
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
+                    d="M10.5 1.5H8.25A2.25 2.25 0 0 0 6 3.75v16.5a2.25 2.25 0 0 0 2.25 2.25h7.5A2.25 2.25 0 0 0 18 20.25V3.75a2.25 2.25 0 0 0-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3"
+                  />
+                </svg>
+              </div>
+              <div>
+                <p class="font-bold text-gray-900">Transferencia</p>
+                <p class="text-xs text-gray-600">Pago electrónico</p>
+              </div>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <div *ngIf="metodoPagoSeleccionado === 'EFECTIVO'" class="mb-6">
+        <label class="block text-sm font-bold text-gray-900 mb-2 flex items-center gap-2">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke-width="1.5"
+            stroke="currentColor"
+            class="w-5 h-5 text-green-600"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M2.25 18.75a60.07 60.07 0 0 1 15.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 0 1 3 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 0 0-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 0 1-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 0 0 3 15h-.75M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm3 0h.008v.008H18V10.5Zm-12 0h.008v.008H6V10.5Z"
+            />
+          </svg>
+          Dinero Recibido
+        </label>
+        <input
+          type="number"
+          [ngModel]="montoRecibido"
+          (ngModelChange)="onMontoRecibidoChange($event)"
+          [min]="0"
+          placeholder="Ingresa el monto recibido"
+          class="w-full px-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all text-lg font-semibold"
+        />
+
+        <div
+          *ngIf="montoRecibido > 0"
+          class="mt-4 p-4 rounded-xl"
+          [class.bg-green-50]="cambio >= 0"
+          [class.border-2]="cambio >= 0"
+          [class.border-green-200]="cambio >= 0"
+          [class.bg-red-50]="cambio < 0"
+          [class.border-2]="cambio < 0"
+          [class.border-red-200]="cambio < 0"
+        >
+          <div class="flex items-center justify-between">
+            <span class="text-sm font-semibold" [class.text-green-900]="cambio >= 0" [class.text-red-900]="cambio < 0">
+              {{ cambio >= 0 ? 'Cambio a devolver' : 'Falta' }}
+            </span>
+            <span class="text-2xl font-black" [class.text-green-600]="cambio >= 0" [class.text-red-600]="cambio < 0">
+              {{ formatearMonto(cambioAbsoluto) }}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex gap-3">
+        <button
+          (click)="cerrar.emit()"
+          class="flex-1 px-5 py-3.5 border-2 border-gray-300 text-gray-700 font-bold rounded-xl hover:bg-gray-50 hover:border-gray-400 transition-all"
+        >
+          Cancelar
+        </button>
+        <button
+          (click)="confirmar.emit()"
+          [disabled]="guardando || !puedeConfirmarCobro"
+          class="flex-1 px-5 py-3.5 bg-emerald-500 text-white font-bold rounded-xl hover:from-green-600 hover:to-emerald-600 transition-all shadow-lg hover:shadow-xl transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+        >
+          <div class="flex items-center justify-center gap-2">
+            <svg
+              *ngIf="!guardando"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke-width="2"
+              stroke="currentColor"
+              class="w-5 h-5"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
+              />
+            </svg>
+            <svg
+              *ngIf="guardando"
+              class="animate-spin h-5 w-5 text-white"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path
+                class="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+              ></path>
+            </svg>
+            {{ guardando ? 'Procesando...' : 'Confirmar Cobro' }}
+          </div>
+        </button>
+      </div>
+    </div>
+  </div>
+</div>

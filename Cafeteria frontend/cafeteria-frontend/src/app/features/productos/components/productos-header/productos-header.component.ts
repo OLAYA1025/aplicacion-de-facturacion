@@ -1,0 +1,41 @@
+import { CommonModule } from '@angular/common';
+import { Component, EventEmitter, Input, Output } from '@angular/core';
+import { RouterLink } from '@angular/router';
+import { TabProductos } from '../../models/productos-ui.model';
+
+@Component({
+  selector: 'app-productos-header',
+  standalone: true,
+  imports: [CommonModule, RouterLink],
+  templateUrl: './productos-header.component.html',
+})
+export class ProductosHeaderComponent {
+  @Input({ required: true }) tabActual!: TabProductos;
+  @Input() esVistaListado: boolean = false;
+
+  @Output() crearProducto = new EventEmitter<void>();
+
+  get titulo(): string {
+    if (this.tabActual === 'inventariables') {
+      return 'Inventario de productos';
+    }
+
+    if (this.tabActual === 'preparaciones') {
+      return 'Preparaciones';
+    }
+
+    return 'Crear producto';
+  }
+
+  get descripcion(): string {
+    if (this.tabActual === 'crear-producto') {
+      return 'Registra nuevos productos y define su tipo de gestión.';
+    }
+
+    return 'Administra disponibilidad, estado y datos comerciales.';
+  }
+
+  onCrearProducto(): void {
+    this.crearProducto.emit();
+  }
+}

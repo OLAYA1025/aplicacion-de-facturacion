@@ -1,0 +1,111 @@
+<section class="rounded-2xl border border-gray-200 bg-white shadow-sm">
+  <div class="grid gap-4 p-5 md:grid-cols-2 xl:grid-cols-5">
+    <div class="xl:col-span-2">
+      <label
+        for="busqueda-producto"
+        class="mb-2 block text-xs font-semibold uppercase tracking-wide text-gray-500"
+      >
+        Buscar
+      </label>
+      <div class="relative">
+        <span class="pointer-events-none absolute inset-y-0 left-0 flex items-center pl-3 text-gray-400">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke-width="2"
+            stroke="currentColor"
+            class="h-4 w-4"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="m21 21-4.35-4.35m1.85-5.65a7.5 7.5 0 1 1-15 0 7.5 7.5 0 0 1 15 0Z"
+            />
+          </svg>
+        </span>
+        <input
+          id="busqueda-producto"
+          type="text"
+          [ngModel]="busqueda"
+          (ngModelChange)="onBusquedaChange($event)"
+          placeholder="Nombre o código del producto"
+          class="w-full rounded-xl border border-gray-300 py-2.5 pl-9 pr-3 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+        />
+      </div>
+    </div>
+
+    <div>
+      <label
+        for="categoria-filtro"
+        class="mb-2 block text-xs font-semibold uppercase tracking-wide text-gray-500"
+      >
+        Categoría
+      </label>
+      <select
+        id="categoria-filtro"
+        name="categoria-filtro"
+        [ngModel]="filtroCategoriaId"
+        (ngModelChange)="onCategoriaChange($event)"
+        class="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+      >
+        <option [ngValue]="null">Todas</option>
+        <option *ngFor="let categoria of categorias" [ngValue]="categoria.id">
+          {{ categoria.nombre }}
+        </option>
+      </select>
+    </div>
+
+    <div>
+      <label
+        for="estado-filtro"
+        class="mb-2 block text-xs font-semibold uppercase tracking-wide text-gray-500"
+      >
+        Estado
+      </label>
+      <select
+        id="estado-filtro"
+        name="estado-filtro"
+        [ngModel]="filtroEstado"
+        (ngModelChange)="onEstadoChange($event)"
+        class="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+      >
+        <option value="TODOS">Todos</option>
+        <option value="ACTIVOS">Activos</option>
+        <option value="DESACTIVADOS">Desactivados</option>
+      </select>
+    </div>
+
+    <div>
+      <label
+        for="orden-campo"
+        class="mb-2 block text-xs font-semibold uppercase tracking-wide text-gray-500"
+      >
+        Ordenar por
+      </label>
+      <div class="grid grid-cols-[minmax(0,1fr)_8rem] gap-2">
+        <select
+          id="orden-campo"
+          name="orden-campo"
+          [ngModel]="campoOrden"
+          (ngModelChange)="onCampoOrdenChange($event)"
+          class="rounded-xl border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+        >
+          <option value="nombre">Nombre</option>
+          <option value="precio">Precio</option>
+          <option *ngIf="esInventariable" value="stockDisponible">Stock disp.</option>
+        </select>
+
+        <select
+          name="orden-direccion"
+          [ngModel]="direccionOrden"
+          (ngModelChange)="onDireccionOrdenChange($event)"
+          class="rounded-xl border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+        >
+          <option value="asc">Asc</option>
+          <option value="desc">Desc</option>
+        </select>
+      </div>
+    </div>
+  </div>
+</section>

@@ -1,0 +1,1011 @@
+<div class="min-h-screen space-y-6">
+  <section class="rounded-2xl border border-gray-200 bg-white shadow-sm">
+    <div class="flex flex-col gap-5 p-4 sm:p-6 lg:flex-row lg:items-center lg:justify-between">
+      <div>
+        <h1 class="text-2xl font-bold text-gray-900">Gestión de compras</h1>
+        <p class="mt-1 text-sm text-gray-600">
+          Controla el historial de compras, registra nuevas entradas y gestiona proveedores.
+        </p>
+      </div>
+
+      <div class="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
+        <div class="grid w-full grid-cols-2 rounded-xl border border-gray-200 bg-gray-50 p-1 text-sm font-semibold sm:inline-flex sm:w-auto">
+          <a
+            routerLink="/compras/listado"
+            class="rounded-lg px-4 py-2 text-center transition-colors"
+            [class.bg-white]="tabActual === 'listado'"
+            [class.text-indigo-600]="tabActual === 'listado'"
+            [class.shadow-sm]="tabActual === 'listado'"
+            [class.text-gray-600]="tabActual !== 'listado'"
+            [class.hover:bg-white]="tabActual !== 'listado'"
+          >
+            Listado
+          </a>
+
+          <a
+            routerLink="/compras/nueva"
+            class="rounded-lg px-4 py-2 text-center transition-colors"
+            [class.bg-white]="tabActual === 'nueva'"
+            [class.text-indigo-600]="tabActual === 'nueva'"
+            [class.shadow-sm]="tabActual === 'nueva'"
+            [class.text-gray-600]="tabActual !== 'nueva'"
+            [class.hover:bg-white]="tabActual !== 'nueva'"
+          >
+            Registrar compra
+          </a>
+        </div>
+
+        <button
+          *ngIf="tabActual === 'listado'"
+          type="button"
+          (click)="abrirModalCrearCompra()"
+          class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-indigo-700 sm:w-auto"
+        >
+          Registrar compra
+        </button>
+
+        <a
+          *ngIf="tabActual === 'nueva'"
+          routerLink="/compras/listado"
+          class="inline-flex w-full items-center justify-center gap-2 rounded-xl border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-100 sm:w-auto"
+        >
+          Volver al listado
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <ng-container *ngIf="tabActual === 'listado'; else vistaCrearCompra">
+    <section class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+      <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+        <div class="xl:col-span-2">
+          <label class="mb-2 block text-xs font-semibold uppercase tracking-wide text-gray-500">
+            Buscar
+          </label>
+          <input
+            type="text"
+            [ngModel]="busqueda"
+            (ngModelChange)="onBusquedaChange($event)"
+            placeholder="Proveedor, factura o ID"
+            class="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+          />
+        </div>
+
+        <div>
+          <label class="mb-2 block text-xs font-semibold uppercase tracking-wide text-gray-500">
+            Estado
+          </label>
+          <select
+            [ngModel]="estadoFiltro"
+            (ngModelChange)="onEstadoFiltroChange($event)"
+            class="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+          >
+            <option value="TODAS">Todas</option>
+            <option value="BORRADOR">Borrador</option>
+            <option value="CONFIRMADA">Confirmada</option>
+            <option value="ANULADA">Anulada</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="mb-2 block text-xs font-semibold uppercase tracking-wide text-gray-500">
+            Tamaño página
+          </label>
+          <select
+            [ngModel]="tamanoPagina"
+            (ngModelChange)="onTamanoPaginaChange($event)"
+            class="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+          >
+            <option [ngValue]="10">10</option>
+            <option [ngValue]="20">20</option>
+            <option [ngValue]="50">50</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="mb-2 block text-xs font-semibold uppercase tracking-wide text-gray-500">
+            Desde
+          </label>
+          <input
+            type="date"
+            [(ngModel)]="desde"
+            class="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+          />
+        </div>
+
+        <div>
+          <label class="mb-2 block text-xs font-semibold uppercase tracking-wide text-gray-500">
+            Hasta
+          </label>
+          <input
+            type="date"
+            [(ngModel)]="hasta"
+            class="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+          />
+        </div>
+
+        <div>
+          <label class="mb-2 block text-xs font-semibold uppercase tracking-wide text-gray-500">
+            Ordenar por
+          </label>
+          <select
+            [ngModel]="campoOrden"
+            (ngModelChange)="campoOrden = $event; onOrdenChange()"
+            class="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+          >
+            <option value="fechaCreacion">Fecha creación</option>
+            <option value="numeroFactura">Número factura</option>
+            <option value="total">Total</option>
+            <option value="estado">Estado</option>
+          </select>
+        </div>
+
+        <div>
+          <label class="mb-2 block text-xs font-semibold uppercase tracking-wide text-gray-500">
+            Dirección
+          </label>
+          <select
+            [ngModel]="direccionOrden"
+            (ngModelChange)="direccionOrden = $event; onOrdenChange()"
+            class="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+          >
+            <option value="asc">Ascendente</option>
+            <option value="desc">Descendente</option>
+          </select>
+        </div>
+      </div>
+
+      <p *ngIf="errorFiltros" class="mt-3 rounded-lg border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-700">
+        {{ errorFiltros }}
+      </p>
+
+      <div class="mt-4 flex flex-wrap gap-2">
+        <button
+          type="button"
+          (click)="aplicarFiltrosRemotos()"
+          class="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-indigo-700"
+        >
+          Aplicar fechas
+        </button>
+        <button
+          type="button"
+          (click)="limpiarFiltros()"
+          class="rounded-xl border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-100"
+        >
+          Limpiar filtros
+        </button>
+      </div>
+    </section>
+
+    <section class="rounded-2xl border border-gray-200 bg-white shadow-sm">
+      <div *ngIf="loadingCompras" class="flex items-center justify-center py-16">
+        <div class="h-10 w-10 animate-spin rounded-full border-4 border-indigo-600 border-r-transparent"></div>
+      </div>
+
+      <div *ngIf="!loadingCompras && errorListado" class="p-8">
+        <p class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {{ errorListado }}
+        </p>
+      </div>
+
+      <div *ngIf="!loadingCompras && exitoAccionCompra" class="px-8 pt-6">
+        <p class="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+          {{ exitoAccionCompra }}
+        </p>
+      </div>
+
+      <div *ngIf="!loadingCompras && errorAccionCompra" class="px-8 pt-4">
+        <p class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {{ errorAccionCompra }}
+        </p>
+      </div>
+
+      <div *ngIf="!loadingCompras && !errorListado && comprasFiltradas.length === 0" class="p-10 text-center">
+        <p class="text-lg font-semibold text-gray-800">No hay compras para mostrar</p>
+        <p class="mt-1 text-sm text-gray-500">Ajusta los filtros o registra una nueva compra.</p>
+      </div>
+
+      <div *ngIf="!loadingCompras && comprasFiltradas.length > 0" class="overflow-x-auto">
+        <table class="min-w-full divide-y divide-gray-100">
+          <thead class="bg-gray-50">
+            <tr>
+              <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                Factura
+              </th>
+              <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                Proveedor
+              </th>
+              <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                Estado
+              </th>
+              <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                Fechas
+              </th>
+              <th class="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-500">
+                Total
+              </th>
+              <th class="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-500">
+                Acciones
+              </th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-100">
+            <tr *ngFor="let compra of comprasFiltradas" class="hover:bg-gray-50">
+              <td class="px-5 py-4">
+                <p class="font-semibold text-sm text-gray-900">#{{ compra.numeroFactura}}</p> 
+              </td>
+              <td class="px-5 py-4">
+                <p class="text-sm font-medium text-gray-800">{{ compra.proveedorNombre }}</p>
+                <p class="mt-1 text-xs text-gray-500" *ngIf="compra.observacion">{{ compra.observacion }}</p>
+              </td>
+              <td class="px-5 py-4">
+                <span
+                  class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold"
+                  [class]="claseEstado(compra.estado)"
+                >
+                  {{ textoEstado(compra.estado) }}
+                </span>
+              </td>
+              <td class="px-5 py-4 text-sm text-gray-700">
+                <p><span class="font-semibold">Creación:</span> {{ formatearFechaHora(compra.fechaCreacion) }}</p>
+                <p *ngIf="compra.fechaConfirmacion" class="mt-1">
+                  <span class="font-semibold">Confirmación:</span>
+                  {{ formatearFechaHora(compra.fechaConfirmacion) }}
+                </p>
+                <p *ngIf="compra.fechaAnulacion" class="mt-1">
+                  <span class="font-semibold">Anulación:</span>
+                  {{ formatearFechaHora(compra.fechaAnulacion) }}
+                </p>
+              </td>
+              <td class="px-5 py-4 text-right text-sm font-semibold text-gray-900">
+                {{ formatearMoneda(compra.total) }}
+              </td>
+              <td class="px-5 py-4 text-right">
+                <div class="flex flex-wrap justify-end gap-2">
+                  <button
+                    type="button"
+                    (click)="abrirResumenCompra(compra)"
+                    [disabled]="procesandoAccionCompraId === compra.compraId"
+                    class="rounded-lg border border-indigo-200 px-3 py-1.5 text-xs font-semibold text-indigo-700 transition-colors hover:bg-indigo-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    Ver resumen
+                  </button>
+
+                  <button
+                    *ngIf="compra.estado === 'BORRADOR'"
+                    type="button"
+                    (click)="confirmarCompraBorrador(compra)"
+                    [disabled]="procesandoAccionCompraId === compra.compraId"
+                    class="rounded-lg border border-emerald-200 px-3 py-1.5 text-xs font-semibold text-emerald-700 transition-colors hover:bg-emerald-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {{
+                      procesandoAccionCompraId === compra.compraId ? 'Procesando...' : 'Confirmar'
+                    }}
+                  </button>
+
+                  <button
+                    *ngIf="compra.estado === 'BORRADOR'"
+                    type="button"
+                    (click)="anularCompraBorrador(compra)"
+                    [disabled]="procesandoAccionCompraId === compra.compraId"
+                    class="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-700 transition-colors hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {{
+                      procesandoAccionCompraId === compra.compraId ? 'Procesando...' : 'Anular'
+                    }}
+                  </button>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div
+        *ngIf="!loadingCompras && totalPaginas > 0"
+        class="flex flex-col items-start justify-between gap-3 border-t border-gray-100 px-5 py-4 text-sm text-gray-700 sm:flex-row sm:items-center"
+      >
+        <div>
+          Página <span class="font-semibold">{{ paginaActual + 1 }}</span> de
+          <span class="font-semibold">{{ totalPaginas }}</span>.
+          <span class="ml-1">
+            Mostrando {{ comprasFiltradas.length }} de {{ comprasPagina.length }} registros en esta página
+            ({{ totalElementos }} totales).
+          </span>
+        </div>
+
+        <div class="flex items-center gap-2">
+          <button
+            type="button"
+            (click)="paginaAnterior()"
+            [disabled]="paginaActual === 0"
+            class="rounded-lg border border-gray-300 px-3 py-1.5 font-semibold text-gray-700 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Anterior
+          </button>
+
+          <button
+            type="button"
+            *ngFor="let pagina of paginasVisibles"
+            (click)="irAPagina(pagina)"
+            class="rounded-lg px-3 py-1.5 font-semibold transition-colors"
+            [class.bg-indigo-600]="pagina === paginaActual"
+            [class.text-white]="pagina === paginaActual"
+            [class.bg-white]="pagina !== paginaActual"
+            [class.text-gray-700]="pagina !== paginaActual"
+            [class.border]="pagina !== paginaActual"
+            [class.border-gray-300]="pagina !== paginaActual"
+            [class.hover:bg-gray-100]="pagina !== paginaActual"
+          >
+            {{ pagina + 1 }}
+          </button>
+
+          <button
+            type="button"
+            (click)="paginaSiguiente()"
+            [disabled]="paginaActual >= totalPaginas - 1"
+            class="rounded-lg border border-gray-300 px-3 py-1.5 font-semibold text-gray-700 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            Siguiente
+          </button>
+        </div>
+      </div>
+    </section>
+  </ng-container>
+
+  <ng-template #vistaCrearCompra>
+    <section
+      class="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl"
+      [ngClass]="modalCrearCompraAbierto ? 'max-h-[calc(100dvh-2rem)] flex flex-col' : ''"
+    >
+      <div class="border-b border-gray-200 px-6 py-4">
+        <h2 class="text-xl font-bold text-gray-900">Registrar nueva compra</h2>
+        <p class="mt-1 text-sm text-gray-600">
+          Ingresa los productos comprados, cantidades y costos para registrar el ingreso al sistema.
+        </p>
+      </div>
+
+      <div *ngIf="cargandoFormulario" class="flex items-center justify-center py-16">
+        <div class="h-10 w-10 animate-spin rounded-full border-4 border-indigo-600 border-r-transparent"></div>
+      </div>
+
+      <div
+        *ngIf="!cargandoFormulario"
+        [ngClass]="modalCrearCompraAbierto ? 'min-h-0 overflow-y-auto p-4 sm:p-6' : 'p-6'"
+      >
+        <div *ngIf="formularioBloqueado" class="mb-6 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          Para registrar una compra debes tener al menos un proveedor.
+          <div class="mt-2 flex flex-wrap gap-2">
+            <a
+              routerLink="/proveedores/listado"
+              class="inline-flex rounded-lg border border-amber-300 bg-white px-3 py-1.5 font-semibold text-amber-800 transition-colors hover:bg-amber-100"
+            >
+              Ir a proveedores
+            </a>
+          </div>
+        </div>
+
+        <form #compraForm="ngForm" (ngSubmit)="crearCompra(compraForm)" class="space-y-6">
+          <div class="grid gap-5 md:grid-cols-2">
+            <div>
+              <label for="proveedor-id" class="mb-2 block text-sm font-semibold text-gray-700">
+                Proveedor
+              </label>
+              <select
+                id="proveedor-id"
+                name="proveedorId"
+                [ngModel]="nuevaCompra.proveedorId"
+                (ngModelChange)="onProveedorCompraChange($event)"
+                required
+                [disabled]="formularioBloqueado"
+                class="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200 disabled:cursor-not-allowed disabled:bg-gray-100"
+              >
+                <option [ngValue]="null">Selecciona un proveedor</option>
+                <option *ngFor="let proveedor of proveedores" [ngValue]="proveedor.id">
+                  {{ proveedor.nombre }}
+                </option>
+                <option [ngValue]="opcionAgregarProveedor">+ Agregar proveedor</option>
+              </select>
+            </div>
+
+            <div>
+              <label for="numero-factura" class="mb-2 block text-sm font-semibold text-gray-700">
+                Número de factura
+              </label>
+              <input
+                id="numero-factura"
+                name="numeroFactura"
+                [(ngModel)]="nuevaCompra.numeroFactura"
+                required
+                minlength="2"
+                [disabled]="formularioBloqueado"
+                placeholder="Ej. FC-2026-001"
+                class="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200 disabled:cursor-not-allowed disabled:bg-gray-100"
+              />
+            </div>
+
+            <div class="md:col-span-2">
+              <label for="observacion" class="mb-2 block text-sm font-semibold text-gray-700">
+                Observación
+              </label>
+              <textarea
+                id="observacion"
+                name="observacion"
+                [(ngModel)]="nuevaCompra.observacion"
+                rows="2"
+                [disabled]="formularioBloqueado"
+                placeholder="Notas adicionales de la compra"
+                class="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200 disabled:cursor-not-allowed disabled:bg-gray-100"
+              ></textarea>
+            </div>
+          </div>
+
+          <div class="rounded-xl border border-gray-200">
+            <div class="flex items-center justify-between border-b border-gray-200 px-4 py-3">
+              <h3 class="text-sm font-semibold uppercase tracking-wide text-gray-600">Detalle de productos</h3>
+              <button
+                type="button"
+                (click)="agregarDetalle()"
+                [disabled]="formularioBloqueado"
+                class="rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-semibold text-gray-700 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                + Agregar fila
+              </button>
+            </div>
+
+            <div class="overflow-x-auto">
+              <table class="min-w-full divide-y divide-gray-100">
+                <thead class="bg-gray-50">
+                  <tr>
+                    <th class="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                      Producto
+                    </th>
+                    <th class="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                      Cantidad
+                    </th>
+                    <th class="px-4 py-2 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                      Costo unitario
+                    </th>
+                    <th class="px-4 py-2 text-right text-xs font-semibold uppercase tracking-wide text-gray-500">
+                      Subtotal
+                    </th>
+                    <th class="px-4 py-2 text-right text-xs font-semibold uppercase tracking-wide text-gray-500">
+                      Acción
+                    </th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-gray-100">
+                  <tr *ngFor="let detalle of nuevaCompra.detalles; let idx = index">
+                    <td class="px-4 py-3">
+                      <select
+                        [name]="'producto-' + idx"
+                        [(ngModel)]="detalle.productoId"
+                        (ngModelChange)="onProductoDetalleChange(idx, $event)"
+                        required
+                        [disabled]="formularioBloqueado"
+                        class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200 disabled:cursor-not-allowed disabled:bg-gray-100"
+                      >
+                        <option [ngValue]="null">Selecciona</option>
+                        <option *ngFor="let producto of productosDisponibles" [ngValue]="producto.codigo">
+                          {{ producto.nombre }}
+                        </option>
+                        <option [ngValue]="opcionAgregarProducto">+ Agregar producto</option>
+                      </select>
+                    </td>
+                    <td class="px-4 py-3">
+                      <input
+                        [name]="'cantidad-' + idx"
+                        [(ngModel)]="detalle.cantidad"
+                        type="number"
+                        min="0.01"
+                        step="0.01"
+                        required
+                        [disabled]="formularioBloqueado"
+                        class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200 disabled:cursor-not-allowed disabled:bg-gray-100"
+                      />
+                    </td>
+                    <td class="px-4 py-3">
+                      <input
+                        [name]="'costo-' + idx"
+                        [(ngModel)]="detalle.costoUnitario"
+                        type="number"
+                        min="0.01"
+                        step="0.01"
+                        required
+                        [disabled]="formularioBloqueado"
+                        class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200 disabled:cursor-not-allowed disabled:bg-gray-100"
+                      />
+                    </td>
+                    <td class="px-4 py-3 text-right text-sm font-semibold text-gray-900">
+                      {{ formatearMoneda(calcularSubtotalDetalle(detalle)) }}
+                    </td>
+                    <td class="px-4 py-3 text-right">
+                      <button
+                        type="button"
+                        (click)="eliminarDetalle(idx)"
+                        [disabled]="formularioBloqueado"
+                        class="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-700 transition-colors hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                      >
+                        Quitar
+                      </button>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="rounded-xl border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm">
+            <p class="font-semibold text-indigo-900">
+              Total estimado: <span class="text-lg">{{ formatearMoneda(totalDetallesCompra) }}</span>
+            </p>
+          </div>
+
+          <p *ngIf="errorCrearCompra" class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {{ errorCrearCompra }}
+          </p>
+
+          <p
+            *ngIf="exitoCrearCompra"
+            class="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700"
+          >
+            {{ exitoCrearCompra }}
+          </p>
+
+          <div class="flex flex-wrap justify-end gap-2">
+            <button
+              *ngIf="modalCrearCompraAbierto"
+              type="button"
+              (click)="cerrarModalCrearCompra()"
+              class="rounded-xl border border-gray-300 px-5 py-2.5 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-100"
+            >
+              Cancelar
+            </button>
+            <a
+              *ngIf="!modalCrearCompraAbierto"
+              routerLink="/compras/listado"
+              class="rounded-xl border border-gray-300 px-5 py-2.5 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-100"
+            >
+              Volver al listado
+            </a>
+            <button
+              type="submit"
+              [disabled]="guardandoCompra || formularioBloqueado"
+              class="rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {{ guardandoCompra ? 'Guardando compra...' : 'Registrar compra' }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </section>
+  </ng-template>
+
+  <div
+    *ngIf="tabActual === 'listado' && modalCrearCompraAbierto"
+    class="fixed -top-16 bottom-0 left-0 right-0 z-[220] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+    (click)="cerrarModalCrearCompra()"
+  >
+    <div class="w-full max-w-6xl max-h-[calc(100dvh-2rem)] py-2" (click)="$event.stopPropagation()">
+      <ng-container *ngTemplateOutlet="vistaCrearCompra"></ng-container>
+    </div>
+  </div>
+
+  <div
+    *ngIf="modalCrearProveedorRapidoAbierto"
+    class="fixed inset-0 z-[230] flex items-start justify-center overflow-y-auto bg-black/80 backdrop-blur-sm px-4 pt-[calc(1rem+env(safe-area-inset-top))] pb-[calc(1rem+env(safe-area-inset-bottom))] sm:items-center"
+    (click)="cerrarModalCrearProveedorRapido()"
+  >
+    <section
+      class="w-full max-w-2xl rounded-2xl border border-gray-200 bg-white shadow-2xl"
+      (click)="$event.stopPropagation()"
+    >
+      <div class="border-b border-gray-200 px-6 py-4">
+        <h2 class="text-xl font-bold text-gray-900">Agregar nuevo proveedor</h2>
+        <p class="mt-1 text-sm text-gray-600">
+          Crea el proveedor y se seleccionará automáticamente en esta compra.
+        </p>
+      </div>
+
+      <form
+        #proveedorRapidoForm="ngForm"
+        (ngSubmit)="crearProveedorRapido(proveedorRapidoForm)"
+        class="space-y-5 p-6"
+      >
+        <div class="grid gap-5 md:grid-cols-2">
+          <div>
+            <label for="proveedor-rapido-id" class="mb-2 block text-sm font-semibold text-gray-700">
+              ID proveedor
+            </label>
+            <input
+              id="proveedor-rapido-id"
+              name="proveedorRapidoId"
+              [(ngModel)]="nuevoProveedorRapido.id"
+              type="number"
+              required
+              min="1"
+              step="1"
+              placeholder="Ej. 900123456"
+              class="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+            />
+          </div>
+
+          <div>
+            <label for="proveedor-rapido-documento" class="mb-2 block text-sm font-semibold text-gray-700">
+              Tipo de documento
+            </label>
+            <select
+              id="proveedor-rapido-documento"
+              name="proveedorRapidoTipoDocumento"
+              [(ngModel)]="nuevoProveedorRapido.tipoDocumento"
+              required
+              class="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+            >
+              <option *ngFor="let tipo of tiposDocumentoProveedorRapido" [ngValue]="tipo">{{ tipo }}</option>
+            </select>
+          </div>
+
+          <div class="md:col-span-2">
+            <label for="proveedor-rapido-nombre" class="mb-2 block text-sm font-semibold text-gray-700">
+              Nombre del proveedor
+            </label>
+            <input
+              id="proveedor-rapido-nombre"
+              name="proveedorRapidoNombre"
+              [(ngModel)]="nuevoProveedorRapido.nombre"
+              required
+              minlength="2"
+              placeholder="Ej. Distribuciones Andinas"
+              class="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+            />
+          </div>
+
+          <div>
+            <label for="proveedor-rapido-telefono" class="mb-2 block text-sm font-semibold text-gray-700">
+              Teléfono
+            </label>
+            <input
+              id="proveedor-rapido-telefono"
+              name="proveedorRapidoTelefono"
+              [(ngModel)]="nuevoProveedorRapido.telefono"
+              placeholder="Ej. 3001234567"
+              class="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+            />
+          </div>
+
+          <div>
+            <label for="proveedor-rapido-correo" class="mb-2 block text-sm font-semibold text-gray-700">
+              Correo
+            </label>
+            <input
+              id="proveedor-rapido-correo"
+              name="proveedorRapidoCorreo"
+              [(ngModel)]="nuevoProveedorRapido.correo"
+              type="email"
+              placeholder="Ej. compras@proveedor.com"
+              class="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+            />
+          </div>
+        </div>
+
+        <p
+          *ngIf="errorCrearProveedorRapido"
+          class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+        >
+          {{ errorCrearProveedorRapido }}
+        </p>
+
+        <div class="flex justify-end gap-2">
+          <button
+            type="button"
+            (click)="cerrarModalCrearProveedorRapido()"
+            class="rounded-xl border border-gray-300 px-5 py-2.5 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-100"
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            [disabled]="guardandoProveedorRapido"
+            class="rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {{ guardandoProveedorRapido ? 'Guardando proveedor...' : 'Guardar proveedor' }}
+          </button>
+        </div>
+      </form>
+    </section>
+  </div>
+
+  <div
+    *ngIf="modalCrearProductoRapidoAbierto"
+    class="fixed inset-0 z-[225] flex items-start justify-center overflow-y-auto bg-black/80 backdrop-blur-sm px-4 pt-[calc(1rem+env(safe-area-inset-top))] pb-[calc(1rem+env(safe-area-inset-bottom))] sm:items-center"
+    (click)="cerrarModalCrearProductoRapido()"
+  >
+    <section
+      class="w-full max-w-2xl rounded-2xl border border-gray-200 bg-white shadow-2xl"
+      (click)="$event.stopPropagation()"
+    >
+      <div class="border-b border-gray-200 px-6 py-4">
+        <h2 class="text-xl font-bold text-gray-900">Agregar nuevo producto</h2>
+        <p class="mt-1 text-sm text-gray-600">
+          Crea un producto inventariable y se seleccionará automáticamente en la fila actual.
+        </p>
+      </div>
+
+      <div *ngIf="cargandoCategoriasProductoRapido" class="flex items-center justify-center py-12">
+        <div class="h-10 w-10 animate-spin rounded-full border-4 border-indigo-600 border-r-transparent"></div>
+      </div>
+
+      <form
+        *ngIf="!cargandoCategoriasProductoRapido"
+        #productoRapidoForm="ngForm"
+        (ngSubmit)="crearProductoRapido(productoRapidoForm)"
+        class="space-y-5 p-6"
+      >
+        <div class="grid gap-5 md:grid-cols-2">
+          <div class="md:col-span-2">
+            <label for="producto-rapido-nombre" class="mb-2 block text-sm font-semibold text-gray-700">
+              Nombre del producto
+            </label>
+            <input
+              id="producto-rapido-nombre"
+              name="productoRapidoNombre"
+              [(ngModel)]="nuevoProductoRapido.nombre"
+              required
+              minlength="2"
+              placeholder="Ej. Leche entera 1L"
+              class="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+            />
+          </div>
+
+          <div>
+            <label for="producto-rapido-precio" class="mb-2 block text-sm font-semibold text-gray-700">
+              Precio
+            </label>
+            <input
+              id="producto-rapido-precio"
+              name="productoRapidoPrecio"
+              [(ngModel)]="nuevoProductoRapido.precio"
+              type="number"
+              min="0"
+              required
+              placeholder="0"
+              class="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+            />
+          </div>
+
+          <div>
+            <label for="producto-rapido-categoria" class="mb-2 block text-sm font-semibold text-gray-700">
+              Categoría
+            </label>
+            <select
+              id="producto-rapido-categoria"
+              name="productoRapidoCategoriaId"
+              [ngModel]="nuevoProductoRapido.categoriaId"
+              (ngModelChange)="onCategoriaProductoRapidoChange($event)"
+              required
+              class="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+            >
+              <option [ngValue]="null">Selecciona una categoría</option>
+              <option *ngFor="let categoria of categoriasProductoRapido" [ngValue]="categoria.id">
+                {{ categoria.nombre }}
+              </option>
+            </select>
+          </div>
+
+          <div>
+            <label for="producto-rapido-stock-inicial" class="mb-2 block text-sm font-semibold text-gray-700">
+              Stock inicial
+            </label>
+            <input
+              id="producto-rapido-stock-inicial"
+              name="productoRapidoStockInicial"
+              [(ngModel)]="nuevoProductoRapido.stockInicial"
+              type="number"
+              min="0"
+              required
+              class="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+            />
+          </div>
+
+          <div>
+            <label for="producto-rapido-stock-minimo" class="mb-2 block text-sm font-semibold text-gray-700">
+              Stock mínimo
+            </label>
+            <input
+              id="producto-rapido-stock-minimo"
+              name="productoRapidoStockMinimo"
+              [(ngModel)]="nuevoProductoRapido.stockMinimo"
+              type="number"
+              min="0"
+              required
+              class="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+            />
+          </div>
+        </div>
+
+        <p *ngIf="categoriasProductoRapido.length === 0" class="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+          No hay categorías disponibles para crear productos. Registra una categoría primero.
+        </p>
+
+        <p
+          *ngIf="errorCrearProductoRapido"
+          class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700"
+        >
+          {{ errorCrearProductoRapido }}
+        </p>
+
+        <div class="flex justify-end gap-2">
+          <button
+            type="button"
+            (click)="cerrarModalCrearProductoRapido()"
+            class="rounded-xl border border-gray-300 px-5 py-2.5 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-100"
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            [disabled]="guardandoProductoRapido || categoriasProductoRapido.length === 0"
+            class="rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {{ guardandoProductoRapido ? 'Guardando producto...' : 'Guardar producto' }}
+          </button>
+        </div>
+      </form>
+    </section>
+  </div>
+
+  <div
+    *ngIf="tabActual === 'listado' && modalResumenCompraAbierto"
+    class="fixed -top-16 bottom-0 left-0 right-0 z-[220] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+    (click)="cerrarResumenCompra()"
+  >
+    <section
+      class="flex w-full max-w-5xl max-h-[calc(100dvh-2rem)] flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl"
+      
+      
+      (click)="$event.stopPropagation()"
+    >
+      <div class="border-b border-gray-200 bg-white px-4 py-4 sm:px-6 sm:py-4">
+        <div class="flex items-start justify-between gap-3">
+        <div>
+          <h2 class="text-xl font-bold text-gray-900">
+            Resumen de compra #{{ compraResumenSeleccionada?.compraId ?? compraResumenSolicitadaId }}
+          </h2>
+          <p *ngIf="compraResumenSeleccionada" class="mt-1 text-sm text-gray-600">
+            Factura {{ compraResumenSeleccionada.numeroFactura }} - {{ compraResumenSeleccionada.proveedorNombre }}
+          </p>
+        </div>
+        <button
+          type="button"
+          (click)="cerrarResumenCompra()"
+          class="rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-semibold text-gray-700 transition-colors hover:bg-gray-100"
+        >
+          Cerrar
+        </button>
+        </div>
+      </div>
+
+      <div class="min-h-0 overflow-y-auto">
+        <div *ngIf="cargandoResumenCompra" class="flex items-center justify-center py-12">
+          <div class="h-10 w-10 animate-spin rounded-full border-4 border-indigo-600 border-r-transparent"></div>
+        </div>
+
+        <div *ngIf="!cargandoResumenCompra && errorResumenCompra" class="p-6">
+          <p class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+            {{ errorResumenCompra }}
+          </p>
+        </div>
+
+        <div *ngIf="!cargandoResumenCompra && !errorResumenCompra && compraResumenSeleccionada" class="space-y-5 p-4 sm:p-6">
+          <div class="grid gap-4 md:grid-cols-2">
+          <div class="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
+            <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Proveedor</p>
+            <p class="mt-1 text-sm font-semibold text-gray-900">{{ compraResumenSeleccionada.proveedorNombre }}</p>
+            <p class="text-xs text-gray-600">ID: {{ compraResumenSeleccionada.proveedorId }}</p>
+          </div>
+
+          <div class="rounded-xl border border-gray-200 bg-gray-50 px-4 py-3">
+            <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Estado</p>
+            <span
+              class="mt-2 inline-flex rounded-full px-2.5 py-1 text-xs font-semibold"
+              [class]="claseEstado(compraResumenSeleccionada.estado)"
+            >
+              {{ textoEstado(compraResumenSeleccionada.estado) }}
+            </span>
+          </div>
+        </div>
+
+        <div class="rounded-xl border border-gray-200 px-4 py-3">
+          <h3 class="text-sm font-semibold uppercase tracking-wide text-gray-600">Fechas</h3>
+          <div class="mt-2 space-y-1.5 text-sm text-gray-700">
+            <p>
+              <span class="font-semibold">Creación:</span>
+              {{ formatearFechaHora(compraResumenSeleccionada.fechaCreacion) }}
+            </p>
+            <p *ngIf="compraResumenSeleccionada.estado === 'CONFIRMADA'">
+              <span class="font-semibold">Confirmación:</span>
+              {{ formatearFechaHora(compraResumenSeleccionada.fechaConfirmacion) }}
+            </p>
+            <p *ngIf="compraResumenSeleccionada.estado === 'ANULADA'">
+              <span class="font-semibold">Anulación:</span>
+              {{ formatearFechaHora(compraResumenSeleccionada.fechaAnulacion) }}
+            </p>
+          </div>
+        </div>
+
+        <div class="rounded-xl border border-gray-200 px-4 py-3">
+          <h3 class="text-sm font-semibold uppercase tracking-wide text-gray-600">Observación</h3>
+          <p class="mt-2 text-sm text-gray-700">{{ compraResumenSeleccionada.observacion || '-' }}</p>
+        </div>
+
+        <div class="rounded-xl border border-gray-200 px-4 py-3">
+          <h3 class="text-sm font-semibold uppercase tracking-wide text-gray-600">Detalle de la compra</h3>
+
+          
+
+          <div
+            *ngIf="(compraResumenSeleccionada.detalles?.length ?? 0) === 0"
+            class="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800"
+          >
+            Esta compra no tiene detalles registrados.
+          </div>
+
+          <div *ngIf="(compraResumenSeleccionada.detalles?.length ?? 0) > 0" class="mt-3 overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-100 border-b-2 border-gray-200 ">
+              <thead class="bg-gray-50">
+                <tr>
+                  <th class="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+                    Producto
+                  </th>
+                  <th class="px-3 py-2 text-right text-xs font-semibold uppercase tracking-wide text-gray-500">
+                    Cantidad
+                  </th>
+                  <th class="px-3 py-2 text-right text-xs font-semibold uppercase tracking-wide text-gray-500">
+                    Costo unitario
+                  </th>
+                  <th class="px-3 py-2 text-right text-xs font-semibold uppercase tracking-wide text-gray-500">
+                    Subtotal
+                  </th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-100">
+                <tr *ngFor="let detalle of compraResumenSeleccionada.detalles" class="text-sm text-gray-700">
+                  <td class="px-3 py-2">
+                    <p class="font-semibold text-gray-900">{{ detalle.nombreProducto }}</p>
+                    <p class="text-xs text-gray-500">ID: {{ detalle.productoId }}</p>
+                  </td>
+                  <td class="px-3 py-2 text-right">{{ detalle.cantidad }}</td>
+                  <td class="px-3 py-2 text-right">{{ formatearMoneda(detalle.costoUnitario) }}</td>
+                  <td class="px-3 py-2 text-right font-semibold text-gray-900">
+                    {{ formatearMoneda(detalle.subtotal) }}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+            
+            <div class="mt-3 grid gap-3 rounded-lg border border-indigo-200 bg-indigo-50 p-3 sm:grid-cols-2">
+            <p class="text-sm font-semibold text-indigo-900">
+             <span>Total:</span>
+            </p>
+            <p class="text-sm font-semibold text-indigo-900 sm:text-right">
+              <span>{{ formatearMoneda(compraResumenSeleccionada.total) }}</span>
+            </p>
+          </div>
+            
+          </div>
+        </div>
+
+        <div
+          *ngIf="compraResumenSeleccionada.estado === 'ANULADA'"
+          class="rounded-xl border border-red-200 bg-red-50 px-4 py-3"
+        >
+          <h3 class="text-sm font-semibold uppercase tracking-wide text-red-700">Información de anulación</h3>
+          <p class="mt-2 text-sm text-red-800">
+            <span class="font-semibold">Anulada por:</span> {{ compraResumenSeleccionada.anuladoPor || '-' }}
+          </p>
+        </div>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>

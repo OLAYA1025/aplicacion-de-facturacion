@@ -1,0 +1,60 @@
+<section class="rounded-2xl border border-gray-200 bg-white shadow-sm">
+  <div class="flex flex-col gap-5 p-4 sm:p-6 lg:flex-row lg:items-center lg:justify-between">
+    <div>
+      <h1 class="text-2xl font-bold text-gray-900">
+        {{ titulo }}
+      </h1>
+      <p class="mt-1 text-sm text-gray-600">
+        {{ descripcion }}
+      </p>
+    </div>
+
+    <div class="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
+      <div class="grid w-full grid-cols-2 rounded-xl border border-gray-200 bg-gray-50 p-1 text-sm font-semibold sm:inline-flex sm:w-auto">
+        <a
+          routerLink="/productos/inventariables"
+          class="rounded-lg px-4 py-2 text-center transition-colors"
+          [class.bg-white]="tabActual === 'inventariables'"
+          [class.text-indigo-600]="tabActual === 'inventariables'"
+          [class.shadow-sm]="tabActual === 'inventariables'"
+          [class.text-gray-600]="tabActual !== 'inventariables'"
+          [class.hover:bg-white]="tabActual !== 'inventariables'"
+        >
+          Inventario
+        </a>
+
+        <a
+          routerLink="/productos/preparaciones"
+          class="rounded-lg px-4 py-2 text-center transition-colors"
+          [class.bg-white]="tabActual === 'preparaciones'"
+          [class.text-indigo-600]="tabActual === 'preparaciones'"
+          [class.shadow-sm]="tabActual === 'preparaciones'"
+          [class.text-gray-600]="tabActual !== 'preparaciones'"
+          [class.hover:bg-white]="tabActual !== 'preparaciones'"
+        >
+          Preparaciones
+        </a>
+      </div>
+
+      <button
+        *ngIf="esVistaListado"
+        type="button"
+        (click)="onCrearProducto()"
+        class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-indigo-700 sm:w-auto"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke-width="2.2"
+          stroke="currentColor"
+          class="h-4 w-4"
+        >
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+        </svg>
+        Crear producto
+      </button>
+    </div>
+  </div>
+</section>
+

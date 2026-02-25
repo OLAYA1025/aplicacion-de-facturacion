@@ -1,0 +1,134 @@
+<div class="min-h-screen space-y-6">
+  
+  <app-productos-header
+    class="block"
+    [tabActual]="tabActual"
+    [esVistaListado]="esVistaListado"
+    (crearProducto)="abrirModalCrearProducto()"
+  />
+
+  <ng-container *ngIf="esVistaListado" >
+    <app-productos-filtros
+      class="block"
+      [busqueda]="busqueda"
+      (busquedaChange)="busqueda = $event"
+      [filtroCategoriaId]="filtroCategoriaId"
+      (filtroCategoriaIdChange)="filtroCategoriaId = $event"
+      [filtroEstado]="filtroEstado"
+      (filtroEstadoChange)="filtroEstado = $event"
+      [campoOrden]="campoOrden"
+      (campoOrdenChange)="campoOrden = $event"
+      [direccionOrden]="direccionOrden"
+      (direccionOrdenChange)="direccionOrden = $event"
+      [esInventariable]="esInventariable"
+      [categorias]="categorias"
+      (filtrosChange)="aplicarFiltrosYOrden()"
+    />
+
+    <app-productos-listado
+      class="block"
+      [loadingProductos]="loadingProductos"
+      [productosFiltrados]="productosFiltrados"
+      [esInventariable]="esInventariable"
+      [guardandoEstadoIds]="guardandoEstadoIds"
+      (editar)="abrirModalEdicion($event)"
+      (cambiarEstado)="cambiarEstadoProducto($event)"
+    />
+  </ng-container>
+
+  <section
+    *ngIf="tabActual === 'crear-producto'"
+    class="mx-auto max-w-4xl rounded-2xl border border-gray-200 bg-white shadow-sm"
+  >
+    <app-producto-form
+      formIdPrefix="pagina"
+      [nuevoProducto]="nuevoProducto"
+      [selectorCategoriaCrear]="selectorCategoriaCrear"
+      [categorias]="categorias"
+      [mostrarCrearCategoria]="mostrarCrearCategoria"
+      [nuevaCategoriaNombre]="nuevaCategoriaNombre"
+      [guardandoCategoria]="guardandoCategoria"
+      [guardandoProducto]="guardandoProducto"
+      [errorCrearCategoria]="errorCrearCategoria"
+      [errorCrearProducto]="errorCrearProducto"
+      (submitForm)="crearProducto($event)"
+      (categoriaChange)="onCategoriaCrearChange($event)"
+      (tipoGestionChange)="onTipoGestionCrearChange()"
+      (nuevaCategoriaNombreChange)="nuevaCategoriaNombre = $event"
+      (crearCategoria)="crearCategoria()"
+      (cancelarCrearCategoria)="cancelarCrearCategoria()"
+    />
+  </section>
+
+  <div
+    *ngIf="modalCreacionAbierto"
+    class="fixed -top-16 bottom-0 left-0 right-0 z-[220] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+    (click)="cerrarModalCrearProducto()"
+  >
+    <div class="w-full max-w-4xl max-h-[calc(100dvh-2rem)] py-2" (click)="$event.stopPropagation()">
+      <section
+        class="flex max-h-[calc(100dvh-2rem)] w-full flex-col overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl"
+      >
+        <div class="flex items-center justify-between border-b border-gray-200 px-6 py-4">
+          <div>
+            <h2 class="text-xl font-bold text-gray-900">Crear producto</h2>
+            <p class="mt-1 text-sm text-gray-600">
+              Completa los datos y crea el producto sin salir de la lista.
+            </p>
+          </div>
+          <button
+            type="button"
+            (click)="cerrarModalCrearProducto()"
+            class="rounded-lg p-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700"
+            aria-label="Cerrar"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.2" stroke="currentColor" class="h-5 w-5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+            </svg>
+          </button>
+        </div>
+
+        <div class="min-h-0 overflow-y-auto">
+          <app-producto-form
+            formIdPrefix="modal"
+            [nuevoProducto]="nuevoProducto"
+            [selectorCategoriaCrear]="selectorCategoriaCrear"
+            [categorias]="categorias"
+            [mostrarCrearCategoria]="mostrarCrearCategoria"
+            [nuevaCategoriaNombre]="nuevaCategoriaNombre"
+            [guardandoCategoria]="guardandoCategoria"
+            [guardandoProducto]="guardandoProducto"
+            [errorCrearCategoria]="errorCrearCategoria"
+            [errorCrearProducto]="errorCrearProducto"
+            [mostrarBotonCancelar]="true"
+            (submitForm)="crearProducto($event)"
+            (categoriaChange)="onCategoriaCrearChange($event)"
+            (tipoGestionChange)="onTipoGestionCrearChange()"
+            (nuevaCategoriaNombreChange)="nuevaCategoriaNombre = $event"
+            (crearCategoria)="crearCategoria()"
+            (cancelarCrearCategoria)="cancelarCrearCategoria()"
+            (cancelarFormulario)="cerrarModalCrearProducto()"
+          />
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <app-productos-toast-exito
+    [visible]="toastExitoVisible"
+    [mensaje]="mensajeExitoCreacion"
+    (cerrar)="cerrarToastExito()"
+  />
+
+  <app-productos-edicion-modal
+    [abierto]="modalEdicionAbierto"
+    [edicionProducto]="edicionProducto"
+    [categorias]="categorias"
+    [guardandoEdicion]="guardandoEdicion"
+    [errorEditarProducto]="errorEditarProducto"
+    (cerrar)="cerrarModalEdicion()"
+    (guardar)="guardarEdicion($event)"
+    (tipoGestionChange)="onTipoGestionEdicionChange()"
+  />
+
+</div>

@@ -1,0 +1,155 @@
+<div class="relative min-h-screen flex items-center justify-center bg-gray-100 px-4 py-12 sm:px-6 lg:px-8 ">
+  <button
+    type="button"
+    (click)="toggleTheme()"
+    [class.animate-theme-pulse]="themeAnimating"
+    class="absolute right-4 top-4 z-10 inline-flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-gray-200 bg-white shadow-sm transition hover:shadow-md active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/60 focus-visible:ring-offset-2 dark:border-white/10 dark:bg-slate-900 text-slate-700 dark:text-slate-200 sm:right-6 sm:top-6 sm:w-[76px]"
+    aria-label="Alternar tema"
+  >
+    <!-- Mobile (icon-only) -->
+    <span class="relative inline-flex h-6 w-6 items-center justify-center sm:hidden">
+      <span class="absolute inset-0 flex items-center justify-center text-amber-500 transition-all duration-300 opacity-0 scale-75 dark:scale-100 dark:opacity-100">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2.25m6.364.386-1.591 1.591M21 12h-2.25m-.386 6.364-1.591-1.591M12 18.75V21m-4.773-4.227-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0Z" />
+        </svg>
+      </span>
+      <span class="absolute inset-0 flex items-center justify-center text-slate-700 transition-all duration-300 dark:scale-75 dark:opacity-0 dark:text-slate-200">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002A9.72 9.72 0 0 1 18 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 0 0 3 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 0 0 9.002-5.998Z" />
+        </svg>
+      </span>
+    </span>
+
+    <!-- Desktop+ (pill) -->
+    <span class="hidden sm:block absolute inset-0 rounded-full bg-gray-100 dark:bg-slate-800"></span>
+
+    <!-- Icons -->
+    <span class="hidden sm:block absolute left-2 z-10 text-amber-500 transition-all duration-300 dark:opacity-35">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2.25m6.364.386-1.591 1.591M21 12h-2.25m-.386 6.364-1.591-1.591M12 18.75V21m-4.773-4.227-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0Z" />
+      </svg>
+    </span>
+    <span class="hidden sm:block absolute right-2 z-10 text-slate-700 transition-all duration-300 opacity-30 dark:opacity-100 dark:text-slate-200">
+      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+        <path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002A9.72 9.72 0 0 1 18 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 0 0 3 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 0 0 9.002-5.998Z" />
+      </svg>
+    </span>
+
+    <!-- Knob -->
+    <span
+      class="hidden sm:inline-flex absolute z-10 top-1 left-1 h-8 w-8 items-center justify-center rounded-full bg-white shadow ring-1 ring-black/5 transition-transform duration-300 dark:bg-slate-800 dark:ring-white/10 dark:translate-x-[36px]"
+    ></span>
+  </button>
+  
+  <div class="w-full max-w-md">
+    
+    
+
+    <!-- Card del login -->
+    <div class="bg-white rounded-2xl shadow-md border border-gray-100 overflow-hidden">
+      
+      <!-- Header -->
+      <div class="px-8 pt-10 pb-6 text-center border-b border-gray-100">
+        <div class="inline-flex items-center justify-center w-28 h-28 rounded-full mb-4">
+          <img
+            src="/montaraLogo.png"
+            alt="Montara Logo"
+            class="w-24 h-24 object-contain"
+          />
+        </div>
+        <h2 class="text-2xl font-bold text-gray-900">
+          Ingresa con tu cuenta
+        </h2>
+        <p class="text-sm text-gray-500 mt-2">
+          Bienvenido de nuevo
+        </p>
+      </div>
+
+      <!-- Formulario -->
+      <div class="px-8 py-8">
+        <form (ngSubmit)="onSubmit()" class="space-y-5">
+
+          <!-- Campo Usuario -->
+          <div>
+            <label for="username" class="block text-sm font-medium text-gray-700 mb-2">
+              Usuario
+            </label>
+            <div class="relative">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 text-gray-400">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
+                </svg>
+              </div>
+              <input
+                id="username"
+                type="text"
+                [(ngModel)]="username"
+                name="username"
+                required
+                autocomplete="username"
+                placeholder="Ingresa tu usuario"
+                class="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
+              />
+            </div>
+          </div>
+
+          <!-- Campo Contraseña -->
+          <div>
+            <label for="password" class="block text-sm font-medium text-gray-700 mb-2">
+              Contraseña
+            </label>
+            <div class="relative">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 text-gray-400">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 11.25h10.5a2.25 2.25 0 0 0 2.25-2.25v-6.75a2.25 2.25 0 0 0-2.25-2.25H6.75a2.25 2.25 0 0 0-2.25 2.25v6.75a2.25 2.25 0 0 0 2.25 2.25Z" />
+                </svg>
+              </div>
+              <input
+                id="password"
+                type="password"
+                [(ngModel)]="password"
+                name="password"
+                required
+                autocomplete="current-password"
+                placeholder="Ingresa tu contraseña"
+                class="block w-full pl-10 pr-3 py-2.5 border border-gray-300 rounded-lg text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-colors"
+              />
+            </div>
+          </div>
+
+          <!-- Mensaje de error -->
+          <div *ngIf="errorMessage()" 
+               class="bg-red-50 border border-red-200 rounded-lg p-3 flex items-start gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 text-red-500 flex-shrink-0 mt-0.5">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z" />
+            </svg>
+            <p class="text-sm text-red-700 font-medium">
+              {{ errorMessage() }}
+            </p>
+          </div>
+
+          <!-- Botón de submit -->
+          <button
+            type="submit"
+            [disabled]="loading()"
+            class="w-full bg-orange-700 dark:bg-red-800 dark:hover:bg-red-600 dark:shadow-[0_0_10px_rgba(220,38,38,0.6)] text-white font-semibold py-2.5 px-4 rounded-lg hover:bg-orange-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+            <span *ngIf="!loading()">Ingresar</span>
+            <span *ngIf="loading()" class="flex items-center justify-center gap-2">
+              <svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Ingresando...
+            </span>
+          </button>
+
+        </form>
+      </div>
+
+    </div>
+
+    <!-- Footer -->
+
+  </div>
+
+</div>

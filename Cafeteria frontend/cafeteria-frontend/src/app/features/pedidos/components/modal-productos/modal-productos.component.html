@@ -1,0 +1,295 @@
+<div
+  *ngIf="visible"
+  class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+>
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-6xl max-h-[90vh] flex flex-col transform scale-100 transition-all">
+    <div
+      class="bg-indigo-600 px-6 py-5 flex items-center justify-between rounded-t-2xl flex-shrink-0"
+    >
+      <div class="flex items-center gap-3">
+        <div class="p-2 bg-white/20 rounded-xl">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke-width="2"
+            stroke="currentColor"
+            class="w-6 h-6 text-white"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M13.5 21v-7.5a.75.75 0 0 1 .75-.75h3a.75.75 0 0 1 .75.75V21m-4.5 0H2.36m11.14 0H18m0 0h3.64m-1.39 0V9.349M3.75 21V9.349m0 0a3.001 3.001 0 0 0 3.75-.615A2.993 2.993 0 0 0 9.75 9.75c.896 0 1.7-.393 2.25-1.016a2.993 2.993 0 0 0 2.25 1.016c.896 0 1.7-.393 2.25-1.015a3.001 3.001 0 0 0 3.75.614m-16.5 0a3.004 3.004 0 0 1-.621-4.72l1.189-1.19A1.5 1.5 0 0 1 5.378 3h13.243a1.5 1.5 0 0 1 1.06.44l1.19 1.189a3 3 0 0 1-.621 4.72M6.75 18h3.75a.75.75 0 0 0 .75-.75V13.5a.75.75 0 0 0-.75-.75H6.75a.75.75 0 0 0-.75.75v3.75c0 .414.336.75.75.75Z"
+            />
+          </svg>
+        </div>
+        <div>
+          <h3 class="text-2xl font-bold text-white">Catálogo de Productos</h3>
+          <p class="text-indigo-100 text-sm mt-1">Selecciona los productos para el pedido</p>
+        </div>
+      </div>
+      <button
+        (click)="cerrar.emit()"
+        class="p-2 bg-white/20 hover:bg-white/30 rounded-xl transition-colors"
+      >
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke-width="2.5"
+          stroke="currentColor"
+          class="w-6 h-6 text-white"
+        >
+          <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+        </svg>
+      </button>
+    </div>
+
+    <div class="px-6 py-4 border-b border-gray-200 flex-shrink-0">
+      <div class="relative">
+        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke-width="2"
+            stroke="currentColor"
+            class="w-5 h-5 text-gray-400"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"
+            />
+          </svg>
+        </div>
+        <input
+          type="text"
+          [ngModel]="busquedaProducto"
+          (ngModelChange)="onBusquedaChange($event)"
+          placeholder="Buscar producto por nombre o código..."
+          class="w-full pl-12 pr-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
+        />
+      </div>
+    </div>
+
+    <div class="flex-1 overflow-hidden flex">
+      <div class="w-28 sm:w-56 md:w-64 bg-gray-50 border-r border-gray-200 overflow-y-auto flex-shrink-0">
+        <div class="p-2 sm:p-4">
+          <h4 class="hidden sm:block text-xs font-bold text-gray-500 uppercase tracking-wider mb-3">Categorías</h4>
+
+          <button
+            (click)="onSeleccionarCategoria(null)"
+            class="w-full text-center sm:text-left px-2 py-2 sm:px-4 sm:py-3 rounded-lg mb-1.5 sm:mb-2 transition-all font-medium text-[11px] sm:text-sm"
+            [class.bg-indigo-600]="categoriaSeleccionada === null"
+            [class.text-white]="categoriaSeleccionada === null"
+            [class.hover:bg-indigo-700]="categoriaSeleccionada === null"
+            [class.bg-white]="categoriaSeleccionada !== null"
+            [class.text-gray-700]="categoriaSeleccionada !== null"
+            [class.hover:bg-gray-100]="categoriaSeleccionada !== null"
+          >
+            <div class="flex items-center justify-center sm:justify-between">
+              <span>Todas</span>
+              <span
+                class="hidden sm:inline-flex text-xs font-semibold px-2 py-1 rounded-full"
+                [class.bg-white/20]="categoriaSeleccionada === null"
+                [class.bg-gray-100]="categoriaSeleccionada !== null"
+              >
+                {{ productos.length }}
+              </span>
+            </div>
+          </button>
+
+          <button
+            *ngFor="let categoria of categorias"
+            (click)="onSeleccionarCategoria(categoria.id)"
+            class="w-full text-center sm:text-left px-2 py-2 sm:px-4 sm:py-3 rounded-lg mb-1.5 sm:mb-2 transition-all font-medium text-[11px] sm:text-sm"
+            [class.bg-indigo-600]="categoriaSeleccionada === categoria.id"
+            [class.text-white]="categoriaSeleccionada === categoria.id"
+            [class.hover:bg-indigo-700]="categoriaSeleccionada === categoria.id"
+            [class.bg-white]="categoriaSeleccionada !== categoria.id"
+            [class.text-gray-700]="categoriaSeleccionada !== categoria.id"
+            [class.hover:bg-gray-100]="categoriaSeleccionada !== categoria.id"
+          >
+            <div class="flex items-center justify-center sm:justify-between">
+              <span class="truncate max-w-full">{{ categoria.nombre }}</span>
+              <span
+                class="hidden sm:inline-flex text-xs font-semibold px-2 py-1 rounded-full ml-2 flex-shrink-0"
+                [class.bg-white/20]="categoriaSeleccionada === categoria.id"
+                [class.bg-gray-100]="categoriaSeleccionada !== categoria.id"
+              >
+                {{ contarProductosPorCategoria(categoria.id) }}
+              </span>
+            </div>
+          </button>
+        </div>
+      </div>
+
+      <div class="flex-1 overflow-y-auto p-3 sm:p-6">
+        <div *ngIf="productosFiltrados.length === 0" class="flex items-center justify-center h-full">
+          <div class="text-center">
+            <div class="inline-flex items-center justify-center w-20 h-20 bg-gray-100 rounded-full mb-4">
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke-width="1.5"
+                stroke="currentColor"
+                class="w-10 h-10 text-gray-400"
+              >
+                <path
+                  stroke-linecap="round"
+                  stroke-linejoin="round"
+                  d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z"
+                />
+              </svg>
+            </div>
+            <h3 class="text-lg font-semibold text-gray-900 mb-2">No se encontraron productos</h3>
+            <p class="text-gray-500">Intenta con otro término de búsqueda o categoría</p>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <div
+            *ngFor="let producto of productosFiltrados"
+            (click)="onAgregarProducto(producto)"
+            class="border-2 rounded-xl p-4 hover:shadow-lg transition-all text-left group transform hover:scale-105 duration-200 cursor-pointer"
+            [ngClass]= "{
+              'shadow-md border-green-500 bg-green-50 dark:shadow-[0_0_10px_rgba(34,197,94,0.5) ]': esProductoSeleccionado(obtenerIdProducto(producto)),
+              'border-gray-200 bg-white hover:border-indigo-500': !esProductoSeleccionado(obtenerIdProducto(producto))
+            }"
+            
+            
+          >
+            <div class="mb-2 flex items-center justify-between gap-2">
+              <span
+                class="inline-block px-2.5 py-1 bg-indigo-50 text-indigo-700 text-xs font-bold rounded-lg"
+              >
+                {{ producto.categoria.nombre }}
+              </span>
+
+              <span
+                *ngIf="esProductoSeleccionado(obtenerIdProducto(producto))"
+                class="inline-flex items-center gap-1 px-2 py-1 bg-green-600 text-white text-[11px] font-bold rounded-md"
+              >
+                Seleccionado x{{ obtenerCantidadSeleccionada(obtenerIdProducto(producto)) }}
+              </span>
+            </div>
+
+            <h4
+              class="font-bold text-gray-900 text-sm mb-1 line-clamp-2 transition-colors min-h-[2.5rem]"
+              [class.group-hover:text-indigo-600]="!esProductoSeleccionado(obtenerIdProducto(producto))"
+              [class.text-green-800]="esProductoSeleccionado(obtenerIdProducto(producto))"
+            >
+              {{ producto.nombre }}
+            </h4>
+
+            <p class="text-xs text-gray-500 mb-3 font-mono">#{{ obtenerIdProducto(producto) }}</p>
+
+            <div class="space-y-2">
+              <div class="flex items-baseline gap-1">
+                <span class="text-lg font-bold bg-indigo-600 bg-clip-text text-transparent">
+                  {{ formatearMonto(producto.precio) }}
+                </span>
+              </div>
+
+              <div *ngIf="esInventariable(producto)" class="flex items-center gap-1.5 text-xs">
+                <div
+                  class="flex items-center gap-1 px-2 py-1 rounded-md"
+                  [class.bg-green-100]="stockDisponible(producto) > producto.stockMinimo"
+                  [class.text-green-600]="stockDisponible(producto) > producto.stockMinimo"
+                  [class.bg-orange-100]="stockDisponible(producto) <= producto.stockMinimo"
+                  [class.text-orange-500]="stockDisponible(producto) <= producto.stockMinimo"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke-width="2"
+                    stroke="currentColor"
+                    class="w-3 h-3"
+                  >
+                    <path
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
+                      d="m20.25 7.5-.625 10.632a2.25 2.25 0 0 1-2.247 2.118H6.622a2.25 2.25 0 0 1-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125Z"
+                    />
+                  </svg>
+                  <span class="font-bold">{{ stockDisponible(producto) }}</span>
+                </div>
+              </div>
+
+              <div *ngIf="!esInventariable(producto)" class="flex items-center gap-1.5 text-xs">
+                <div class="flex items-center gap-1 px-2 py-1 rounded-md bg-indigo-100 text-indigo-700">
+                  <span class="font-bold">Preparación</span>
+                </div>
+              </div>
+            </div>
+
+            <div
+              *ngIf="!esProductoSeleccionado(obtenerIdProducto(producto))"
+              class="mt-3 pt-3 border-t border-gray-100 flex items-center justify-center gap-1.5 text-indigo-600 opacity-0 group-hover:opacity-100 transition-opacity"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke-width="2.5"
+                stroke="currentColor"
+                class="w-4 h-4"
+              >
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+              </svg>
+              <span class="text-xs font-bold">Agregar</span>
+            </div>
+
+            <div
+              *ngIf="esProductoSeleccionado(obtenerIdProducto(producto))"
+              class="mt-3 pt-3 border-t border-green-200"
+              (click)="$event.stopPropagation()"
+            >
+              <label class="text-xs font-semibold text-green-800 block mb-2">Cantidad en el pedido</label>
+              <div class="grid grid-cols-[2rem_minmax(0,1fr)_2rem] items-center gap-2">
+                <button
+                  type="button"
+                  class="w-8 h-8 rounded-lg border border-green-300 text-green-800 hover:bg-green-100 font-bold"
+                  (click)="onCantidadProductoChange(producto, obtenerCantidadSeleccionada(obtenerIdProducto(producto)) - 1)"
+                >
+                  -
+                </button>
+
+                <input
+                  type="number"
+                  min="0"
+                  class="cantidad-input w-full min-w-0 px-2 py-1.5 border border-green-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-sm font-semibold text-green-900 bg-white text-center"
+                  [ngModel]="obtenerCantidadSeleccionada(obtenerIdProducto(producto))"
+                  (ngModelChange)="onCantidadProductoChange(producto, $event)"
+                />
+
+                <button
+                  type="button"
+                  class="w-8 h-8 rounded-lg border border-green-300 text-green-800 hover:bg-green-100 font-bold"
+                  (click)="onCantidadProductoChange(producto, obtenerCantidadSeleccionada(obtenerIdProducto(producto)) + 1)"
+                >
+                  +
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="px-6 py-4 bg-gray-50 border-t border-gray-200 flex items-center justify-between rounded-b-2xl flex-shrink-0">
+      <div class="text-sm text-gray-600">
+        <span class="font-semibold">{{ productosFiltrados.length }}</span> productos disponibles
+      </div>
+      <button
+        (click)="cerrar.emit()"
+        class="px-6 py-2.5 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 transition-colors"
+      >
+        Cerrar
+      </button>
+    </div>
+  </div>
+</div>

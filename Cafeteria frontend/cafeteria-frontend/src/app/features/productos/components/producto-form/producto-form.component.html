@@ -1,0 +1,203 @@
+<form #crearForm="ngForm" (ngSubmit)="onSubmit(crearForm)" class="space-y-6 p-6">
+  <div class="grid gap-5 md:grid-cols-2">
+    <div class="md:col-span-2">
+      <label [for]="'nombre-crear-' + formIdPrefix" class="mb-2 block text-sm font-semibold text-gray-700">
+        Nombre del producto
+      </label>
+      <input
+        [id]="'nombre-crear-' + formIdPrefix"
+        [name]="'nombreCrear' + formIdPrefix"
+        [(ngModel)]="nuevoProducto.nombre"
+        required
+        minlength="2"
+        placeholder="Ej. Capuchino grande"
+        class="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+      />
+    </div>
+
+    <div>
+      <label [for]="'precio-crear-' + formIdPrefix" class="mb-2 block text-sm font-semibold text-gray-700">
+        Precio
+      </label>
+      <input
+        [id]="'precio-crear-' + formIdPrefix"
+        [name]="'precioCrear' + formIdPrefix"
+        [(ngModel)]="nuevoProducto.precio"
+        type="number"
+        required
+        min="0"
+        placeholder="0"
+        class="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+      />
+    </div>
+
+    <div>
+      <label [for]="'categoria-crear-' + formIdPrefix" class="mb-2 block text-sm font-semibold text-gray-700">
+        Categoría
+      </label>
+      <select
+        [id]="'categoria-crear-' + formIdPrefix"
+        [name]="'categoriaCrear' + formIdPrefix"
+        [ngModel]="selectorCategoriaCrear"
+        (ngModelChange)="onCategoriaChange($event)"
+        required
+        class="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+      >
+        <option [ngValue]="null">Selecciona una categoría</option>
+        <option *ngFor="let categoria of categorias" [ngValue]="categoria.id">
+          {{ categoria.nombre }}
+        </option>
+        <option [ngValue]="'crear'">+ Crear categoría</option>
+      </select>
+    </div>
+  </div>
+
+  <div *ngIf="mostrarCrearCategoria" class="rounded-xl border border-indigo-200 bg-indigo-50 p-4">
+    <label [for]="'nueva-categoria-' + formIdPrefix" class="mb-2 block text-sm font-semibold text-indigo-900">
+      Nueva categoría
+    </label>
+    <div class="flex flex-col gap-3 sm:flex-row">
+      <input
+        [id]="'nueva-categoria-' + formIdPrefix"
+        [name]="'nuevaCategoriaNombre' + formIdPrefix"
+        [ngModel]="nuevaCategoriaNombre"
+        (ngModelChange)="onNuevaCategoriaNombreChange($event)"
+        placeholder="Ej. Panadería"
+        class="w-full rounded-lg border border-indigo-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+      />
+      <div class="flex gap-2">
+        <button
+          type="button"
+          (click)="onCrearCategoria()"
+          [disabled]="guardandoCategoria"
+          class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {{ textoBotonCrearCategoria }}
+        </button>
+        <button
+          type="button"
+          (click)="onCancelarCrearCategoria()"
+          class="rounded-lg border border-indigo-300 bg-white px-4 py-2 text-sm font-semibold text-indigo-700 transition-colors hover:bg-indigo-100"
+        >
+          Cancelar
+        </button>
+      </div>
+    </div>
+    <p *ngIf="errorCrearCategoria" class="mt-2 text-sm text-red-600">{{ errorCrearCategoria }}</p>
+  </div>
+
+  <div>
+    <p class="mb-2 text-sm font-semibold text-gray-700">Tipo de gestión</p>
+    <div class="grid gap-3 sm:grid-cols-2">
+      <label
+        class="flex cursor-pointer items-center gap-3 rounded-xl border px-4 py-3"
+        [class.border-indigo-500]="nuevoProducto.tipoGestion === 'INVENTARIABLE'"
+        [class.bg-indigo-50]="nuevoProducto.tipoGestion === 'INVENTARIABLE'"
+        [class.border-gray-300]="nuevoProducto.tipoGestion !== 'INVENTARIABLE'"
+      >
+        <input
+          type="radio"
+          [name]="'tipoGestionCrear' + formIdPrefix"
+          value="INVENTARIABLE"
+          [(ngModel)]="nuevoProducto.tipoGestion"
+          (ngModelChange)="onTipoGestionChange()"
+        />
+        <div>
+          <p class="text-sm font-semibold text-gray-900">Inventariable</p>
+          <p class="text-xs text-gray-600">Controla stock del producto.</p>
+        </div>
+      </label>
+
+      <label
+        class="flex cursor-pointer items-center gap-3 rounded-xl border px-4 py-3"
+        [class.border-indigo-500]="nuevoProducto.tipoGestion === 'PREPARACION'"
+        [class.bg-indigo-50]="nuevoProducto.tipoGestion === 'PREPARACION'"
+        [class.border-gray-300]="nuevoProducto.tipoGestion !== 'PREPARACION'"
+      >
+        <input
+          type="radio"
+          [name]="'tipoGestionCrear' + formIdPrefix"
+          value="PREPARACION"
+          [(ngModel)]="nuevoProducto.tipoGestion"
+          (ngModelChange)="onTipoGestionChange()"
+        />
+        <div>
+          <p class="text-sm font-semibold text-gray-900">Preparación</p>
+          <p class="text-xs text-gray-600">No maneja campos de stock.</p>
+        </div>
+      </label>
+    </div>
+  </div>
+
+  <div *ngIf="nuevoProducto.tipoGestion === 'INVENTARIABLE'" class="grid gap-5 md:grid-cols-2">
+    <div>
+      <label [for]="'stock-inicial-' + formIdPrefix" class="mb-2 block text-sm font-semibold text-gray-700">
+        Stock inicial
+      </label>
+      <input
+        [id]="'stock-inicial-' + formIdPrefix"
+        [name]="'stockInicialCrear' + formIdPrefix"
+        [(ngModel)]="nuevoProducto.stockInicial"
+        type="number"
+        min="0"
+        required
+        class="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+      />
+    </div>
+
+    <div>
+      <label [for]="'stock-minimo-' + formIdPrefix" class="mb-2 block text-sm font-semibold text-gray-700">
+        Stock mínimo
+      </label>
+      <input
+        [id]="'stock-minimo-' + formIdPrefix"
+        [name]="'stockMinimoCrear' + formIdPrefix"
+        [(ngModel)]="nuevoProducto.stockMinimo"
+        type="number"
+        min="0"
+        required
+        class="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+      />
+    </div>
+  </div>
+
+  <p
+    *ngIf="nuevoProducto.tipoGestion === 'PREPARACION'"
+    class="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800"
+  >
+    Producto en modo preparación: no se solicitarán datos de stock.
+  </p>
+
+  <p *ngIf="errorCrearProducto" class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+    {{ errorCrearProducto }}
+  </p>
+
+  <div *ngIf="mostrarBotonCancelar; else botonSoloSubmit" class="flex justify-end gap-2">
+    <button
+      type="button"
+      (click)="onCancelarFormulario()"
+      class="rounded-xl border border-gray-300 px-5 py-2.5 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-100"
+    >
+      Cancelar
+    </button>
+    <button
+      type="submit"
+      [disabled]="guardandoProducto"
+      class="rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
+    >
+      {{ textoBotonSubmit }}
+    </button>
+  </div>
+
+  <ng-template #botonSoloSubmit>
+    <div class="flex justify-end">
+      <button
+        type="submit"
+        [disabled]="guardandoProducto"
+        class="rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        {{ textoBotonSubmit }}
+      </button>
+    </div>
+  </ng-template>
+</form>

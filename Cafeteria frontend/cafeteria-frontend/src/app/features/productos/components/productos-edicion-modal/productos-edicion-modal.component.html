@@ -1,0 +1,129 @@
+<div
+  *ngIf="abierto"
+  class="fixed -top-16 bottom-0 left-0 right-0 z-[120] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+  (click)="onCerrar()"
+>
+  <div class="w-full max-w-lg rounded-2xl border border-gray-200 bg-white shadow-xl" (click)="$event.stopPropagation()">
+    <form #edicionForm="ngForm" (ngSubmit)="onGuardar(edicionForm)" class="space-y-4 p-6">
+      <div class="flex items-center justify-between">
+        <h3 class="text-lg font-semibold text-gray-900">Editar producto</h3>
+        <button type="button" (click)="onCerrar()" class="rounded-md p-1 text-gray-500 hover:bg-gray-100 hover:text-gray-700">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="h-5 w-5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <div>
+        <label for="editar-nombre" class="mb-1 block text-sm font-semibold text-gray-700">Nombre</label>
+        <input
+          id="editar-nombre"
+          name="editarNombre"
+          [(ngModel)]="edicionProducto.nombre"
+          required
+          minlength="2"
+          class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+        />
+      </div>
+
+      <div class="grid gap-4 sm:grid-cols-2">
+        <div>
+          <label for="editar-precio" class="mb-1 block text-sm font-semibold text-gray-700">Precio</label>
+          <input
+            id="editar-precio"
+            name="editarPrecio"
+            [(ngModel)]="edicionProducto.precio"
+            type="number"
+            min="0"
+            required
+            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+          />
+        </div>
+
+        <div>
+          <label for="editar-categoria" class="mb-1 block text-sm font-semibold text-gray-700">Categoría</label>
+          <select
+            id="editar-categoria"
+            name="editarCategoria"
+            [(ngModel)]="edicionProducto.categoriaId"
+            required
+            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+          >
+            <option [ngValue]="null">Selecciona una categoría</option>
+            <option *ngFor="let categoria of categorias" [ngValue]="categoria.id">
+              {{ categoria.nombre }}
+            </option>
+          </select>
+        </div>
+      </div>
+
+      <div>
+        <p class="mb-2 text-sm font-semibold text-gray-700">Tipo de gestión</p>
+        <div class="grid gap-2 sm:grid-cols-2">
+          <label
+            class="flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm"
+            [class.border-indigo-500]="edicionProducto.tipoGestion === 'INVENTARIABLE'"
+            [class.bg-indigo-50]="edicionProducto.tipoGestion === 'INVENTARIABLE'"
+          >
+            <input
+              type="radio"
+              name="tipoGestionEdicion"
+              value="INVENTARIABLE"
+              [(ngModel)]="edicionProducto.tipoGestion"
+              (ngModelChange)="onTipoGestionChange()"
+            />
+            Inventariable
+          </label>
+          <label
+            class="flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm"
+            [class.border-indigo-500]="edicionProducto.tipoGestion === 'PREPARACION'"
+            [class.bg-indigo-50]="edicionProducto.tipoGestion === 'PREPARACION'"
+          >
+            <input
+              type="radio"
+              name="tipoGestionEdicion"
+              value="PREPARACION"
+              [(ngModel)]="edicionProducto.tipoGestion"
+              (ngModelChange)="onTipoGestionChange()"
+            />
+            Preparación
+          </label>
+        </div>
+      </div>
+
+      <div *ngIf="edicionProducto.tipoGestion === 'INVENTARIABLE'">
+        <label for="editar-stock-minimo" class="mb-1 block text-sm font-semibold text-gray-700">Stock mínimo</label>
+        <input
+          id="editar-stock-minimo"
+          name="editarStockMinimo"
+          [(ngModel)]="edicionProducto.stockMinimo"
+          type="number"
+          min="0"
+          required
+          class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+        />
+      </div>
+
+      <p *ngIf="errorEditarProducto" class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+        {{ errorEditarProducto }}
+      </p>
+
+      <div class="flex justify-end gap-2 pt-2">
+        <button
+          type="button"
+          (click)="onCerrar()"
+          class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+        >
+          Cancelar
+        </button>
+        <button
+          type="submit"
+          [disabled]="guardandoEdicion"
+          class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
+        >
+          {{ textoBotonGuardar }}
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
