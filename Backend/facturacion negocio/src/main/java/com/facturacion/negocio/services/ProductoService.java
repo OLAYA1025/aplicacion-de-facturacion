@@ -5,7 +5,6 @@ import com.facturacion.negocio.domain.Producto;
 import com.facturacion.negocio.enumerated.TipoGestionProducto;
 import com.facturacion.negocio.repository.CategoriaRepository;
 import com.facturacion.negocio.repository.ProductoRepository;
-import org.springframework.data.repository.query.Param;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -60,6 +59,7 @@ public class ProductoService {
                                   String descripcion,
                                   Long categoriaId,
                                   TipoGestionProducto tipoGestion,
+                                  BigDecimal ivaPorcentaje,
                                   Integer stockInicial,
                                   Integer stockMinimo){
         if(nombre == null || precio == null || categoriaId == null){
@@ -70,9 +70,21 @@ public class ProductoService {
         }
         Categoria categoria = obtenerCategoriaExistente(categoriaId);
 
-        Producto producto = new Producto(nombre, precio, descripcion, categoria, tipoGestion, stockInicial, stockMinimo);
-
-        return productoRepository.save(producto);
+        try {
+            Producto producto = new Producto(
+                    nombre,
+                    precio,
+                    descripcion,
+                    categoria,
+                    tipoGestion,
+                    ivaPorcentaje,
+                    stockInicial,
+                    stockMinimo
+            );
+            return productoRepository.save(producto);
+        } catch (IllegalArgumentException ex) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ex.getMessage());
+        }
     }
 
     public Producto editarProducto(Long id,
@@ -81,6 +93,7 @@ public class ProductoService {
                                    String descripcion,
                                    Long categoriaId,
                                    TipoGestionProducto tipoGestion,
+                                   BigDecimal ivaPorcentaje,
                                    Integer stockMinimo){
         if(id  == null || nombre == null || precio == null || categoriaId == null){
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Datos invalidos");
@@ -97,8 +110,12 @@ public class ProductoService {
                                 "El producto no existe")
                 );
         Categoria categoria = obtenerCategoriaExistente(categoriaId);
-        producto.actualizarProducto(nombre, precio, descripcion, categoria, tipoGestion, stockMinimo);
-        return productoRepository.save(producto);
+        try {
+            producto.actualizarProducto(nombre, precio, descripcion, categoria, tipoGestion, ivaPorcentaje, stockMinimo);
+            return productoRepository.save(producto);
+        } catch (IllegalArgumentException ex) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ex.getMessage());
+        }
     }
 
     public Producto desactivarProducto(Long id){

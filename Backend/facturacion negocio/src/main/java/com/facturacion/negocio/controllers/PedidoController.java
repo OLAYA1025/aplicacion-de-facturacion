@@ -7,6 +7,7 @@ import com.facturacion.negocio.dto.request.DetallePedidoRequestDTO;
 import com.facturacion.negocio.dto.request.PedidoCreateRequestDTO;
 import com.facturacion.negocio.dto.request.PedidoUpdateRequestDTO;
 import com.facturacion.negocio.dto.request.PedidoUsuarioRequestDTO;
+import com.facturacion.negocio.dto.response.PedidoListadoItemDTO;
 import com.facturacion.negocio.dto.response.PedidoResponseDTO;
 import com.facturacion.negocio.dto.response.PedidoTotalResponseDTO;
 import com.facturacion.negocio.repository.ProductoRepository;
@@ -52,10 +53,10 @@ public class PedidoController {
 
     @GetMapping("/caja/abierta")
     public ResponseEntity<List<PedidoResponseDTO>> obtenerPedidosCajaAbierta() {
-        List<Pedido> pedidos = pedidoService.obtenerPedidosPorCajaAbierta();
+        List<PedidoListadoItemDTO> pedidos = pedidoService.obtenerPedidosPorCajaAbierta();
         List<Long> pedidoIds = new ArrayList<>(pedidos.size());
-        for (Pedido pedido : pedidos) {
-            pedidoIds.add(pedido.getId());
+        for (PedidoListadoItemDTO pedido : pedidos) {
+            pedidoIds.add(pedido.id());
         }
 
         List<DetallePedido> detalles = pedidoService.obtenerDetallesPorPedidos(pedidoIds);
@@ -75,22 +76,22 @@ public class PedidoController {
         }
 
         List<PedidoResponseDTO> response = new ArrayList<>(pedidos.size());
-        for (Pedido pedido : pedidos) {
-            List<DetallePedido> detallesPedido = detallesPorPedido.get(pedido.getId());
+        for (PedidoListadoItemDTO pedido : pedidos) {
+            List<DetallePedido> detallesPedido = detallesPorPedido.get(pedido.id());
             if (detallesPedido == null) {
                 detallesPedido = new ArrayList<>();
             }
-            response.add(PedidoResponseDTO.from(pedido, detallesPedido));
+            response.add(PedidoResponseDTO.fromListado(pedido, detallesPedido));
         }
         return ResponseEntity.ok(response);
     }
 
     @GetMapping("/caja/{cajaId}")
     public ResponseEntity<List<PedidoResponseDTO>> obtenerPedidosPorCaja(@PathVariable Long cajaId) {
-        List<Pedido> pedidos = pedidoService.obtenerPedidosPorCaja(cajaId);
+        List<PedidoListadoItemDTO> pedidos = pedidoService.obtenerPedidosPorCaja(cajaId);
         List<Long> pedidoIds = new ArrayList<>(pedidos.size());
-        for (Pedido pedido : pedidos) {
-            pedidoIds.add(pedido.getId());
+        for (PedidoListadoItemDTO pedido : pedidos) {
+            pedidoIds.add(pedido.id());
         }
 
         List<DetallePedido> detalles = pedidoService.obtenerDetallesPorPedidos(pedidoIds);
@@ -110,12 +111,12 @@ public class PedidoController {
         }
 
         List<PedidoResponseDTO> response = new ArrayList<>(pedidos.size());
-        for (Pedido pedido : pedidos) {
-            List<DetallePedido> detallesPedido = detallesPorPedido.get(pedido.getId());
+        for (PedidoListadoItemDTO pedido : pedidos) {
+            List<DetallePedido> detallesPedido = detallesPorPedido.get(pedido.id());
             if (detallesPedido == null) {
                 detallesPedido = new ArrayList<>();
             }
-            response.add(PedidoResponseDTO.from(pedido, detallesPedido));
+            response.add(PedidoResponseDTO.fromListado(pedido, detallesPedido));
         }
         return ResponseEntity.ok(response);
     }
@@ -150,7 +151,9 @@ public class PedidoController {
         }
         Pedido pedido = pedidoService.cobrarPedido(id,
                 request.getUsuarioId(),
-                request.getMetodoPago());
+                request.getMetodoPago(),
+                request.getTipoDocumentoFiscal(),
+                request.getCliente());
         List<DetallePedido> detalles = pedidoService.obtenerDetalles(id);
         return ResponseEntity.ok(PedidoResponseDTO.from(pedido, detalles));
     }

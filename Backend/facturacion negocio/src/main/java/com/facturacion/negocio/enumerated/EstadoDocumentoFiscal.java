@@ -5,5 +5,6 @@ public enum EstadoDocumentoFiscal {
     ENVIADO_PT,
     ACEPTADO_DIAN,
     RECHAZADO,
-    PENDIENTE_CONTINGENCIA
+    PENDIENTE_CONTINGENCIA,
+    PENDIENTE_ENVIO
 }

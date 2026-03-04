@@ -10,6 +10,8 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.util.List;
+
 @Service
 public class UsuarioService {
 
@@ -27,6 +29,12 @@ public class UsuarioService {
         }
         return usuarioRepository.findById(usuarioId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario no encontrado"));
+    }
+
+    public List<Usuario> listarUsuarios() {
+        Usuario usuarioAutenticado = obtenerUsuarioAutenticado();
+        validarAdministrador(usuarioAutenticado);
+        return usuarioRepository.findAll();
     }
 
     public Usuario crearUsuario(String nombre, String username, String password, String email, Rol rol) {
@@ -101,6 +109,41 @@ public class UsuarioService {
 
         String nuevaPasswordNormalizada = normalizarRequerido(nuevaPassword, "password invalido");
         usuarioObjetivo.setPassword(passwordEncoder.encode(nuevaPasswordNormalizada));
+        return usuarioRepository.save(usuarioObjetivo);
+    }
+
+    public Usuario activarUsuario(Long id) {
+        if (id == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "id de usuario invalido");
+        }
+
+        Usuario usuarioAutenticado = obtenerUsuarioAutenticado();
+        validarAdministrador(usuarioAutenticado);
+
+        Usuario usuarioObjetivo = usuarioRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario no encontrado"));
+
+        usuarioObjetivo.activar();
+        return usuarioRepository.save(usuarioObjetivo);
+    }
+
+    public Usuario desactivarUsuario(Long id) {
+        if (id == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "id de usuario invalido");
+        }
+
+        Usuario usuarioAutenticado = obtenerUsuarioAutenticado();
+        validarAdministrador(usuarioAutenticado);
+
+        Usuario usuarioObjetivo = usuarioRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario no encontrado"));
+
+        if (usuarioObjetivo.getRol() != Rol.CAJERO) {
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN,
+                    "Solo se puede desactivar usuarios con rol CAJERO");
+        }
+
+        usuarioObjetivo.desactivar();
         return usuarioRepository.save(usuarioObjetivo);
     }
 

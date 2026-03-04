@@ -39,4 +39,13 @@ public interface DetallePedidoRepository extends JpaRepository<DetallePedido, Lo
             Pageable pageable
     );
 
+    @Query("""
+            SELECT d.pedido.id AS pedidoId,
+                   COALESCE(SUM(d.precioUnitario * d.cantidad), 0) AS total
+            FROM DetallePedido d
+            WHERE d.pedido.id IN :pedidoIds
+            GROUP BY d.pedido.id
+            """)
+    List<PedidoTotalProjection> findTotalesPorPedidoIds(@Param("pedidoIds") List<Long> pedidoIds);
+
 }

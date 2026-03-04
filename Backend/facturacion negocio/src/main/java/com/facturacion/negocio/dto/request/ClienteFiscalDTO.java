@@ -1,17 +1,19 @@
 package com.facturacion.negocio.dto.request;
 
+import com.facturacion.negocio.enumerated.TipoDocumento;
+
 public class ClienteFiscalDTO {
-    private String tipoIdentificacion;   // "CC" / "NIT"
+    private TipoDocumento tipoIdentificacion;   // "CC" / "NIT"
     private String numeroIdentificacion; // "900123456"
     private String nombre;               // "Empresa SAS"
     private String email;
 
 
-    public String getTipoIdentificacion() {
+    public TipoDocumento getTipoIdentificacion() {
         return tipoIdentificacion;
     }
 
-    public void setTipoIdentificacion(String tipoIdentificacion) {
+    public void setTipoIdentificacion(TipoDocumento tipoIdentificacion) {
         this.tipoIdentificacion = tipoIdentificacion;
     }
 

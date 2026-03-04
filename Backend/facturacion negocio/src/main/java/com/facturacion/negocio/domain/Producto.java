@@ -5,9 +5,14 @@ import jakarta.persistence.*;
 
 import java.math.BigDecimal;
 import java.util.Objects;
+import java.util.Set;
 
 @Entity
 public class Producto {
+
+    private static final BigDecimal IVA_CERO = BigDecimal.ZERO;
+    private static final BigDecimal IVA_DIECINUEVE = BigDecimal.valueOf(19);
+    private static final Set<Integer> IVA_PERMITIDOS = Set.of(0, 5, 19);
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -28,6 +33,12 @@ public class Producto {
     @Column
     private TipoGestionProducto tipoGestion;
 
+    @Column(nullable = false, precision = 5, scale = 2)
+    private BigDecimal ivaPorcentaje = IVA_DIECINUEVE;
+
+    @Column(nullable = false)
+    private Boolean isExcluded = false;
+
     private Integer stockActual;
 
     private Integer stockMinimo;
@@ -45,7 +56,7 @@ public class Producto {
     }
 
     public Producto(String nombre, BigDecimal precio, String descripcion, Categoria categoria) {
-        this(nombre, precio, descripcion, categoria, TipoGestionProducto.PREPARACION, null, null);
+        this(nombre, precio, descripcion, categoria, TipoGestionProducto.PREPARACION, null, null, null);
     }
 
     public Producto(String nombre,
@@ -53,6 +64,7 @@ public class Producto {
                     String descripcion,
                     Categoria categoria,
                     TipoGestionProducto tipoGestion,
+                    BigDecimal ivaPorcentaje,
                     Integer stockInicial,
                     Integer stockMinimo) {
         this.nombre = nombre;
@@ -61,6 +73,7 @@ public class Producto {
         this.descripcion = descripcion;
         this.categoria = Objects.requireNonNull(categoria, "categoria requerida");
         this.tipoGestion = tipoGestion != null ? tipoGestion : TipoGestionProducto.PREPARACION;
+        aplicarReglasIva(ivaPorcentaje);
         this.stockActual = null;
         this.stockMinimo = null;
         this.stockReservado = null;
@@ -103,7 +116,7 @@ public class Producto {
     }
 
     public void actualizarProducto(String nombre, BigDecimal precio, String descripcion, Categoria categoria) {
-        actualizarProducto(nombre, precio, descripcion, categoria, this.tipoGestion, this.stockMinimo);
+        actualizarProducto(nombre, precio, descripcion, categoria, this.tipoGestion, this.ivaPorcentaje, this.stockMinimo);
     }
 
     public void actualizarProducto(String nombre,
@@ -111,6 +124,7 @@ public class Producto {
                                    String descripcion,
                                    Categoria categoria,
                                    TipoGestionProducto tipoGestion,
+                                   BigDecimal ivaPorcentaje,
                                    Integer stockMinimo) {
         TipoGestionProducto gestionNueva = tipoGestion != null ? tipoGestion : this.tipoGestion;
         this.nombre = nombre;
@@ -118,6 +132,7 @@ public class Producto {
         this.descripcion = descripcion;
         this.categoria = Objects.requireNonNull(categoria, "categoria requerida");
         this.tipoGestion = Objects.requireNonNull(gestionNueva, "tipoGestion requerido");
+        aplicarReglasIva(ivaPorcentaje);
         if (this.tipoGestion == TipoGestionProducto.INVENTARIABLE) {
             if (this.stockActual == null) {
                 this.stockActual = 0;
@@ -158,6 +173,14 @@ public class Producto {
 
     public TipoGestionProducto getTipoGestion() {
         return tipoGestion;
+    }
+
+    public BigDecimal getIvaPorcentaje() {
+        return ivaPorcentaje;
+    }
+
+    public Boolean getIsExcluded() {
+        return isExcluded;
     }
 
     public Categoria getCategoria() {
@@ -278,6 +301,49 @@ public class Producto {
             throw new IllegalArgumentException(campo + " no puede ser negativo");
         }
         return valor;
+    }
+
+    @PrePersist
+    @PreUpdate
+    private void sincronizarDatosTributarios() {
+        if (this.tipoGestion == null) {
+            this.tipoGestion = TipoGestionProducto.PREPARACION;
+        }
+        aplicarReglasIva(this.ivaPorcentaje);
+    }
+
+    private void aplicarReglasIva(BigDecimal ivaSolicitado) {
+        if (this.tipoGestion == TipoGestionProducto.PREPARACION) {
+            this.ivaPorcentaje = IVA_DIECINUEVE;
+            this.isExcluded = false;
+            return;
+        }
+
+        BigDecimal ivaBase = ivaSolicitado != null
+                ? ivaSolicitado
+                : (this.ivaPorcentaje != null ? this.ivaPorcentaje : IVA_DIECINUEVE);
+        BigDecimal ivaNormalizado = validarIvaPermitido(ivaBase);
+        this.ivaPorcentaje = ivaNormalizado;
+        this.isExcluded = ivaNormalizado.compareTo(IVA_CERO) == 0;
+    }
+
+    private BigDecimal validarIvaPermitido(BigDecimal ivaSolicitado) {
+        if (ivaSolicitado == null) {
+            throw new IllegalArgumentException("ivaPorcentaje no puede ser null");
+        }
+
+        int ivaEntero;
+        try {
+            ivaEntero = ivaSolicitado.stripTrailingZeros().intValueExact();
+        } catch (ArithmeticException ex) {
+            throw new IllegalArgumentException("ivaPorcentaje invalido. Valores permitidos: 0, 5, 19");
+        }
+
+        if (!IVA_PERMITIDOS.contains(ivaEntero)) {
+            throw new IllegalArgumentException("ivaPorcentaje invalido. Valores permitidos: 0, 5, 19");
+        }
+
+        return BigDecimal.valueOf(ivaEntero);
     }
 
 }

@@ -227,6 +227,7 @@ export class ProductosComponent implements OnInit, OnDestroy {
       nombre: producto.nombre,
       precio: producto.precio,
       tipoGestion: producto.tipoGestion,
+      ivaPorcentaje: producto.tipoGestion === 'INVENTARIABLE' ? Number(producto.ivaPorcentaje ?? 19) : 19,
       stockMinimo: producto.tipoGestion === 'INVENTARIABLE' ? producto.stockMinimo : null,
       categoriaId: producto.categoria.id,
     };
@@ -241,8 +242,13 @@ export class ProductosComponent implements OnInit, OnDestroy {
 
   onTipoGestionEdicionChange(): void {
     if (this.edicionProducto.tipoGestion === 'PREPARACION') {
+      this.edicionProducto.ivaPorcentaje = 19;
       this.edicionProducto.stockMinimo = null;
       return;
+    }
+
+    if (this.edicionProducto.ivaPorcentaje === null) {
+      this.edicionProducto.ivaPorcentaje = 19;
     }
 
     if (this.edicionProducto.stockMinimo === null) {
@@ -264,6 +270,9 @@ export class ProductosComponent implements OnInit, OnDestroy {
       nombre: this.edicionProducto.nombre.trim(),
       precio: Number(this.edicionProducto.precio),
       tipoGestion: this.edicionProducto.tipoGestion,
+      ...(this.edicionProducto.tipoGestion === 'INVENTARIABLE'
+        ? { ivaPorcentaje: Number(this.edicionProducto.ivaPorcentaje) }
+        : {}),
       stockMinimo:
         this.edicionProducto.tipoGestion === 'INVENTARIABLE'
           ? Number(this.edicionProducto.stockMinimo)
@@ -300,9 +309,14 @@ export class ProductosComponent implements OnInit, OnDestroy {
 
   onTipoGestionCrearChange(): void {
     if (this.nuevoProducto.tipoGestion === 'PREPARACION') {
+      this.nuevoProducto.ivaPorcentaje = 19;
       this.nuevoProducto.stockInicial = null;
       this.nuevoProducto.stockMinimo = null;
       return;
+    }
+
+    if (this.nuevoProducto.ivaPorcentaje === null) {
+      this.nuevoProducto.ivaPorcentaje = 19;
     }
 
     if (this.nuevoProducto.stockInicial === null) {
@@ -407,6 +421,9 @@ export class ProductosComponent implements OnInit, OnDestroy {
       nombre: this.nuevoProducto.nombre.trim(),
       precio: Number(this.nuevoProducto.precio),
       tipoGestion: this.nuevoProducto.tipoGestion,
+      ...(this.nuevoProducto.tipoGestion === 'INVENTARIABLE'
+        ? { ivaPorcentaje: Number(this.nuevoProducto.ivaPorcentaje) }
+        : {}),
       stockInicial:
         this.nuevoProducto.tipoGestion === 'INVENTARIABLE'
           ? Number(this.nuevoProducto.stockInicial)
@@ -555,6 +572,7 @@ export class ProductosComponent implements OnInit, OnDestroy {
       nombre: '',
       precio: null,
       tipoGestion: 'INVENTARIABLE',
+      ivaPorcentaje: 19,
       stockInicial: 0,
       stockMinimo: 0,
       categoriaId: null,
@@ -566,6 +584,7 @@ export class ProductosComponent implements OnInit, OnDestroy {
       nombre: '',
       precio: null,
       tipoGestion: 'INVENTARIABLE',
+      ivaPorcentaje: 19,
       stockMinimo: 0,
       categoriaId: null,
     };
@@ -619,6 +638,10 @@ export class ProductosComponent implements OnInit, OnDestroy {
     }
 
     if (this.nuevoProducto.tipoGestion === 'INVENTARIABLE') {
+      if (!this.esIvaPermitido(this.nuevoProducto.ivaPorcentaje)) {
+        return 'Selecciona un IVA válido (0%, 5% o 19%).';
+      }
+
       if (this.nuevoProducto.stockInicial === null || this.nuevoProducto.stockInicial < 0) {
         return 'El stock inicial debe ser un valor mayor o igual a 0.';
       }
@@ -649,12 +672,20 @@ export class ProductosComponent implements OnInit, OnDestroy {
     }
 
     if (this.edicionProducto.tipoGestion === 'INVENTARIABLE') {
+      if (!this.esIvaPermitido(this.edicionProducto.ivaPorcentaje)) {
+        return 'Selecciona un IVA válido (0%, 5% o 19%).';
+      }
+
       if (this.edicionProducto.stockMinimo === null || this.edicionProducto.stockMinimo < 0) {
         return 'El stock mínimo debe ser mayor o igual a 0.';
       }
     }
 
     return null;
+  }
+
+  private esIvaPermitido(iva: number | null): boolean {
+    return iva === 0 || iva === 5 || iva === 19;
   }
 
   private mostrarError(titulo: string, mensaje: string, error?: unknown): void {

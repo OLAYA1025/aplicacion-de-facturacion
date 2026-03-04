@@ -9,7 +9,7 @@ import com.facturacion.negocio.enumerated.EstadoPedido;
 import com.facturacion.negocio.enumerated.MetodoPago;
 import com.facturacion.negocio.enumerated.TipoMovimiento;
 import com.facturacion.negocio.repository.*;
-import jakarta.transaction.Transactional;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -45,6 +45,7 @@ public class CajaService {
                 );
     }
 
+    @Transactional(readOnly = true)
     public CajaResumenResponseDTO  obtenerCajaResumen() {
         Caja cajaAbierta = obtenerCajaAbierta();
         BigDecimal montoInicial = valorSeguro(cajaAbierta.getMontoInicial());

@@ -1,16 +1,10 @@
 package com.facturacion.negocio.services;
 
 import com.facturacion.negocio.domain.*;
-import com.facturacion.negocio.enumerated.TipoGestionProducto;
-import com.facturacion.negocio.enumerated.MetodoPago;
-import com.facturacion.negocio.enumerated.TipoMovimiento;
-import com.facturacion.negocio.enumerated.TipoMovimientoInventario;
-import com.facturacion.negocio.repository.CajaRepository;
-import com.facturacion.negocio.repository.MovimientoCajaRepository;
-import com.facturacion.negocio.repository.MovimientoInventarioRepository;
-import com.facturacion.negocio.repository.PedidoRepository;
-import com.facturacion.negocio.repository.ProductoRepository;
-import com.facturacion.negocio.repository.UsuarioRepository;
+import com.facturacion.negocio.dto.request.ClienteFiscalDTO;
+import com.facturacion.negocio.dto.response.PedidoListadoItemDTO;
+import com.facturacion.negocio.enumerated.*;
+import com.facturacion.negocio.repository.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -29,19 +23,23 @@ public class PedidoService {
     private final ProductoRepository productoRepository;
     private final UsuarioRepository usuarioRepository;
     private final CajaRepository cajaRepository;
+    private final ClienteRepository clienteRepository;
+    private final DocumentoFiscalRepository documentoFiscalRepository;
 
     public PedidoService(PedidoRepository pedidoRepository,
                          MovimientoCajaRepository movimientoCajaRepository,
                          MovimientoInventarioRepository movimientoInventarioRepository,
                          ProductoRepository productoRepository,
                          UsuarioRepository usuarioRepository,
-                         CajaRepository cajaRepository) {
+                         CajaRepository cajaRepository, ClienteRepository clienteRepository, DocumentoFiscalRepository documentoFiscalRepository) {
         this.pedidoRepository = pedidoRepository;
         this.movimientoCajaRepository = movimientoCajaRepository;
         this.movimientoInventarioRepository = movimientoInventarioRepository;
         this.productoRepository = productoRepository;
         this.usuarioRepository = usuarioRepository;
         this.cajaRepository = cajaRepository;
+        this.clienteRepository = clienteRepository;
+        this.documentoFiscalRepository = documentoFiscalRepository;
     }
 
 
@@ -59,6 +57,7 @@ public class PedidoService {
 
     }
 
+    @Transactional(readOnly = true)
     public BigDecimal calcularTotal(Long pedidoId) {
         Pedido pedido = pedidoRepository.findById(pedidoId)
                 .orElseThrow(() ->
@@ -70,21 +69,21 @@ public class PedidoService {
         return pedido.calcularTotal();
     }
 
-    public List<Pedido> obtenerPedidosPorCajaAbierta() {
+    public List<PedidoListadoItemDTO> obtenerPedidosPorCajaAbierta() {
         if(!cajaRepository.existeCajaAbierta()){
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No hay ninguna caja abierta");
         }
-        return pedidoRepository.findPedidosByCajaAbierta();
+        return pedidoRepository.findResumenPedidosByCajaAbierta();
     }
 
-    public List<Pedido> obtenerPedidosPorCaja(Long idCaja) {
+    public List<PedidoListadoItemDTO> obtenerPedidosPorCaja(Long idCaja) {
         Caja caja = cajaRepository.findById(idCaja)
                 .orElseThrow(() ->
                 new ResponseStatusException(
                         HttpStatus.NOT_FOUND,
                         "la caja solicitada no existe")
                 );
-        return pedidoRepository.findPedidosByCaja(caja.getId());
+        return pedidoRepository.findResumenPedidosByCaja(caja.getId());
     }
 
     public List<DetallePedido> obtenerDetalles(Long pedidoId) {
@@ -169,95 +168,142 @@ public class PedidoService {
 
 
     @Transactional
-    public Pedido cobrarPedido(Long pedidoId, Long usuarioId, MetodoPago metodoPago) {
+    public Pedido cobrarPedido(Long pedidoId,
+                               Long usuarioId,
+                               MetodoPago metodoPago,
+                               TipoDocumentoFiscal tipoDocumentoFiscal,
+                               ClienteFiscalDTO clienteDto) {
 
-        if(pedidoId == null) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "pedidoId invalido"
-            );
+        // ===== Validaciones básicas =====
+        if (pedidoId == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "pedidoId invalido");
         }
-
         if (usuarioId == null) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "usuarioId invalido"
-            );
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "usuarioId invalido");
         }
         if (metodoPago == null) {
-            throw new ResponseStatusException(
-                    HttpStatus.BAD_REQUEST,
-                    "metodoPago invalido"
-            );
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "metodoPago invalido");
         }
 
+        // Default para retail
+        if (tipoDocumentoFiscal == null) {
+            tipoDocumentoFiscal = TipoDocumentoFiscal.DEE_POS;
+        }
+
+        // ===== 1) Bloquear y validar PEDIDO primero =====
         Pedido pedido = pedidoRepository.findByIdForUpdate(pedidoId)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Pedido no encontrado")
-                );
-
-        Usuario usuario = usuarioRepository.findById(usuarioId)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Usuario no encontrado"));
-
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Pedido no encontrado"));
 
         if (!pedido.isPendiente()) {
-            throw new ResponseStatusException(
-                    HttpStatus.CONFLICT,
-                    "el pedido debe estar pendiente para poder cobrarlo"
-            );
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "el pedido debe estar pendiente para poder cobrarlo");
         }
+
+        // Evitar doble documento fiscal / doble cobro por reintento
+        if (pedido.getDocumentoFiscal() != null) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "El pedido ya tiene documento fiscal asociado");
+            // Alternativa idempotente: return pedido;
+        }
+
+        // ===== 2) Validar usuario =====
+        Usuario usuario = usuarioRepository.findById(usuarioId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario no encontrado"));
 
         if (!usuario.isActivo()) {
-            throw new ResponseStatusException(
-                    HttpStatus.FORBIDDEN,
-                    "El usuario no esta activo"
-            );
+            throw new ResponseStatusException(HttpStatus.FORBIDDEN, "El usuario no esta activo");
         }
 
+        // ===== 3) Validar y bloquear CAJA =====
         if (pedido.getCaja() == null || pedido.getCaja().getId() == null) {
-            throw new ResponseStatusException(
-                    HttpStatus.CONFLICT,
-                    "El pedido no esta asociado a ninguna caja"
-            );
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "El pedido no esta asociado a ninguna caja");
         }
 
-        // bloqueo de la fila caja para evitar concurrencia
         Caja caja = cajaRepository.findByIdForUpdate(pedido.getCaja().getId())
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Caja no encontrada")
-                );
-
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Caja no encontrada"));
 
         if (!caja.isAbierta()) {
-            throw new ResponseStatusException(
-                    HttpStatus.CONFLICT,
-                    "La caja debe estar abierta para cobrar un pedido"
-            );
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "La caja debe estar abierta para cobrar un pedido");
         }
 
-        // recalcular total justo antes de crear movimiento
+        // ===== 4) Resolver cliente SOLO si es FEV =====
+        Cliente cliente = null;
+
+        if (tipoDocumentoFiscal == TipoDocumentoFiscal.FEV) {
+            if (clienteDto == null) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                        "debes enviar un cliente para crear una factura electronica");
+            }
+
+            // Validación mínima (email opcional)
+            if (clienteDto.getTipoIdentificacion() == null
+                    || clienteDto.getNumeroIdentificacion() == null
+                    || clienteDto.getNombre() == null) {
+                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Envia los datos del cliente");
+            }
+
+            // Buscar por (tipo, numero); si no existe, crear
+            cliente = clienteRepository
+                    .findByTipoIdentificacionAndNumeroIdentificacion(clienteDto.getTipoIdentificacion(), clienteDto.getNumeroIdentificacion())
+                    .orElseGet(() -> clienteRepository.save(
+                            new Cliente(
+                                    clienteDto.getTipoIdentificacion(),
+                                    clienteDto.getNumeroIdentificacion(),
+                                    clienteDto.getNombre(),
+                                    clienteDto.getEmail()
+                            )
+                    ));
+
+            // Si más adelante quieres: actualizar email si está vacío, etc.
+        }
+
+        if(tipoDocumentoFiscal == TipoDocumentoFiscal.FEV_CONS_FINAL){
+            cliente = clienteRepository
+                    .findByTipoIdentificacionAndNumeroIdentificacion(TipoDocumento.CC,"222222222222")
+                    .orElseGet(() -> clienteRepository.save(
+                            new Cliente(
+                                    TipoDocumento.CC,
+                                    "222222222222",
+                                    "consumidor final",
+                                    null
+                            )
+                    ));
+
+        }
+
+        // ===== 5) Crear DocumentoFiscal y asociarlo al pedido =====
+        DocumentoFiscal documentoFiscal = DocumentoFiscal.crearBorrador(pedido, tipoDocumentoFiscal);
+
+
+        if (cliente != null) {
+            documentoFiscal.setCliente(cliente);
+        }
+
+        //asociar para que se persista correctamente
+        pedido.setDocumentoFiscal(documentoFiscal);
+
+        // ===== 6) Recalcular total, consumir inventario, pagar =====
         BigDecimal total = pedido.calcularTotal();
         if (total == null) total = BigDecimal.ZERO;
 
         consumirInventarioReservadoSiAplica(pedido);
 
-        // marcar pedido como pagado, y se marca el usuario que cobro el pedido
         pedido.pagar(usuario, metodoPago);
 
-        // crear y persistir movimiento
+        // El documento queda listo para que un worker lo envíe al PT
+        documentoFiscal.marcarPendienteEnvio();
+
+        // ===== 7) Movimiento de caja =====
         MovimientoCaja movimiento = new MovimientoCaja(
                 total,
                 TipoMovimiento.INGRESO,
-                "Venta Pedido #" + pedido.getId() + ", Vendido por: "+usuario.getUsername(),
+                "Venta Pedido #" + pedido.getId() + ", Vendido por: " + usuario.getUsername(),
                 usuario,
                 caja
         );
         movimientoCajaRepository.save(movimiento);
 
+        // ===== 8) Persistencia =====
+        // Si en Pedido tienes cascade ALL hacia DocumentoFiscal, con esto basta:
+        // return pedidoRepository.save(pedido);
 
         return pedidoRepository.save(pedido);
     }

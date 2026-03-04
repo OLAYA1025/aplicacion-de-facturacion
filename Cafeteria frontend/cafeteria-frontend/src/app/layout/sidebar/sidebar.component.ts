@@ -2,6 +2,7 @@ import { Component, EventEmitter, Input, OnInit, Output, inject } from '@angular
 import { NavigationEnd, Router, RouterLink, RouterLinkActive } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { filter } from 'rxjs/operators';
+import { AuthService } from '../../core/services/auth.service';
 
 @Component({
   selector: 'app-sidebar',
@@ -11,6 +12,7 @@ import { filter } from 'rxjs/operators';
 })
 export class SidebarComponent implements OnInit {
   private readonly router = inject(Router);
+  private readonly authService = inject(AuthService);
 
   @Input() collapsed = false;
   @Input() mobileOpen = false;
@@ -21,6 +23,7 @@ export class SidebarComponent implements OnInit {
   inventarioExpanded = false;
   comprasExpanded = false;
   proveedoresExpanded = false;
+  esCajero = false;
 
   toggleInventario() {
     this.inventarioExpanded = !this.inventarioExpanded;
@@ -35,6 +38,9 @@ export class SidebarComponent implements OnInit {
   }
 
   ngOnInit(): void {
+    const rolUsuario = this.authService.getUsuario()?.rol?.toUpperCase();
+    this.esCajero = rolUsuario === 'CAJERO';
+
     this.actualizarExpansionSegunRuta(this.router.url);
     this.router.events.pipe(filter((event) => event instanceof NavigationEnd)).subscribe(() => {
       this.actualizarExpansionSegunRuta(this.router.url);

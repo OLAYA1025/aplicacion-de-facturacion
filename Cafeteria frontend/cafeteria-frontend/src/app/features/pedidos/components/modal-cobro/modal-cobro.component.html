@@ -2,7 +2,7 @@
   *ngIf="visible"
   class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
 >
-  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-lg transform scale-100 transition-all">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl transform scale-100 transition-all max-h-[95vh] overflow-y-auto">
     <div class="bg-emerald-500 px-6 py-5 flex items-center justify-between rounded-t-2xl">
       <div class="flex items-center gap-3">
         <div class="p-2 bg-white/20 rounded-xl">
@@ -23,7 +23,11 @@
         </div>
         <h3 class="text-2xl font-bold text-white">Cobrar Pedido</h3>
       </div>
-      <button (click)="cerrar.emit()" class="p-2 bg-white/20 hover:bg-white/30 rounded-xl transition-colors">
+      <button
+        (click)="onCerrar()"
+        [disabled]="estaProcesando"
+        class="p-2 bg-white/20 hover:bg-white/30 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+      >
         <svg
           xmlns="http://www.w3.org/2000/svg"
           fill="none"
@@ -40,7 +44,7 @@
     <div class="p-6">
       <div class="mb-6 bg-gray-50 rounded-xl p-5 border-2 border-gray-200">
         <div class="flex items-center justify-between mb-3">
-          <span class="text-sm font-semibold text-gray-600">Cliente</span>
+          <span class="text-sm font-semibold text-gray-600">Cliente del pedido</span>
           <span class="font-bold text-gray-900 text-lg">{{ pedido?.nombre }}</span>
         </div>
         <div class="flex items-center justify-between pt-3 border-t border-gray-300">
@@ -67,15 +71,14 @@
               d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25v10.5A2.25 2.25 0 0 0 4.5 19.5Z"
             />
           </svg>
-          Método de Pago
+          Metodo de pago
         </label>
 
-        <div class="space-y-3">
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
           <label
-            class="flex items-center gap-4 p-4 border-2 rounded-xl cursor-pointer transition-all hover:shadow-md"
+            class="flex items-center gap-3 p-4 border-2 rounded-xl cursor-pointer transition-all hover:shadow-md"
             [class.border-green-500]="metodoPagoSeleccionado === 'EFECTIVO'"
             [class.bg-green-50]="metodoPagoSeleccionado === 'EFECTIVO'"
-            [class.shadow-lg]="metodoPagoSeleccionado === 'EFECTIVO'"
             [class.border-gray-200]="metodoPagoSeleccionado !== 'EFECTIVO'"
           >
             <input
@@ -86,35 +89,16 @@
               (ngModelChange)="onMetodoPagoChange($event)"
               class="w-5 h-5 text-green-600"
             />
-            <div class="flex items-center gap-3 flex-1">
-              <div class="p-3 bg-green-100 rounded-xl">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke-width="2"
-                  stroke="currentColor"
-                  class="w-6 h-6 text-green-600"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    d="M2.25 18.75a60.07 60.07 0 0 1 15.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 0 1 3 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 0 0-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 0 1-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 0 0 3 15h-.75M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm3 0h.008v.008H18V10.5Zm-12 0h.008v.008H6V10.5Z"
-                  />
-                </svg>
-              </div>
-              <div>
-                <p class="font-bold text-gray-900">Efectivo</p>
-                <p class="text-xs text-gray-600">Pago en efectivo</p>
-              </div>
+            <div>
+              <p class="font-bold text-gray-900">Efectivo</p>
+              <p class="text-xs text-gray-600">Pago en efectivo</p>
             </div>
           </label>
 
           <label
-            class="flex items-center gap-4 p-4 border-2 rounded-xl cursor-pointer transition-all hover:shadow-md"
+            class="flex items-center gap-3 p-4 border-2 rounded-xl cursor-pointer transition-all hover:shadow-md"
             [class.border-blue-500]="metodoPagoSeleccionado === 'TARJETA'"
             [class.bg-indigo-50]="metodoPagoSeleccionado === 'TARJETA'"
-            [class.shadow-lg]="metodoPagoSeleccionado === 'TARJETA'"
             [class.border-gray-200]="metodoPagoSeleccionado !== 'TARJETA'"
           >
             <input
@@ -125,35 +109,16 @@
               (ngModelChange)="onMetodoPagoChange($event)"
               class="w-5 h-5 text-blue-600"
             />
-            <div class="flex items-center gap-3 flex-1">
-              <div class="p-3 bg-blue-100 rounded-xl">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke-width="2"
-                  stroke="currentColor"
-                  class="w-6 h-6 text-blue-600"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    d="M2.25 8.25h19.5M2.25 9h19.5m-16.5 5.25h6m-6 2.25h3m-3.75 3h15a2.25 2.25 0 0 0 2.25-2.25V6.75A2.25 2.25 0 0 0 19.5 4.5h-15a2.25 2.25 0 0 0-2.25 2.25v10.5A2.25 2.25 0 0 0 4.5 19.5Z"
-                  />
-                </svg>
-              </div>
-              <div>
-                <p class="font-bold text-gray-900">Tarjeta</p>
-                <p class="text-xs text-gray-600">Débito o crédito</p>
-              </div>
+            <div>
+              <p class="font-bold text-gray-900">Tarjeta</p>
+              <p class="text-xs text-gray-600">Debito o credito</p>
             </div>
           </label>
 
           <label
-            class="flex items-center gap-4 p-4 border-2 rounded-xl cursor-pointer transition-all hover:shadow-md"
+            class="flex items-center gap-3 p-4 border-2 rounded-xl cursor-pointer transition-all hover:shadow-md"
             [class.border-purple-500]="metodoPagoSeleccionado === 'TRANSFERENCIA'"
             [class.bg-purple-50]="metodoPagoSeleccionado === 'TRANSFERENCIA'"
-            [class.shadow-lg]="metodoPagoSeleccionado === 'TRANSFERENCIA'"
             [class.border-gray-200]="metodoPagoSeleccionado !== 'TRANSFERENCIA'"
           >
             <input
@@ -164,50 +129,16 @@
               (ngModelChange)="onMetodoPagoChange($event)"
               class="w-5 h-5 text-purple-600"
             />
-            <div class="flex items-center gap-3 flex-1">
-              <div class="p-3 bg-purple-100 rounded-xl">
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke-width="2"
-                  stroke="currentColor"
-                  class="w-6 h-6 text-purple-600"
-                >
-                  <path
-                    stroke-linecap="round"
-                    stroke-linejoin="round"
-                    d="M10.5 1.5H8.25A2.25 2.25 0 0 0 6 3.75v16.5a2.25 2.25 0 0 0 2.25 2.25h7.5A2.25 2.25 0 0 0 18 20.25V3.75a2.25 2.25 0 0 0-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3"
-                  />
-                </svg>
-              </div>
-              <div>
-                <p class="font-bold text-gray-900">Transferencia</p>
-                <p class="text-xs text-gray-600">Pago electrónico</p>
-              </div>
+            <div>
+              <p class="font-bold text-gray-900">Transferencia</p>
+              <p class="text-xs text-gray-600">Pago electronico</p>
             </div>
           </label>
         </div>
       </div>
 
       <div *ngIf="metodoPagoSeleccionado === 'EFECTIVO'" class="mb-6">
-        <label class="block text-sm font-bold text-gray-900 mb-2 flex items-center gap-2">
-          <svg
-            xmlns="http://www.w3.org/2000/svg"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke-width="1.5"
-            stroke="currentColor"
-            class="w-5 h-5 text-green-600"
-          >
-            <path
-              stroke-linecap="round"
-              stroke-linejoin="round"
-              d="M2.25 18.75a60.07 60.07 0 0 1 15.797 2.101c.727.198 1.453-.342 1.453-1.096V18.75M3.75 4.5v.75A.75.75 0 0 1 3 6h-.75m0 0v-.375c0-.621.504-1.125 1.125-1.125H20.25M2.25 6v9m18-10.5v.75c0 .414.336.75.75.75h.75m-1.5-1.5h.375c.621 0 1.125.504 1.125 1.125v9.75c0 .621-.504 1.125-1.125 1.125h-.375m1.5-1.5H21a.75.75 0 0 0-.75.75v.75m0 0H3.75m0 0h-.375a1.125 1.125 0 0 1-1.125-1.125V15m1.5 1.5v-.75A.75.75 0 0 0 3 15h-.75M15 10.5a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm3 0h.008v.008H18V10.5Zm-12 0h.008v.008H6V10.5Z"
-            />
-          </svg>
-          Dinero Recibido
-        </label>
+        <label class="block text-sm font-bold text-gray-900 mb-2">Dinero recibido</label>
         <input
           type="number"
           [ngModel]="montoRecibido"
@@ -219,12 +150,10 @@
 
         <div
           *ngIf="montoRecibido > 0"
-          class="mt-4 p-4 rounded-xl"
+          class="mt-4 p-4 rounded-xl border-2"
           [class.bg-green-50]="cambio >= 0"
-          [class.border-2]="cambio >= 0"
           [class.border-green-200]="cambio >= 0"
           [class.bg-red-50]="cambio < 0"
-          [class.border-2]="cambio < 0"
           [class.border-red-200]="cambio < 0"
         >
           <div class="flex items-center justify-between">
@@ -238,50 +167,297 @@
         </div>
       </div>
 
-      <div class="flex gap-3">
+      <div class="mb-6 p-4 border-2 border-emerald-200 rounded-xl bg-indigo-50">
+        <p class="text-sm font-semibold text-indigo-900 mb-3">¿El cliente solicita factura a su nombre?</p>
+
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <button
+            type="button"
+            (click)="onSeleccionSolicitudFactura(false)"
+            [disabled]="estaProcesando"
+            class="px-4 py-3 rounded-xl border-2 font-semibold transition-all"
+            [class.border-indigo-600]="solicitaFactura === false"
+            [class.bg-indigo-600]="solicitaFactura === false"
+            [class.text-white]="solicitaFactura === false"
+            [class.border-indigo-200]="solicitaFactura !== false"
+            [class.text-indigo-900]="solicitaFactura !== false"
+          >
+            No, consumidor final
+          </button>
+
+          <button
+            type="button"
+            (click)="onSeleccionSolicitudFactura(true)"
+            [disabled]="estaProcesando"
+            class="px-4 py-3 rounded-xl border-2 font-semibold transition-all"
+            [class.border-indigo-600]="solicitaFactura === true"
+            [class.bg-indigo-600]="solicitaFactura === true"
+            [class.text-white]="solicitaFactura === true"
+            [class.border-indigo-200]="solicitaFactura !== true"
+            [class.text-indigo-900]="solicitaFactura !== true"
+          >
+            Si, factura a nombre
+          </button>
+        </div>
+      </div>
+
+      <div *ngIf="solicitaFactura === true" class="mb-6 p-5 rounded-xl border-2 border-indigo-200 bg-indigo-50">
+        <h4 class="text-lg font-bold text-indigo-900 mb-4">{{ tituloModalCliente }}</h4>
+
+        <ng-container [ngSwitch]="pasoCobro">
+          <div *ngSwitchCase="'BUSCAR_CLIENTE'" class="space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <label class="flex flex-col gap-2">
+                <span class="text-sm font-semibold text-gray-700">Tipo identificacion</span>
+                <select
+                  name="tipoIdentificacionCliente"
+                  [(ngModel)]="busquedaCliente.tipoIdentificacion"
+                  [disabled]="buscandoCliente"
+                  class="rounded-xl border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
+                >
+                  <option *ngFor="let tipo of tiposIdentificacion" [ngValue]="tipo.value">{{ tipo.label }}</option>
+                </select>
+              </label>
+
+              <label class="flex flex-col gap-2">
+                <span class="text-sm font-semibold text-gray-700">Numero identificacion</span>
+                <input
+                  type="text"
+                  name="numeroIdentificacionCliente"
+                  [(ngModel)]="busquedaCliente.numeroIdentificacion"
+                  [disabled]="buscandoCliente"
+                  placeholder="Ej. 900123456"
+                  class="rounded-xl border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
+                />
+              </label>
+            </div>
+
+            <div *ngIf="errorBusquedaCliente" class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              {{ errorBusquedaCliente }}
+            </div>
+
+            <div class="flex justify-end">
+              <button
+                type="button"
+                (click)="buscarCliente()"
+                [disabled]="!puedeBuscarCliente"
+                class="px-4 py-2 rounded-xl bg-indigo-600 text-white font-semibold hover:bg-indigo-700 disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {{ buscandoCliente ? 'Buscando...' : 'Buscar cliente' }}
+              </button>
+            </div>
+          </div>
+
+          <div *ngSwitchCase="'CONFIRMAR_CLIENTE'" class="space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div class="rounded-xl border border-gray-200 bg-white px-4 py-3">
+                <p class="text-xs uppercase tracking-wide text-gray-500">Tipo identificacion</p>
+                <p class="text-sm font-semibold text-gray-900">{{ clienteSeleccionado?.tipoIdentificacion }}</p>
+              </div>
+              <div class="rounded-xl border border-gray-200 bg-white px-4 py-3">
+                <p class="text-xs uppercase tracking-wide text-gray-500">Numero identificacion</p>
+                <p class="text-sm font-semibold text-gray-900">{{ clienteSeleccionado?.numeroIdentificacion }}</p>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 gap-3">
+              <label class="flex flex-col gap-2">
+                <span class="text-sm font-semibold text-gray-700">Nombre</span>
+                <input
+                  type="text"
+                  name="nombreConfirmacionCliente"
+                  [(ngModel)]="clienteForm.nombre"
+                  [readonly]="!editandoCliente"
+                  [disabled]="guardandoCliente"
+                  class="rounded-xl border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none bg-white"
+                />
+              </label>
+
+              <label class="flex flex-col gap-2">
+                <span class="text-sm font-semibold text-gray-700">Email</span>
+                <input
+                  type="email"
+                  name="emailConfirmacionCliente"
+                  [(ngModel)]="clienteForm.email"
+                  [readonly]="!editandoCliente"
+                  [disabled]="guardandoCliente"
+                  placeholder="cliente@correo.com"
+                  class="rounded-xl border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none bg-white"
+                />
+              </label>
+            </div>
+
+            <div class="flex flex-wrap gap-3 justify-end">
+              <button
+                *ngIf="!editandoCliente"
+                type="button"
+                (click)="habilitarEdicionCliente()"
+                [disabled]="guardandoCobro"
+                class="px-4 py-2 rounded-xl border border-indigo-300 text-indigo-700 font-semibold hover:bg-indigo-100 disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                Editar
+              </button>
+
+              <button
+                *ngIf="editandoCliente"
+                type="button"
+                (click)="cancelarEdicionCliente()"
+                [disabled]="guardandoCliente"
+                class="px-4 py-2 rounded-xl border border-gray-300 text-gray-700 font-semibold hover:bg-gray-100 disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                Cancelar edicion
+              </button>
+
+              <button
+                *ngIf="editandoCliente"
+                type="button"
+                (click)="guardarEdicionCliente()"
+                [disabled]="guardandoCliente"
+                class="px-4 py-2 rounded-xl bg-emerald-600 text-white font-semibold hover:bg-emerald-700 disabled:opacity-60 disabled:cursor-not-allowed"
+              >
+                {{ guardandoCliente ? 'Guardando...' : 'Guardar cambios' }}
+              </button>
+            </div>
+
+            <div *ngIf="errorCliente" class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              {{ errorCliente }}
+            </div>
+
+            <div *ngIf="exitoCliente" class="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+              {{ exitoCliente }}
+            </div>
+          </div>
+
+          <div *ngSwitchCase="'CREAR_CLIENTE'" class="space-y-4">
+            <div *ngIf="mensajeNoEncontrado" class="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+              {{ mensajeNoEncontrado }}
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div class="rounded-xl border border-gray-200 bg-white px-4 py-3">
+                <p class="text-xs uppercase tracking-wide text-gray-500">Tipo identificacion</p>
+                <p class="text-sm font-semibold text-gray-900">{{ busquedaCliente.tipoIdentificacion }}</p>
+              </div>
+              <div class="rounded-xl border border-gray-200 bg-white px-4 py-3">
+                <p class="text-xs uppercase tracking-wide text-gray-500">Numero identificacion</p>
+                <p class="text-sm font-semibold text-gray-900">{{ busquedaCliente.numeroIdentificacion }}</p>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-1 gap-3">
+              <label class="flex flex-col gap-2">
+                <span class="text-sm font-semibold text-gray-700">Nombre *</span>
+                <input
+                  type="text"
+                  name="nombreNuevoCliente"
+                  [(ngModel)]="clienteForm.nombre"
+                  [disabled]="guardandoCobro"
+                  placeholder="Nombre o razon social"
+                  class="rounded-xl border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
+                />
+              </label>
+
+              <label class="flex flex-col gap-2">
+                <span class="text-sm font-semibold text-gray-700">Email (opcional)</span>
+                <input
+                  type="email"
+                  name="emailNuevoCliente"
+                  [(ngModel)]="clienteForm.email"
+                  [disabled]="guardandoCobro"
+                  placeholder="cliente@correo.com"
+                  class="rounded-xl border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:outline-none"
+                />
+              </label>
+            </div>
+
+            <div *ngIf="errorCliente" class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              {{ errorCliente }}
+            </div>
+          </div>
+        </ng-container>
+      </div>
+
+      <div *ngIf="errorCobro" class="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        {{ errorCobro }}
+      </div>
+
+      <div class="flex flex-wrap gap-3 justify-end">
         <button
-          (click)="cerrar.emit()"
-          class="flex-1 px-5 py-3.5 border-2 border-gray-300 text-gray-700 font-bold rounded-xl hover:bg-gray-50 hover:border-gray-400 transition-all"
+          type="button"
+          (click)="onCerrar()"
+          [disabled]="estaProcesando"
+          class="px-5 py-3 border-2 border-gray-300 text-gray-700 font-bold rounded-xl hover:bg-gray-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
         >
           Cancelar
         </button>
+
         <button
-          (click)="confirmar.emit()"
-          [disabled]="guardando || !puedeConfirmarCobro"
-          class="flex-1 px-5 py-3.5 bg-emerald-500 text-white font-bold rounded-xl hover:from-green-600 hover:to-emerald-600 transition-all shadow-lg hover:shadow-xl transform hover:scale-105 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+          *ngIf="solicitaFactura === true && pasoCobro === 'BUSCAR_CLIENTE'"
+          type="button"
+          (click)="volverAPreguntaFactura()"
+          [disabled]="estaProcesando"
+          class="px-5 py-3 border-2 border-gray-300 text-gray-700 font-bold rounded-xl hover:bg-gray-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
         >
-          <div class="flex items-center justify-center gap-2">
-            <svg
-              *ngIf="!guardando"
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke-width="2"
-              stroke="currentColor"
-              class="w-5 h-5"
-            >
-              <path
-                stroke-linecap="round"
-                stroke-linejoin="round"
-                d="M9 12.75 11.25 15 15 9.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
-              />
-            </svg>
-            <svg
-              *ngIf="guardando"
-              class="animate-spin h-5 w-5 text-white"
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-            >
-              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-              <path
-                class="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-              ></path>
-            </svg>
-            {{ guardando ? 'Procesando...' : 'Confirmar Cobro' }}
-          </div>
+          Volver
+        </button>
+
+        <button
+          *ngIf="solicitaFactura === true && pasoCobro === 'CONFIRMAR_CLIENTE'"
+          type="button"
+          (click)="volverABuscarCliente()"
+          [disabled]="estaProcesando"
+          class="px-5 py-3 border-2 border-gray-300 text-gray-700 font-bold rounded-xl hover:bg-gray-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          Buscar otro cliente
+        </button>
+
+        <button
+          *ngIf="solicitaFactura === true && pasoCobro === 'CREAR_CLIENTE'"
+          type="button"
+          (click)="volverABuscarCliente()"
+          [disabled]="estaProcesando"
+          class="px-5 py-3 border-2 border-gray-300 text-gray-700 font-bold rounded-xl hover:bg-gray-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          Volver a buscar
+        </button>
+
+        <button
+          *ngIf="solicitaFactura === null"
+          type="button"
+          disabled
+          class="px-5 py-3 bg-gray-300 text-white font-bold rounded-xl cursor-not-allowed"
+        >
+          Selecciona una opcion
+        </button>
+
+        <button
+          *ngIf="solicitaFactura === false"
+          type="button"
+          (click)="confirmarCobroSinFactura()"
+          [disabled]="guardandoCobro || !puedeConfirmarCobro"
+          class="px-5 py-3 bg-emerald-500 text-white font-bold rounded-xl hover:bg-emerald-600 transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {{ guardandoCobro ? 'Procesando...' : 'Confirmar cobro' }}
+        </button>
+
+        <button
+          *ngIf="solicitaFactura === true && pasoCobro === 'CONFIRMAR_CLIENTE'"
+          type="button"
+          (click)="generarFacturaYCobrar()"
+          [disabled]="guardandoCobro || editandoCliente || !puedeConfirmarCobro"
+          class="px-5 py-3 bg-emerald-500 text-white font-bold rounded-xl hover:bg-emerald-600 transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {{ guardandoCobro ? 'Procesando...' : 'Generar factura y cobrar' }}
+        </button>
+
+        <button
+          *ngIf="solicitaFactura === true && pasoCobro === 'CREAR_CLIENTE'"
+          type="button"
+          (click)="generarFacturaYCobrar()"
+          [disabled]="guardandoCobro || !puedeConfirmarCobro"
+          class="px-5 py-3 bg-emerald-500 text-white font-bold rounded-xl hover:bg-emerald-600 transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          {{ guardandoCobro ? 'Procesando...' : 'Guardar y generar factura y cobrar' }}
         </button>
       </div>
     </div>

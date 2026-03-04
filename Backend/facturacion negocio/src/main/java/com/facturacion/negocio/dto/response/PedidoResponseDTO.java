@@ -55,6 +55,30 @@ public class PedidoResponseDTO {
         return dto;
     }
 
+    public static PedidoResponseDTO fromListado(PedidoListadoItemDTO pedido, List<DetallePedido> detalles) {
+        PedidoResponseDTO dto = new PedidoResponseDTO();
+        dto.setId(pedido.id());
+        dto.setNombre(pedido.nombre());
+        dto.setFecha(pedido.fecha());
+        dto.setEstado(pedido.estado());
+        dto.setMetodoPago(pedido.metodoPago());
+        dto.setUsuarioId(pedido.usuarioId());
+        dto.setUsuarioUsername(pedido.usuarioUsername());
+
+        List<DetallePedidoResponseDTO> detalleDtos = new ArrayList<>();
+        BigDecimal total = BigDecimal.ZERO;
+        if (detalles != null) {
+            for (DetallePedido detalle : detalles) {
+                detalleDtos.add(DetallePedidoResponseDTO.from(detalle));
+                total = total.add(detalle.calcularSubtotal());
+            }
+            total = total.setScale(2, RoundingMode.HALF_UP);
+        }
+        dto.setDetalles(detalleDtos);
+        dto.setTotal(total);
+        return dto;
+    }
+
     public Long getId() {
         return id;
     }

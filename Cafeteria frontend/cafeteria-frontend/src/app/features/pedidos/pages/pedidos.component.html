@@ -106,13 +106,6 @@
 <app-modal-cobro
   [visible]="mostrarModalCobro"
   [pedido]="pedidoRecienCreado"
-  [guardando]="guardando"
-  [metodoPagoSeleccionado]="metodoPagoSeleccionado"
-  [montoRecibido]="montoRecibido"
-  [cambio]="cambio"
-  [puedeConfirmarCobro]="puedeConfirmarCobro"
   (cerrar)="cerrarModalCobro()"
-  (confirmar)="confirmarCobro()"
-  (metodoPagoChange)="actualizarMetodoPagoSeleccionado($event)"
-  (montoRecibidoChange)="actualizarMontoRecibido($event)"
+  (cobroRealizado)="onCobroRealizado()"
 ></app-modal-cobro>

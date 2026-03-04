@@ -51,9 +51,6 @@ public class Usuario {
         this.rol = Rol.CAJERO;
     }
 
-    public void volverDev() {
-        this.rol = Rol.DEV;
-    }
 
     public String getEmail() {
         return email;

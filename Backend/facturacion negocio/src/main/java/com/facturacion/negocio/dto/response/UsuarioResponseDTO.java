@@ -9,6 +9,7 @@ public class UsuarioResponseDTO {
     String username;
     String email;
     Rol rol;
+    Boolean activo;
 
     public static UsuarioResponseDTO from(Usuario usuario) {
         UsuarioResponseDTO usuarioResponseDTO = new UsuarioResponseDTO();
@@ -17,6 +18,7 @@ public class UsuarioResponseDTO {
         usuarioResponseDTO.setUsername(usuario.getUsername());
         usuarioResponseDTO.setEmail(usuario.getEmail());
         usuarioResponseDTO.setRol(usuario.getRol());
+        usuarioResponseDTO.setActivo(usuario.isActivo());
         return usuarioResponseDTO;
     }
 
@@ -58,5 +60,13 @@ public class UsuarioResponseDTO {
 
     public void setRol(Rol rol) {
         this.rol = rol;
+    }
+
+    public Boolean getActivo() {
+        return activo;
+    }
+
+    public void setActivo(Boolean activo) {
+        this.activo = activo;
     }
 }

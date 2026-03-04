@@ -793,6 +793,23 @@
           </div>
 
           <div>
+            <label for="producto-rapido-iva" class="mb-2 block text-sm font-semibold text-gray-700">
+              IVA
+            </label>
+            <select
+              id="producto-rapido-iva"
+              name="productoRapidoIva"
+              [(ngModel)]="nuevoProductoRapido.ivaPorcentaje"
+              required
+              class="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+            >
+              <option [ngValue]="0">0%</option>
+              <option [ngValue]="5">5%</option>
+              <option [ngValue]="19">19%</option>
+            </select>
+          </div>
+
+          <div>
             <label for="producto-rapido-stock-inicial" class="mb-2 block text-sm font-semibold text-gray-700">
               Stock inicial
             </label>

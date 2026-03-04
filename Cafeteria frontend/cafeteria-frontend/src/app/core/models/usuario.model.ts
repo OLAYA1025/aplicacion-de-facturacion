@@ -4,4 +4,5 @@ export interface UsuarioResponse {
     email: string;
     username: string;
     rol: string;
+    activo: boolean;
 }

@@ -6,6 +6,7 @@ import com.facturacion.negocio.dto.request.CrearProveedorRequestDTO;
 import com.facturacion.negocio.dto.response.ProveedorResponseDTO;
 import com.facturacion.negocio.services.ProveedorService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -19,6 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @RestController
+@PreAuthorize("hasRole('ADMINISTRADOR')")
 @RequestMapping("/proveedor")
 public class ProveedorController {
 

@@ -5,6 +5,7 @@ import { environment } from 'src/environments/environment';
 import { UsuarioResponse } from '../models/usuario.model';
 import { ActualizarUsuarioRequest } from '../models/actualizarUsuarioRequest.model';
 import { CambiarPasswordUsuarioRequest } from '../models/cambiarPasswordUsuarioRequest.model';
+import { CrearUsuarioRequest } from '../models/crearUsuarioRequest.model';
 
 @Injectable({
   providedIn: 'root',
@@ -16,6 +17,14 @@ export class UsuarioService {
 
   obtenerUsuario(id: number): Observable<UsuarioResponse> {
     return this.http.get<UsuarioResponse>(`${this.baseUrl}/${id}`);
+  }
+
+  listarUsuarios(): Observable<UsuarioResponse[]> {
+    return this.http.get<UsuarioResponse[]>(this.baseUrl);
+  }
+
+  crearUsuario(request: CrearUsuarioRequest): Observable<UsuarioResponse> {
+    return this.http.post<UsuarioResponse>(this.baseUrl, request);
   }
 
   actualizarUsuario(
@@ -36,6 +45,14 @@ export class UsuarioService {
       `${this.baseUrl}/${id}/password`,
       cambiarPasswordRequest,
     );
+  }
+
+  activarUsuario(id: number): Observable<UsuarioResponse> {
+    return this.http.post<UsuarioResponse>(`${this.baseUrl}/${id}/activar`, {});
+  }
+
+  desactivarUsuario(id: number): Observable<UsuarioResponse> {
+    return this.http.post<UsuarioResponse>(`${this.baseUrl}/${id}/desactivar`, {});
   }
 }
 

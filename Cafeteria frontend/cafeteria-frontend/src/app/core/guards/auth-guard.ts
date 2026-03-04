@@ -2,6 +2,8 @@ import { CanActivateChildFn, CanActivateFn, Router, UrlTree } from '@angular/rou
 import { AuthService } from '../services/auth.service';
 import { inject } from '@angular/core';
 
+const CAJERO_ALLOWED_PATHS = ['/caja', '/pedidos', '/productos', '/facturas', '/clientes', '/perfil'] as const;
+
 function resolveAuthGuard(authService: AuthService, router: Router): boolean | UrlTree {
   if (authService.isAuthenticated()) {
     return true;
@@ -17,6 +19,28 @@ function resolveAuthGuard(authService: AuthService, router: Router): boolean | U
   return router.createUrlTree(['']);
 }
 
+function resolveCajeroRouteGuard(
+  authService: AuthService,
+  router: Router,
+  targetUrl: string
+): boolean | UrlTree {
+  const rolUsuario = authService.getUsuario()?.rol?.toUpperCase();
+  if (rolUsuario !== 'CAJERO') {
+    return true;
+  }
+
+  const urlWithoutQuery = targetUrl.split('?')[0];
+  const hasAccess = CAJERO_ALLOWED_PATHS.some(
+    (allowedPath) => urlWithoutQuery === allowedPath || urlWithoutQuery.startsWith(`${allowedPath}/`)
+  );
+
+  if (hasAccess) {
+    return true;
+  }
+
+  return router.createUrlTree(['/caja']);
+}
+
 export const authGuard: CanActivateFn = () => {
 
   const authService = inject(AuthService);
@@ -25,8 +49,13 @@ export const authGuard: CanActivateFn = () => {
 
 };
 
-export const authChildGuard: CanActivateChildFn = () => {
+export const authChildGuard: CanActivateChildFn = (_childRoute, state) => {
   const authService = inject(AuthService);
   const router = inject(Router);
-  return resolveAuthGuard(authService, router);
+  const authResult = resolveAuthGuard(authService, router);
+  if (authResult !== true) {
+    return authResult;
+  }
+
+  return resolveCajeroRouteGuard(authService, router, state.url);
 };

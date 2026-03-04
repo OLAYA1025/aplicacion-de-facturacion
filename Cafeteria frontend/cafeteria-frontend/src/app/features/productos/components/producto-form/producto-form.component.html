@@ -129,7 +129,24 @@
     </div>
   </div>
 
-  <div *ngIf="nuevoProducto.tipoGestion === 'INVENTARIABLE'" class="grid gap-5 md:grid-cols-2">
+  <div *ngIf="nuevoProducto.tipoGestion === 'INVENTARIABLE'" class="grid gap-5 md:grid-cols-3">
+    <div>
+      <label [for]="'iva-crear-' + formIdPrefix" class="mb-2 block text-sm font-semibold text-gray-700">
+        IVA
+      </label>
+      <select
+        [id]="'iva-crear-' + formIdPrefix"
+        [name]="'ivaCrear' + formIdPrefix"
+        [(ngModel)]="nuevoProducto.ivaPorcentaje"
+        required
+        class="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+      >
+        <option [ngValue]="0">0%</option>
+        <option [ngValue]="5">5%</option>
+        <option [ngValue]="19">19%</option>
+      </select>
+    </div>
+
     <div>
       <label [for]="'stock-inicial-' + formIdPrefix" class="mb-2 block text-sm font-semibold text-gray-700">
         Stock inicial
@@ -165,7 +182,7 @@
     *ngIf="nuevoProducto.tipoGestion === 'PREPARACION'"
     class="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800"
   >
-    Producto en modo preparación: no se solicitarán datos de stock.
+    Producto en modo preparación: no se solicitarán datos de stock y el IVA queda fijo en 19%.
   </p>
 
   <p *ngIf="errorCrearProducto" class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">

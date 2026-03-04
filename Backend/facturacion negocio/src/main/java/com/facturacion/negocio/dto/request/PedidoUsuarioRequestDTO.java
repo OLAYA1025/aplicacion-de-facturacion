@@ -6,10 +6,9 @@ import com.facturacion.negocio.enumerated.TipoDocumentoFiscal;
 public class PedidoUsuarioRequestDTO {
     private Long usuarioId;
     private MetodoPago metodoPago;
-
-    private TipoDocumentoFiscal tipoDocumentoFiscal; // DEE_POS / FEV
-
+    private TipoDocumentoFiscal tipoDocumentoFiscal; // DEE_POS / FEV / FEV_CONS_FINAL
     private ClienteFiscalDTO cliente;
+
 
     public Long getUsuarioId() {
         return usuarioId;

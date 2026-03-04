@@ -1,0 +1,281 @@
+<section class="mx-auto w-full space-y-5">
+  <header class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+    <h1 class="text-2xl font-bold text-gray-900">Facturas</h1>
+    <p class="mt-1 text-sm text-gray-600">
+      Consulta documentos fiscales, filtra por estado y abre el PDF para impresión cuando esté aceptado.
+    </p>
+  </header>
+
+  <section class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
+    <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+      <div class="xl:col-span-2">
+        <label class="mb-2 block text-xs font-semibold uppercase tracking-wide text-gray-500">
+          Buscar
+        </label>
+        <input
+          type="text"
+          [(ngModel)]="busqueda"
+          placeholder="Cliente, identificacion, numero documento, referencia o pedido ID"
+          class="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+        />
+      </div>
+
+      <div>
+        <label class="mb-2 block text-xs font-semibold uppercase tracking-wide text-gray-500">
+          Desde
+        </label>
+        <input
+          type="date"
+          [(ngModel)]="fechaDesde"
+          class="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+        />
+      </div>
+
+      <div>
+        <label class="mb-2 block text-xs font-semibold uppercase tracking-wide text-gray-500">
+          Hasta
+        </label>
+        <input
+          type="date"
+          [(ngModel)]="fechaHasta"
+          class="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+        />
+      </div>
+
+      <div>
+        <label class="mb-2 block text-xs font-semibold uppercase tracking-wide text-gray-500">
+          Orden
+        </label>
+        <select
+          [ngModel]="campoSort"
+          (ngModelChange)="onSortChange($event)"
+          class="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+        >
+          <option value="createdAt,desc">Fecha (reciente primero)</option>
+          <option value="createdAt,asc">Fecha (antigua primero)</option>
+          <option value="estado,asc">Estado (A-Z)</option>
+          <option value="estado,desc">Estado (Z-A)</option>
+          <option value="numeroDocumento,asc">Numero documento (A-Z)</option>
+          <option value="numeroDocumento,desc">Numero documento (Z-A)</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="mb-2 block text-xs font-semibold uppercase tracking-wide text-gray-500">
+          Tamaño pagina
+        </label>
+        <select
+          [ngModel]="tamanoPagina"
+          (ngModelChange)="onTamanoPaginaChange($event)"
+          class="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+        >
+          <option *ngFor="let size of tamanosPagina" [ngValue]="size">{{ size }}</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="mt-4">
+      <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">Estados</p>
+      <div class="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+        <label
+          *ngFor="let estado of estadosDisponibles"
+          class="flex cursor-pointer items-center gap-2 rounded-lg border border-gray-200 px-3 py-2 text-sm text-gray-700 hover:bg-gray-50"
+        >
+          <input
+            type="checkbox"
+            [checked]="estaEstadoSeleccionado(estado.value)"
+            (change)="onEstadoToggle(estado.value, $any($event.target).checked)"
+            class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+          />
+          <span>{{ estado.label }}</span>
+        </label>
+      </div>
+    </div>
+
+    <p *ngIf="errorFiltros" class="mt-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+      {{ errorFiltros }}
+    </p>
+
+    <div class="mt-4 flex flex-wrap gap-2">
+      <button
+        type="button"
+        (click)="onBuscar()"
+        [disabled]="loadingFacturas"
+        class="rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        {{ loadingFacturas ? 'Buscando...' : 'Buscar' }}
+      </button>
+      <button
+        type="button"
+        (click)="onLimpiar()"
+        [disabled]="loadingFacturas"
+        class="rounded-xl border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        Limpiar
+      </button>
+    </div>
+  </section>
+
+  <section class="rounded-2xl border border-gray-200 bg-white shadow-sm">
+    <div *ngIf="loadingFacturas" class="flex items-center justify-center py-16">
+      <div class="h-10 w-10 animate-spin rounded-full border-4 border-indigo-600 border-r-transparent"></div>
+    </div>
+
+    <div *ngIf="!loadingFacturas && errorListado" class="p-8">
+      <p class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+        {{ errorListado }}
+      </p>
+    </div>
+
+    <div *ngIf="!loadingFacturas && !errorListado && facturas.length === 0" class="p-10 text-center">
+      <p class="text-lg font-semibold text-gray-800">No hay facturas para mostrar</p>
+      <p class="mt-1 text-sm text-gray-500">Ajusta los filtros e intenta nuevamente.</p>
+    </div>
+
+    <div *ngIf="!loadingFacturas && !errorListado && facturas.length > 0" class="overflow-x-auto">
+      <table class="min-w-full divide-y divide-gray-100">
+        <thead class="bg-gray-50">
+          <tr>
+            <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+              Fecha/Hora
+            </th>
+            <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+              Numero
+            </th>
+            <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+              Cliente
+            </th>
+            <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+              Estado
+            </th>
+            <th class="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-500">
+              Total
+            </th>
+            <th class="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-500">
+              Acciones
+            </th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-gray-100">
+          <tr *ngFor="let factura of facturas" class="hover:bg-gray-50">
+            <td class="px-5 py-4 text-sm text-gray-700">
+              {{ formatearFechaHora( factura.aceptadoAt ?? factura.updatedAt ?? factura.createdAt) }}
+            </td>
+            <td class="px-5 py-4 text-sm font-semibold text-gray-900">
+              {{ numeroFacturaVisible(factura) }}
+            </td>
+            <td class="px-5 py-4 text-sm text-gray-700">
+              <p class="font-medium text-gray-900">{{ nombreClienteVisible(factura) }}</p>
+              <p *ngIf="identificacionClienteVisible(factura)" class="text-xs text-gray-500">
+                {{ identificacionClienteVisible(factura) }}
+              </p>
+            </td>
+            <td class="px-5 py-4">
+              <span
+                class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold"
+                [class]="claseEstado(factura.estado)"
+              >
+                {{ textoEstado(factura.estado) }}
+              </span>
+            </td>
+            <td class="px-5 py-4 text-right text-sm font-semibold text-gray-900">
+              {{ formatearTotal(factura.total) }}
+            </td>
+            <td class="px-5 py-4 text-right">
+              <div class="flex flex-col items-end gap-2">
+                <button
+                  *ngIf="puedeVerError(factura)"
+                  type="button"
+                  (click)="verErrorFactura(factura)"
+                  [disabled]="consultandoErrorFacturaId !== null"
+                  class="rounded-lg border border-red-200 px-3 py-1.5 text-xs font-semibold text-red-700 transition-colors hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {{ consultandoErrorFacturaId === factura.id ? 'Consultando...' : 'Ver error' }}
+                </button>
+
+                <button
+                  *ngIf="puedeReenviar(factura)"
+                  type="button"
+                  (click)="reenviarFactura(factura)"
+                  [disabled]="reenviandoFacturaId !== null"
+                  class="rounded-lg border border-amber-200 px-3 py-1.5 text-xs font-semibold text-amber-700 transition-colors hover:bg-amber-50 disabled:cursor-not-allowed disabled:opacity-50"
+                >
+                  {{ reenviandoFacturaId === factura.id ? 'Reenviando...' : 'Reenviar' }}
+                </button>
+
+                <button
+                  type="button"
+                  (click)="imprimirFactura(factura)"
+                  [disabled]="!puedeImprimir(factura) || imprimiendoFacturaId !== null"
+                  class="rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-50"
+                  [class.border-indigo-200]="puedeImprimir(factura)"
+                  [class.text-indigo-700]="puedeImprimir(factura)"
+                  [class.hover:bg-indigo-50]="puedeImprimir(factura)"
+                  [class.border-gray-200]="!puedeImprimir(factura)"
+                  [class.text-gray-400]="!puedeImprimir(factura)"
+                >
+                  {{
+                    imprimiendoFacturaId === factura.id
+                      ? 'Imprimiendo...'
+                      : puedeImprimir(factura)
+                        ? 'Imprimir'
+                        : 'No disponible'
+                  }}
+                </button>
+              </div>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div
+      *ngIf="!loadingFacturas && !errorListado && totalPaginas > 0"
+      class="flex flex-col items-start justify-between gap-3 border-t border-gray-100 px-5 py-4 text-sm text-gray-700 sm:flex-row sm:items-center"
+    >
+      <div>
+        Pagina <span class="font-semibold">{{ paginaActual + 1 }}</span> de
+        <span class="font-semibold">{{ totalPaginas }}</span>.
+        <span class="ml-1">
+          Mostrando {{ facturas.length }} registro(s) de {{ totalElementos }} totales.
+        </span>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <button
+          type="button"
+          (click)="paginaAnterior()"
+          [disabled]="paginaActual === 0"
+          class="rounded-lg border border-gray-300 px-3 py-1.5 font-semibold text-gray-700 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          Anterior
+        </button>
+
+        <button
+          type="button"
+          *ngFor="let pagina of paginasVisibles"
+          (click)="irAPagina(pagina)"
+          class="rounded-lg px-3 py-1.5 font-semibold transition-colors"
+          [class.bg-indigo-600]="pagina === paginaActual"
+          [class.text-white]="pagina === paginaActual"
+          [class.bg-white]="pagina !== paginaActual"
+          [class.text-gray-700]="pagina !== paginaActual"
+          [class.border]="pagina !== paginaActual"
+          [class.border-gray-300]="pagina !== paginaActual"
+          [class.hover:bg-gray-100]="pagina !== paginaActual"
+        >
+          {{ pagina + 1 }}
+        </button>
+
+        <button
+          type="button"
+          (click)="paginaSiguiente()"
+          [disabled]="paginaActual >= totalPaginas - 1"
+          class="rounded-lg border border-gray-300 px-3 py-1.5 font-semibold text-gray-700 transition-colors hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          Siguiente
+        </button>
+      </div>
+    </div>
+  </section>
+</section>

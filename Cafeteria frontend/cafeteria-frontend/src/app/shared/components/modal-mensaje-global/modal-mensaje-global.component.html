@@ -5,7 +5,7 @@
   role="presentation"
 >
   <section
-    class="w-full max-w-sm rounded-2xl bg-white px-6 py-7 text-center shadow-2xl dark:bg-gray-900"
+    class="flex max-h-[85vh] w-full max-w-lg flex-col overflow-hidden rounded-2xl bg-white px-6 py-7 text-center shadow-2xl dark:bg-gray-900"
     (click)="$event.stopPropagation()"
     role="dialog"
     aria-modal="true"
@@ -44,15 +44,18 @@
       </svg>
     </span>
 
-    <h3 class="mt-5 text-3xl font-semibold leading-tight text-gray-800 dark:text-gray-100">
+    <h3 class="mt-5 break-words text-3xl font-semibold leading-tight text-gray-800 dark:text-gray-100">
       {{ estado().titulo }}
     </h3>
 
-    <p *ngIf="estado().mensaje" class="mt-2 text-sm text-gray-600 dark:text-gray-300">
+    <p
+      *ngIf="estado().mensaje"
+      class="mt-2 max-h-[42vh] overflow-y-auto whitespace-pre-wrap break-words pr-1 text-center text-sm text-gray-600 dark:text-gray-300"
+    >
       {{ estado().mensaje }}
     </p>
 
-    <div class="mt-8 flex items-center justify-center gap-3">
+    <div class="mt-8 flex shrink-0 items-center justify-center gap-3">
       <button
         *ngIf="estado().mostrarCancelar"
         type="button"

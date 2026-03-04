@@ -17,8 +17,6 @@ import { ModalCobroComponent } from '../components/modal-cobro/modal-cobro.compo
 import { FormularioPedidoComponent } from '../components/formulario-pedido/formulario-pedido.component';
 import { ModalMensajeService } from '../../../shared/services/modal-mensaje.service';
 
-type MetodoPago = 'EFECTIVO' | 'TARJETA' | 'TRANSFERENCIA';
-
 @Component({
   selector: 'app-pedidos',
   standalone: true,
@@ -48,12 +46,10 @@ export class PedidosComponent implements OnInit {
 
   mostrarModalDecision: boolean = false;
   pedidoRecienCreado: Pedido | null = null;
-  montoRecibido: number = 0;
   mostrarModalCobro: boolean = false;
   mostrarModalProductos: boolean = false;
   categorias: { id: number; nombre: string }[] = [];
   categoriaSeleccionada: number | null = null;
-  metodoPagoSeleccionado: MetodoPago = 'EFECTIVO';
 
   constructor(
     private pedidosService: PedidosService,
@@ -414,63 +410,11 @@ export class PedidosComponent implements OnInit {
 
     this.mostrarModalDecision = false;
     this.mostrarModalCobro = true;
-    this.metodoPagoSeleccionado = 'EFECTIVO';
-    this.montoRecibido = 0;
-  }
-
-  confirmarCobro(): void {
-    if (!this.pedidoRecienCreado) return;
-
-    const usuario = this.authService.getUsuario();
-    if (!usuario?.id) return;
-
-    if (this.guardando) return;
-    this.guardando = true;
-
-    const request: PedidoUsuarioRequest = {
-      usuarioId: usuario.id,
-      metodoPago: this.metodoPagoSeleccionado
-    };
-
-    this.pedidosService.cobrarPedido(this.pedidoRecienCreado.id, request).subscribe({
-      next: () => {
-        this.guardando = false;
-        this.cerrarModalCobro();
-      },
-      error: (error) => {
-        this.mostrarError('No se pudo cobrar el pedido', 'Intenta nuevamente.', error);
-        this.guardando = false;
-      }
-    });
-  }
-
-  get cambio(): number {
-    if (this.metodoPagoSeleccionado !== 'EFECTIVO') return 0;
-    const total = this.pedidoRecienCreado?.total || 0;
-    return this.montoRecibido - total;
-  }
-
-  get puedeConfirmarCobro(): boolean {
-    if (this.metodoPagoSeleccionado === 'EFECTIVO') {
-      const total = this.pedidoRecienCreado?.total || 0;
-      return this.montoRecibido >= total;
-    }
-    return true;
   }
 
   cobrarPedidoPendiente(pedido: Pedido): void {
     this.pedidoRecienCreado = pedido;
     this.mostrarModalCobro = true;
-    this.metodoPagoSeleccionado = 'EFECTIVO';
-    this.montoRecibido = 0;
-  }
-
-  actualizarMetodoPagoSeleccionado(metodoPago: MetodoPago): void {
-    this.metodoPagoSeleccionado = metodoPago;
-  }
-
-  actualizarMontoRecibido(monto: number): void {
-    this.montoRecibido = monto;
   }
 
   cerrarModalDecision(): void {
@@ -484,9 +428,12 @@ export class PedidosComponent implements OnInit {
   cerrarModalCobro(): void {
     this.mostrarModalCobro = false;
     this.pedidoRecienCreado = null;
-    this.montoRecibido = 0;
     this.cargarPedidosPendientes();
     this.cargarProductos();
+  }
+
+  onCobroRealizado(): void {
+    this.cerrarModalCobro();
   }
 
   cancelarPedido(pedido: Pedido): void {

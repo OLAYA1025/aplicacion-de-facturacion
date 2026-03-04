@@ -45,6 +45,7 @@ interface NuevoProductoRapidoFormState {
   nombre: string;
   precio: number | null;
   categoriaId: number | null;
+  ivaPorcentaje: number | null;
   stockInicial: number | null;
   stockMinimo: number | null;
 }
@@ -608,12 +609,14 @@ export class ComprasComponent implements OnInit {
     }
 
     if (
+      !this.esIvaPermitido(this.nuevoProductoRapido.ivaPorcentaje) ||
       this.nuevoProductoRapido.stockInicial === null ||
       this.nuevoProductoRapido.stockInicial < 0 ||
       this.nuevoProductoRapido.stockMinimo === null ||
       this.nuevoProductoRapido.stockMinimo < 0
     ) {
-      this.errorCrearProductoRapido = 'El stock inicial y mínimo deben ser valores válidos.';
+      this.errorCrearProductoRapido =
+        'Selecciona un IVA válido (0%, 5% o 19%) y verifica stock inicial/mínimo.';
       return;
     }
 
@@ -621,6 +624,7 @@ export class ComprasComponent implements OnInit {
       nombre,
       precio: Number(this.nuevoProductoRapido.precio),
       tipoGestion: 'INVENTARIABLE',
+      ivaPorcentaje: Number(this.nuevoProductoRapido.ivaPorcentaje),
       stockInicial: Number(this.nuevoProductoRapido.stockInicial),
       stockMinimo: Number(this.nuevoProductoRapido.stockMinimo),
       categoriaId: Number(this.nuevoProductoRapido.categoriaId),
@@ -997,6 +1001,7 @@ export class ComprasComponent implements OnInit {
       nombre: '',
       precio: null,
       categoriaId: this.categoriasProductoRapido[0]?.id ?? null,
+      ivaPorcentaje: 19,
       stockInicial: 0,
       stockMinimo: 0,
     };
@@ -1016,6 +1021,10 @@ export class ComprasComponent implements OnInit {
     requestAnimationFrame(() => {
       this.cdr.detectChanges();
     });
+  }
+
+  private esIvaPermitido(iva: number | null): boolean {
+    return iva === 0 || iva === 5 || iva === 19;
   }
 
   private mostrarError(titulo: string, mensaje: string, error?: unknown): void {

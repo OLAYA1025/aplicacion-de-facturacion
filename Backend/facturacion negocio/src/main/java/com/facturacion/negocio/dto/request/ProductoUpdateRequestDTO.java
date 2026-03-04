@@ -9,7 +9,9 @@ public class ProductoUpdateRequestDTO {
     private String nombre;
     private BigDecimal precio;
     private String descripcion;
+    private TipoGestionProducto tipoProducto;
     private TipoGestionProducto tipoGestion;
+    private BigDecimal ivaPorcentaje;
     private Integer stockMinimo;
     private Long categoriaId;
 
@@ -43,6 +45,26 @@ public class ProductoUpdateRequestDTO {
 
     public void setTipoGestion(TipoGestionProducto tipoGestion) {
         this.tipoGestion = tipoGestion;
+    }
+
+    public TipoGestionProducto getTipoProducto() {
+        return tipoProducto;
+    }
+
+    public void setTipoProducto(TipoGestionProducto tipoProducto) {
+        this.tipoProducto = tipoProducto;
+    }
+
+    public TipoGestionProducto resolverTipoProducto() {
+        return tipoProducto != null ? tipoProducto : tipoGestion;
+    }
+
+    public BigDecimal getIvaPorcentaje() {
+        return ivaPorcentaje;
+    }
+
+    public void setIvaPorcentaje(BigDecimal ivaPorcentaje) {
+        this.ivaPorcentaje = ivaPorcentaje;
     }
 
     public Integer getStockMinimo() {

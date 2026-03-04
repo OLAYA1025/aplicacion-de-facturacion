@@ -1,7 +1,6 @@
 <div
   *ngIf="abierto"
   class="fixed -top-16 bottom-0 left-0 right-0 z-[120] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
-  (click)="onCerrar()"
 >
   <div class="w-full max-w-lg rounded-2xl border border-gray-200 bg-white shadow-xl" (click)="$event.stopPropagation()">
     <form #edicionForm="ngForm" (ngSubmit)="onGuardar(edicionForm)" class="space-y-4 p-6">
@@ -91,17 +90,34 @@
         </div>
       </div>
 
-      <div *ngIf="edicionProducto.tipoGestion === 'INVENTARIABLE'">
-        <label for="editar-stock-minimo" class="mb-1 block text-sm font-semibold text-gray-700">Stock mínimo</label>
-        <input
-          id="editar-stock-minimo"
-          name="editarStockMinimo"
-          [(ngModel)]="edicionProducto.stockMinimo"
-          type="number"
-          min="0"
-          required
-          class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
-        />
+      <div *ngIf="edicionProducto.tipoGestion === 'INVENTARIABLE'" class="grid gap-4 sm:grid-cols-2">
+        <div>
+          <label for="editar-iva" class="mb-1 block text-sm font-semibold text-gray-700">IVA</label>
+          <select
+            id="editar-iva"
+            name="editarIva"
+            [(ngModel)]="edicionProducto.ivaPorcentaje"
+            required
+            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+          >
+            <option [ngValue]="0">0%</option>
+            <option [ngValue]="5">5%</option>
+            <option [ngValue]="19">19%</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="editar-stock-minimo" class="mb-1 block text-sm font-semibold text-gray-700">Stock mínimo</label>
+          <input
+            id="editar-stock-minimo"
+            name="editarStockMinimo"
+            [(ngModel)]="edicionProducto.stockMinimo"
+            type="number"
+            min="0"
+            required
+            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+          />
+        </div>
       </div>
 
       <p *ngIf="errorEditarProducto" class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">

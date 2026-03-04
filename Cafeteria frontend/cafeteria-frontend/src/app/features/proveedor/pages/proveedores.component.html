@@ -87,14 +87,6 @@
         <p class="mt-1 text-sm text-gray-500">Ajusta los filtros o crea un nuevo producto.</p>
       </div>
 
-      <div
-        *ngIf="!loadingProveedores && !errorListado && proveedoresFiltrados.length === 0"
-        class="p-10 text-center"
-      >
-        <p class="text-lg font-semibold text-gray-800">No hay proveedores para mostrar</p>
-        <p class="mt-1 text-sm text-gray-500">Ajusta los filtros o registra un nuevo proveedor.</p>
-      </div>
-
       <div *ngIf="!loadingProveedores && proveedoresFiltrados.length > 0" class="overflow-x-auto">
         <table class="min-w-full divide-y divide-gray-100">
           <thead class="bg-gray-50">
@@ -277,7 +269,7 @@
   <div
     *ngIf="tabActual === 'listado' && modalCrearProveedorAbierto"
     class="fixed -top-16 bottom-0 left-0 right-0 z-[220] flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
-    (click)="cerrarModalCrearProveedor()"
+    
   >
     <div class="w-full max-w-4xl max-h-[calc(100dvh-2rem)] py-2" (click)="$event.stopPropagation()">
       <ng-container *ngTemplateOutlet="vistaCrearProveedor"></ng-container>
@@ -287,7 +279,7 @@
   <div
     *ngIf="tabActual === 'listado' && modalEditarProveedorAbierto"
     class="fixed inset-0 z-[120] flex items-start justify-center overflow-y-auto bg-black/70 backdrop-blur-sm px-4 pt-[calc(1rem+env(safe-area-inset-top))] pb-[calc(1rem+env(safe-area-inset-bottom))] sm:items-center"
-    (click)="cerrarModalEditarProveedor()"
+   
   >
     <div
       class="w-full max-w-2xl max-h-[calc(100dvh-2rem)] overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl"
