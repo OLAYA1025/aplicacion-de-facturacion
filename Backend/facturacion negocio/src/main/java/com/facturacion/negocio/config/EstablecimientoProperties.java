@@ -11,6 +11,7 @@ import org.springframework.context.annotation.Configuration;
 public class EstablecimientoProperties {
 
     private String nombre;
+    private String nit;
     private String direccion;
     private String telefono;
     private String email;
@@ -21,11 +22,20 @@ public class EstablecimientoProperties {
     public Establecimiento establecimiento(EstablecimientoProperties props) {
         Establecimiento establecimiento = new Establecimiento();
         establecimiento.setName(props.getNombre());
+        establecimiento.setNit(props.getNit());
         establecimiento.setAddress(props.getDireccion());
         establecimiento.setPhone_number(props.getTelefono());
         establecimiento.setEmail(props.getEmail());
         establecimiento.setMunicipality_id(props.getMunicipaly());
         return establecimiento;
+    }
+
+    public String getNit() {
+        return nit;
+    }
+
+    public void setNit(String nit) {
+        this.nit = nit;
     }
 
     public String getNombre() {

@@ -2,6 +2,7 @@ package com.facturacion.negocio.dto.factura;
 
 public class Establecimiento {
     private String name;
+    private String nit;
     private String address;
     private String phone_number;
     private String email;
@@ -10,12 +11,21 @@ public class Establecimiento {
     public Establecimiento() {
     }
 
-    public Establecimiento(String name, String address, String phone_number, String email, Integer municipality_id) {
+    public Establecimiento(String name, String nit, String address, String phone_number, String email, Integer municipality_id) {
         this.name = name;
+        this.nit = nit;
         this.address = address;
         this.phone_number = phone_number;
         this.email = email;
         this.municipality_id = municipality_id;
+    }
+
+    public String getNit() {
+        return nit;
+    }
+
+    public void setNit(String nit) {
+        this.nit = nit;
     }
 
     public String getName() {

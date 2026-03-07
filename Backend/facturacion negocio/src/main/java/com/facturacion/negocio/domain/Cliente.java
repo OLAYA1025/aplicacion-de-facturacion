@@ -22,6 +22,7 @@ public class Cliente {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @Enumerated(EnumType.STRING)
     @Column(name="tipo_identificacion", nullable = false, length = 10)
     private TipoDocumento tipoIdentificacion; // "CC", "NIT", etc.
 

@@ -2,6 +2,7 @@ package com.facturacion.negocio.dto.factura;
 
 import com.facturacion.negocio.domain.DetallePedido;
 import com.facturacion.negocio.domain.Producto;
+import com.facturacion.negocio.enumerated.TipoImpuesto;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.math.BigDecimal;
@@ -18,22 +19,22 @@ public class ItemDTO {
     private Integer standard_code_id = 1; //ID que corresponde al código de estándar que se adopto para los productos o servicios
     @JsonProperty("is_excluded")
     private Integer isExcluded; //Si el producto está excluido de IVA (0: no, 1: sí).
-    private Integer tribute_id = 1;
-
+    private Integer tribute_id = 1; //1 para IVA (0%, 5%, 19%) y 4 para INC (8% impuesto nacional al consumo. Para preparaciones)
 
     public static ItemDTO from(DetallePedido detalle) {
         ItemDTO itemDTO = new ItemDTO();
         Producto producto = detalle.getProducto();
-        itemDTO.setCode_reference("PED-" + producto.getCodigo().toString());
+        itemDTO.setCode_reference(producto.getCodigo().toString());
         itemDTO.setName(producto.getNombre());
         itemDTO.setQuantity(detalle.getCantidad());
         itemDTO.setPrice(detalle.getPrecioUnitario());
-        Integer isExcluded = 1;
-        if (!producto.getIsExcluded()){
-            isExcluded = 0;
-        }
-        itemDTO.setIsExcluded(isExcluded);
-        String taxString = producto.getIvaPorcentaje().setScale(2, RoundingMode.HALF_UP).toPlainString();
+        itemDTO.setIsExcluded(Boolean.TRUE.equals(producto.getIsExcluded()) ? 1 : 0);
+        TipoImpuesto tipoImpuesto = producto.getTipoImpuesto() != null ? producto.getTipoImpuesto() : TipoImpuesto.IVA;
+        itemDTO.setTribute_id(tipoImpuesto.getTributeId());
+        BigDecimal porcentaje = producto.getImpuestoPorcentaje() != null
+                ? producto.getImpuestoPorcentaje()
+                : BigDecimal.ZERO;
+        String taxString = porcentaje.setScale(2, RoundingMode.HALF_UP).toPlainString();
         itemDTO.setTax_rate(taxString);
 
         return itemDTO;

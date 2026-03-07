@@ -1,6 +1,7 @@
 package com.facturacion.negocio.controllers;
 
 import com.facturacion.negocio.domain.DetallePedido;
+import com.facturacion.negocio.domain.DocumentoFiscal;
 import com.facturacion.negocio.domain.Pedido;
 import com.facturacion.negocio.domain.Producto;
 import com.facturacion.negocio.dto.request.DetallePedidoRequestDTO;
@@ -10,9 +11,14 @@ import com.facturacion.negocio.dto.request.PedidoUsuarioRequestDTO;
 import com.facturacion.negocio.dto.response.PedidoListadoItemDTO;
 import com.facturacion.negocio.dto.response.PedidoResponseDTO;
 import com.facturacion.negocio.dto.response.PedidoTotalResponseDTO;
+import com.facturacion.negocio.enumerated.EstadoDocumentoFiscal;
+import com.facturacion.negocio.enumerated.TipoDocumentoFiscal;
 import com.facturacion.negocio.repository.ProductoRepository;
+import com.facturacion.negocio.services.DocumentoFiscalService;
 import com.facturacion.negocio.services.PedidoService;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
@@ -32,10 +38,12 @@ public class PedidoController {
 
     private final PedidoService pedidoService;
     private final ProductoRepository productoRepository;
+    private final DocumentoFiscalService documentoFiscalService;
 
-    public PedidoController(PedidoService pedidoService, ProductoRepository productoRepository) {
+    public PedidoController(PedidoService pedidoService, ProductoRepository productoRepository, DocumentoFiscalService documentoFiscalService) {
         this.pedidoService = pedidoService;
         this.productoRepository = productoRepository;
+        this.documentoFiscalService = documentoFiscalService;
     }
 
     @GetMapping("/{id}")
@@ -156,6 +164,45 @@ public class PedidoController {
                 request.getCliente());
         List<DetallePedido> detalles = pedidoService.obtenerDetalles(id);
         return ResponseEntity.ok(PedidoResponseDTO.from(pedido, detalles));
+    }
+
+    @PostMapping("/{id}/imprimir")
+    public ResponseEntity<?> imprimirPedido(@PathVariable Long id) {
+        Pedido pedido = pedidoService.buscarPorId(id);
+
+        DocumentoFiscal doc = pedido.getDocumentoFiscal();
+        if (doc == null) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "El pedido no tiene documento fiscal asociado");
+        }
+
+        if (doc.getEstado() != EstadoDocumentoFiscal.ACEPTADO_DIAN) {
+            documentoFiscalService.enviarAlProveedor(doc.getId());
+        }
+
+        DocumentoFiscal actualizado = documentoFiscalService.buscarPorId(doc.getId());
+
+        if (actualizado.getEstado() != EstadoDocumentoFiscal.ACEPTADO_DIAN) {
+            return ResponseEntity.status(HttpStatus.ACCEPTED).body(
+                    Map.of(
+                            "mensaje", "El pedido ya fue cobrado, pero la factura quedó pendiente de envío",
+                            "pedidoId", pedido.getId(),
+                            "documentoFiscalId", actualizado.getId(),
+                            "estadoDocumento", actualizado.getEstado().name()
+                    )
+            );
+        }
+
+        byte[] pdf = documentoFiscalService.obtenerPdfTirilla(actualizado.getId());
+
+        String filename =
+                (actualizado.getTipo() == TipoDocumentoFiscal.FEV_CONS_FINAL ? "FEV-CONSUMIDOR-FINAL-" : "FEV-") +
+                        (actualizado.getNumeroDocumento() != null ? actualizado.getNumeroDocumento() : actualizado.getCufe()) +
+                        ".pdf";
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_PDF)
+                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + filename + "\"")
+                .body(pdf);
     }
 
     @PostMapping("/{id}/cancelar")

@@ -22,6 +22,7 @@ type TabCompras = 'listado' | 'nueva';
 type EstadoCompraFiltro = 'TODAS' | 'BORRADOR' | 'CONFIRMADA' | 'ANULADA';
 type CampoOrdenCompra = 'fechaCreacion' | 'total' | 'estado' | 'numeroFactura';
 type DireccionOrden = 'asc' | 'desc';
+type TipoImpuestoProducto = 'IVA' | 'INC';
 type AccionCompraBorrador = 'CONFIRMAR' | 'ANULAR';
 const OPCION_AGREGAR_PRODUCTO = '__agregar_producto__' as const;
 type OpcionAgregarProducto = typeof OPCION_AGREGAR_PRODUCTO;
@@ -45,7 +46,8 @@ interface NuevoProductoRapidoFormState {
   nombre: string;
   precio: number | null;
   categoriaId: number | null;
-  ivaPorcentaje: number | null;
+  tipoImpuesto: TipoImpuestoProducto;
+  impuestoPorcentaje: number | null;
   stockInicial: number | null;
   stockMinimo: number | null;
 }
@@ -65,6 +67,9 @@ interface NuevoProveedorRapidoFormState {
   templateUrl: './compras.component.html',
 })
 export class ComprasComponent implements OnInit {
+  private static readonly IVA_PERMITIDOS = [0, 5, 19] as const;
+  private static readonly INC_PORCENTAJE = 8;
+
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
@@ -584,6 +589,13 @@ export class ComprasComponent implements OnInit {
     this.nuevoProductoRapido.categoriaId = value;
   }
 
+  onTipoImpuestoProductoRapidoChange(): void {
+    this.nuevoProductoRapido.impuestoPorcentaje = this.normalizarPorcentajeImpuesto(
+      this.nuevoProductoRapido.tipoImpuesto,
+      this.nuevoProductoRapido.impuestoPorcentaje
+    );
+  }
+
   crearProductoRapido(form: NgForm): void {
     this.errorCrearProductoRapido = null;
 
@@ -609,14 +621,17 @@ export class ComprasComponent implements OnInit {
     }
 
     if (
-      !this.esIvaPermitido(this.nuevoProductoRapido.ivaPorcentaje) ||
+      !this.esCombinacionImpuestoValida(
+        this.nuevoProductoRapido.tipoImpuesto,
+        this.nuevoProductoRapido.impuestoPorcentaje
+      ) ||
       this.nuevoProductoRapido.stockInicial === null ||
       this.nuevoProductoRapido.stockInicial < 0 ||
       this.nuevoProductoRapido.stockMinimo === null ||
       this.nuevoProductoRapido.stockMinimo < 0
     ) {
       this.errorCrearProductoRapido =
-        'Selecciona un IVA válido (0%, 5% o 19%) y verifica stock inicial/mínimo.';
+        'Selecciona un impuesto válido: IVA (0%, 5%, 19%) o INC (8%), y verifica stock inicial/mínimo.';
       return;
     }
 
@@ -624,7 +639,8 @@ export class ComprasComponent implements OnInit {
       nombre,
       precio: Number(this.nuevoProductoRapido.precio),
       tipoGestion: 'INVENTARIABLE',
-      ivaPorcentaje: Number(this.nuevoProductoRapido.ivaPorcentaje),
+      tipoImpuesto: this.nuevoProductoRapido.tipoImpuesto,
+      impuestoPorcentaje: Number(this.nuevoProductoRapido.impuestoPorcentaje),
       stockInicial: Number(this.nuevoProductoRapido.stockInicial),
       stockMinimo: Number(this.nuevoProductoRapido.stockMinimo),
       categoriaId: Number(this.nuevoProductoRapido.categoriaId),
@@ -1001,7 +1017,8 @@ export class ComprasComponent implements OnInit {
       nombre: '',
       precio: null,
       categoriaId: this.categoriasProductoRapido[0]?.id ?? null,
-      ivaPorcentaje: 19,
+      tipoImpuesto: 'IVA',
+      impuestoPorcentaje: 19,
       stockInicial: 0,
       stockMinimo: 0,
     };
@@ -1023,8 +1040,34 @@ export class ComprasComponent implements OnInit {
     });
   }
 
+  private normalizarPorcentajeImpuesto(
+    tipoImpuesto: TipoImpuestoProducto,
+    impuestoPorcentaje: number | null
+  ): number {
+    if (tipoImpuesto === 'INC') {
+      return ComprasComponent.INC_PORCENTAJE;
+    }
+
+    return this.esIvaPermitido(impuestoPorcentaje) ? Number(impuestoPorcentaje) : 19;
+  }
+
+  private esCombinacionImpuestoValida(
+    tipoImpuesto: TipoImpuestoProducto | null,
+    impuestoPorcentaje: number | null
+  ): boolean {
+    if (tipoImpuesto === 'INC') {
+      return impuestoPorcentaje === ComprasComponent.INC_PORCENTAJE;
+    }
+
+    if (tipoImpuesto === 'IVA') {
+      return this.esIvaPermitido(impuestoPorcentaje);
+    }
+
+    return false;
+  }
+
   private esIvaPermitido(iva: number | null): boolean {
-    return iva === 0 || iva === 5 || iva === 19;
+    return iva !== null && ComprasComponent.IVA_PERMITIDOS.includes(iva as 0 | 5 | 19);
   }
 
   private mostrarError(titulo: string, mensaje: string, error?: unknown): void {

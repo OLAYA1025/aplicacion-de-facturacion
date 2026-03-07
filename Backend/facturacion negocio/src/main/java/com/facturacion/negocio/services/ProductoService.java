@@ -3,6 +3,7 @@ package com.facturacion.negocio.services;
 import com.facturacion.negocio.domain.Categoria;
 import com.facturacion.negocio.domain.Producto;
 import com.facturacion.negocio.enumerated.TipoGestionProducto;
+import com.facturacion.negocio.enumerated.TipoImpuesto;
 import com.facturacion.negocio.repository.CategoriaRepository;
 import com.facturacion.negocio.repository.ProductoRepository;
 import org.springframework.http.HttpStatus;
@@ -59,7 +60,8 @@ public class ProductoService {
                                   String descripcion,
                                   Long categoriaId,
                                   TipoGestionProducto tipoGestion,
-                                  BigDecimal ivaPorcentaje,
+                                  TipoImpuesto tipoImpuesto,
+                                  BigDecimal impuestoPorcentaje,
                                   Integer stockInicial,
                                   Integer stockMinimo){
         if(nombre == null || precio == null || categoriaId == null){
@@ -77,7 +79,8 @@ public class ProductoService {
                     descripcion,
                     categoria,
                     tipoGestion,
-                    ivaPorcentaje,
+                    tipoImpuesto,
+                    impuestoPorcentaje,
                     stockInicial,
                     stockMinimo
             );
@@ -93,7 +96,8 @@ public class ProductoService {
                                    String descripcion,
                                    Long categoriaId,
                                    TipoGestionProducto tipoGestion,
-                                   BigDecimal ivaPorcentaje,
+                                   TipoImpuesto tipoImpuesto,
+                                   BigDecimal impuestoPorcentaje,
                                    Integer stockMinimo){
         if(id  == null || nombre == null || precio == null || categoriaId == null){
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Datos invalidos");
@@ -111,7 +115,16 @@ public class ProductoService {
                 );
         Categoria categoria = obtenerCategoriaExistente(categoriaId);
         try {
-            producto.actualizarProducto(nombre, precio, descripcion, categoria, tipoGestion, ivaPorcentaje, stockMinimo);
+            producto.actualizarProducto(
+                    nombre,
+                    precio,
+                    descripcion,
+                    categoria,
+                    tipoGestion,
+                    tipoImpuesto,
+                    impuestoPorcentaje,
+                    stockMinimo
+            );
             return productoRepository.save(producto);
         } catch (IllegalArgumentException ex) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, ex.getMessage());

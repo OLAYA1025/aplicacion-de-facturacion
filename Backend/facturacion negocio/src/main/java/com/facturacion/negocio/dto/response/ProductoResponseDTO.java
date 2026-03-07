@@ -3,6 +3,8 @@ package com.facturacion.negocio.dto.response;
 import com.facturacion.negocio.domain.Categoria;
 import com.facturacion.negocio.domain.Producto;
 import com.facturacion.negocio.enumerated.TipoGestionProducto;
+import com.facturacion.negocio.enumerated.TipoImpuesto;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.math.BigDecimal;
 
@@ -18,7 +20,8 @@ public record ProductoResponseDTO(
         Integer stockReservado,
         Integer stockDisponible,
         String descripcion,
-        BigDecimal ivaPorcentaje,
+        TipoImpuesto tipoImpuesto,
+        BigDecimal impuestoPorcentaje,
         boolean isExcluded,
         CategoriaProductoDTO categoria
 ) {
@@ -36,10 +39,16 @@ public record ProductoResponseDTO(
                 producto.getStockReservado(),
                 producto.getStockDisponible(),
                 producto.getDescripcion(),
-                producto.getIvaPorcentaje(),
+                producto.getTipoImpuesto(),
+                producto.getImpuestoPorcentaje(),
                 Boolean.TRUE.equals(producto.getIsExcluded()),
                 CategoriaProductoDTO.fromEntity(producto.getCategoria())
         );
+    }
+
+    @JsonProperty("ivaPorcentaje")
+    public BigDecimal ivaPorcentajeLegacy() {
+        return impuestoPorcentaje;
     }
 
     public record CategoriaProductoDTO(Long id, String nombre) {

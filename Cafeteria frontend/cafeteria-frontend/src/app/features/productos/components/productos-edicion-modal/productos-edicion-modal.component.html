@@ -90,19 +90,39 @@
         </div>
       </div>
 
-      <div *ngIf="edicionProducto.tipoGestion === 'INVENTARIABLE'" class="grid gap-4 sm:grid-cols-2">
+      <div *ngIf="edicionProducto.tipoGestion === 'INVENTARIABLE'" class="grid gap-4 sm:grid-cols-3">
         <div>
-          <label for="editar-iva" class="mb-1 block text-sm font-semibold text-gray-700">IVA</label>
+          <label for="editar-tipo-impuesto" class="mb-1 block text-sm font-semibold text-gray-700">Tipo de impuesto</label>
           <select
-            id="editar-iva"
-            name="editarIva"
-            [(ngModel)]="edicionProducto.ivaPorcentaje"
+            id="editar-tipo-impuesto"
+            name="editarTipoImpuesto"
+            [(ngModel)]="edicionProducto.tipoImpuesto"
+            (ngModelChange)="onTipoImpuestoChange()"
             required
             class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
           >
-            <option [ngValue]="0">0%</option>
-            <option [ngValue]="5">5%</option>
-            <option [ngValue]="19">19%</option>
+            <option [ngValue]="'IVA'">IVA</option>
+            <option [ngValue]="'INC'">INC</option>
+          </select>
+        </div>
+
+        <div>
+          <label for="editar-impuesto" class="mb-1 block text-sm font-semibold text-gray-700">Porcentaje</label>
+          <select
+            id="editar-impuesto"
+            name="editarImpuesto"
+            [(ngModel)]="edicionProducto.impuestoPorcentaje"
+            required
+            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+          >
+            <ng-container *ngIf="edicionProducto.tipoImpuesto === 'IVA'; else impuestoIncEdicion">
+              <option [ngValue]="0">0%</option>
+              <option [ngValue]="5">5%</option>
+              <option [ngValue]="19">19%</option>
+            </ng-container>
+            <ng-template #impuestoIncEdicion>
+              <option [ngValue]="8">8%</option>
+            </ng-template>
           </select>
         </div>
 

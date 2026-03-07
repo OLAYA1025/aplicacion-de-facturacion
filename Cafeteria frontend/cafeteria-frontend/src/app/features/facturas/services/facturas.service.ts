@@ -44,8 +44,9 @@ export class FacturasService {
 
     this.mostrarCargandoEnVentana(openedWindow);
 
+    //el cambio esta aca
     return this.http
-      .get(`${this.baseUrl}/${id}/pdf`, {
+      .get(`${this.baseUrl}/${id}/tirilla/pdf`, {
         observe: 'response',
         responseType: 'blob',
       })

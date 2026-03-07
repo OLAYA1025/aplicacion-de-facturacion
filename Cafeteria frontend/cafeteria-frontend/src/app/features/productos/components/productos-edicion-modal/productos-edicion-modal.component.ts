@@ -20,6 +20,7 @@ export class ProductosEdicionModalComponent {
   @Output() cerrar = new EventEmitter<void>();
   @Output() guardar = new EventEmitter<NgForm>();
   @Output() tipoGestionChange = new EventEmitter<void>();
+  @Output() tipoImpuestoChange = new EventEmitter<void>();
 
   get textoBotonGuardar(): string {
     return this.guardandoEdicion ? 'Guardando...' : 'Guardar cambios';
@@ -35,5 +36,9 @@ export class ProductosEdicionModalComponent {
 
   onTipoGestionChange(): void {
     this.tipoGestionChange.emit();
+  }
+
+  onTipoImpuestoChange(): void {
+    this.tipoImpuestoChange.emit();
   }
 }

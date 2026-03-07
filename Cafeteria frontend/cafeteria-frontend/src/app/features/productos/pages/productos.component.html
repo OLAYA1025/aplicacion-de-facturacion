@@ -54,6 +54,7 @@
       (submitForm)="crearProducto($event)"
       (categoriaChange)="onCategoriaCrearChange($event)"
       (tipoGestionChange)="onTipoGestionCrearChange()"
+      (tipoImpuestoChange)="onTipoImpuestoCrearChange()"
       (nuevaCategoriaNombreChange)="nuevaCategoriaNombre = $event"
       (crearCategoria)="crearCategoria()"
       (cancelarCrearCategoria)="cancelarCrearCategoria()"
@@ -103,6 +104,7 @@
             (submitForm)="crearProducto($event)"
             (categoriaChange)="onCategoriaCrearChange($event)"
             (tipoGestionChange)="onTipoGestionCrearChange()"
+            (tipoImpuestoChange)="onTipoImpuestoCrearChange()"
             (nuevaCategoriaNombreChange)="nuevaCategoriaNombre = $event"
             (crearCategoria)="crearCategoria()"
             (cancelarCrearCategoria)="cancelarCrearCategoria()"
@@ -128,6 +130,7 @@
     (cerrar)="cerrarModalEdicion()"
     (guardar)="guardarEdicion($event)"
     (tipoGestionChange)="onTipoGestionEdicionChange()"
+    (tipoImpuestoChange)="onTipoImpuestoEdicionChange()"
   />
 
 </div>

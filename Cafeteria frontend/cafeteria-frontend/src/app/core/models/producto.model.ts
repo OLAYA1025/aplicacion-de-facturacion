@@ -5,7 +5,9 @@ export interface Producto{
     activo: boolean;
     tipoGestion: 'INVENTARIABLE' | 'PREPARACION';
     tipoProducto?: 'INVENTARIABLE' | 'PREPARACION';
-    ivaPorcentaje: number;
+    tipoImpuesto: 'IVA' | 'INC';
+    impuestoPorcentaje: number;
+    ivaPorcentaje?: number;
     isExcluded: boolean;
     stockActual: number;
     stockMinimo: number;

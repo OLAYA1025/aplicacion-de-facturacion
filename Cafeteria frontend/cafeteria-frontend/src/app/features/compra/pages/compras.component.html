@@ -417,7 +417,7 @@
                 name="numeroFactura"
                 [(ngModel)]="nuevaCompra.numeroFactura"
                 required
-                minlength="2"
+                minlength="1"
                 [disabled]="formularioBloqueado"
                 placeholder="Ej. FC-2026-001"
                 class="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200 disabled:cursor-not-allowed disabled:bg-gray-100"
@@ -497,8 +497,8 @@
                         [name]="'cantidad-' + idx"
                         [(ngModel)]="detalle.cantidad"
                         type="number"
-                        min="0.01"
-                        step="0.01"
+                        min="1"
+                        step="1"
                         required
                         [disabled]="formularioBloqueado"
                         class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200 disabled:cursor-not-allowed disabled:bg-gray-100"
@@ -509,8 +509,8 @@
                         [name]="'costo-' + idx"
                         [(ngModel)]="detalle.costoUnitario"
                         type="number"
-                        min="0.01"
-                        step="0.01"
+                        min="100"
+                        step="100"
                         required
                         [disabled]="formularioBloqueado"
                         class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200 disabled:cursor-not-allowed disabled:bg-gray-100"
@@ -793,19 +793,41 @@
           </div>
 
           <div>
-            <label for="producto-rapido-iva" class="mb-2 block text-sm font-semibold text-gray-700">
-              IVA
+            <label for="producto-rapido-tipo-impuesto" class="mb-2 block text-sm font-semibold text-gray-700">
+              Tipo de impuesto
             </label>
             <select
-              id="producto-rapido-iva"
-              name="productoRapidoIva"
-              [(ngModel)]="nuevoProductoRapido.ivaPorcentaje"
+              id="producto-rapido-tipo-impuesto"
+              name="productoRapidoTipoImpuesto"
+              [(ngModel)]="nuevoProductoRapido.tipoImpuesto"
+              (ngModelChange)="onTipoImpuestoProductoRapidoChange()"
               required
               class="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
             >
-              <option [ngValue]="0">0%</option>
-              <option [ngValue]="5">5%</option>
-              <option [ngValue]="19">19%</option>
+              <option [ngValue]="'IVA'">IVA</option>
+              <option [ngValue]="'INC'">INC</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="producto-rapido-impuesto" class="mb-2 block text-sm font-semibold text-gray-700">
+              Porcentaje
+            </label>
+            <select
+              id="producto-rapido-impuesto"
+              name="productoRapidoImpuesto"
+              [(ngModel)]="nuevoProductoRapido.impuestoPorcentaje"
+              required
+              class="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+            >
+              <ng-container *ngIf="nuevoProductoRapido.tipoImpuesto === 'IVA'; else impuestoIncRapido">
+                <option [ngValue]="0">0%</option>
+                <option [ngValue]="5">5%</option>
+                <option [ngValue]="19">19%</option>
+              </ng-container>
+              <ng-template #impuestoIncRapido>
+                <option [ngValue]="8">8%</option>
+              </ng-template>
             </select>
           </div>
 

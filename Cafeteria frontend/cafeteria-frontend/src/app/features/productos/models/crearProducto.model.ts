@@ -2,7 +2,8 @@ export interface CrearProducto {
     nombre: string;
     precio: number;
     tipoGestion: 'INVENTARIABLE' | 'PREPARACION';
-    ivaPorcentaje?: number;
+    tipoImpuesto?: 'IVA' | 'INC';
+    impuestoPorcentaje?: number;
     stockInicial: number;
     stockMinimo: number;
     categoriaId: number;

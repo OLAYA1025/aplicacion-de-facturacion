@@ -1,6 +1,7 @@
 package com.facturacion.negocio.services;
 
 import com.facturacion.negocio.domain.DocumentoFiscal;
+import com.facturacion.negocio.dto.factura.Establecimiento;
 import com.facturacion.negocio.dto.response.DocumentoFiscalListDTO;
 import com.facturacion.negocio.dto.factura.FactusFactElectronicaRequestDTO;
 import com.facturacion.negocio.enumerated.EstadoDocumentoFiscal;
@@ -10,9 +11,10 @@ import com.facturacion.negocio.repository.DetallePedidoRepository;
 import com.facturacion.negocio.repository.DocumentoFiscalRepository;
 import com.facturacion.negocio.repository.PedidoTotalProjection;
 import com.facturacion.negocio.services.factus.FactusFactElectronicaRequestMapper;
+import com.facturacion.negocio.services.tirillaFctura.Factura;
+import com.facturacion.negocio.services.tirillaFctura.PdfService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.netty.resolver.dns.DnsNameResolverException;
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.JoinType;
@@ -56,72 +58,122 @@ public class DocumentoFiscalService {
     private final DocumentoFiscalRepository documentoFiscalRepository;
     private final DetallePedidoRepository detallePedidoRepository;
     private final ProveedorTecnologicoClientFactus proveedorTecnologicoClient;
-    private final ObjectMapper objectMapper;
     private final FactusFactElectronicaRequestMapper mapper;
+    private final Establecimiento establecimiento;
+    private final PdfService pdfService;
+    private final DocumentoFiscalTxService documentoFiscalTxService;
 
     public DocumentoFiscalService(DocumentoFiscalRepository documentoFiscalRespository,
                                   DetallePedidoRepository detallePedidoRepository,
                                   ProveedorTecnologicoClientFactus proveedorTecnologicoClient,
                                   FactusFactElectronicaRequestMapper mapper,
-                                  ObjectMapper objectMapper) {
+                                  Establecimiento establecimiento,
+                                  PdfService pdfService,
+                                  DocumentoFiscalTxService documentoFiscalTxService) {
 
         this.documentoFiscalRepository = documentoFiscalRespository;
         this.detallePedidoRepository = detallePedidoRepository;
         this.proveedorTecnologicoClient = proveedorTecnologicoClient;
         this.mapper = mapper;
-        this.objectMapper = objectMapper;
+        this.establecimiento = establecimiento;
+        this.pdfService = pdfService;
+        this.documentoFiscalTxService = documentoFiscalTxService;
+    }
+
+    @Transactional(readOnly = true)
+    public DocumentoFiscal buscarPorId(Long id){
+        return documentoFiscalRepository.findById(id).orElseThrow(() -> new ResponseStatusException(
+                HttpStatus.NOT_FOUND, "documento fiscal no encontrado"));
     }
 
     @Transactional
-    public void enviarAlProveedor(Long documentoFiscalId) {
-        DocumentoFiscal doc = documentoFiscalRepository.findById(documentoFiscalId)
-                .orElseThrow(()-> new ResponseStatusException(HttpStatus.NOT_FOUND, "Documento de fiscal no encontrado"));
+    public boolean tomarDocumentoParaEnvio(Long documentoFiscalId) {
+        return documentoFiscalTxService.tomarDocumentoParaEnvio(documentoFiscalId);
+    }
 
-        if (doc.getEstado() != EstadoDocumentoFiscal.PENDIENTE_ENVIO) return;
+    public void enviarAlProveedor(Long documentoFiscalId) {
+        boolean tomado = tomarDocumentoParaEnvio(documentoFiscalId);
+
+        if (!tomado) {
+            return;
+        }
+
+        DocumentoFiscal doc = documentoFiscalRepository.findByIdForEnvio(documentoFiscalId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Documento fiscal no encontrado"));
 
         try {
-            FactusFactElectronicaRequestDTO request = mapper.from(doc);// asegúrate que sea public static
+            FactusFactElectronicaRequestDTO request = mapper.from(doc);
 
-            doc.setRequestJson(objectMapper.writeValueAsString(request));
+            guardarRequestJson(documentoFiscalId, request);
 
             JsonNode resp = proveedorTecnologicoClient.validarFactura(request);
 
-            doc.setResponseJson(resp.toString());
+            procesarRespuestaExitosa(documentoFiscalId, resp);
 
-            String cufe = resp.at("/data/bill/cufe").asText(null);
-            String number = resp.at("/data/bill/number").asText(null);
-            String qr = resp.at("/data/bill/qr").asText(null);
+        } catch (HttpClientErrorException e) {
+            manejarHttpClientError(documentoFiscalId, e);
 
-            if (number == null || cufe == null) {
-                doc.marcarRechazado("RESP_INVALIDA", "No viene number/cufe");
-                return;
-            }
-
-
-            doc.setCufe(cufe);
-            doc.setNumeroDocumento(number);
-            doc.setQr(qr);
-
-            doc.marcarEnviadoPT("FACTUS", cufe); // o trackId
-
-            doc.marcarAceptadoDian(doc.getNumeroDocumento(), doc.getCufe(), doc.getQr());
-
-        }catch (HttpClientErrorException e) {
-            if (e.getStatusCode().value() == 422) {
-                doc.marcarRechazado("422", e.getResponseBodyAsString());
-            } else if (e.getStatusCode().value() == 409) {
-                // TODO: resolver idempotencia consultando por reference_code
-                doc.marcarRechazado("409", "Duplicado reference_code: " + doc.getReferenceCode());
-            } else {
-                doc.marcarPendienteContingencia("HTTP_" + e.getStatusCode(), e.getResponseBodyAsString());
-            }
         } catch (FactusSinConexionException e) {
-            doc.marcarPendienteContingencia("SIN_CONEXION", e.getMessage());
-
+            marcarPendienteContingencia(
+                    documentoFiscalId,
+                    "SIN_CONEXION",
+                    e.getMessage()
+            );
 
         } catch (Exception e) {
-            doc.marcarPendienteContingencia("EXCEPTION", e.getMessage());
+            marcarPendienteContingencia(
+                    documentoFiscalId,
+                    "EXCEPTION",
+                    e.getMessage()
+            );
         }
+    }
+
+    @Transactional
+    public void procesarRespuestaExitosa(Long documentoFiscalId, JsonNode resp) {
+        documentoFiscalTxService.procesarRespuestaExitosa(documentoFiscalId, resp);
+    }
+
+    public void manejarHttpClientError(Long documentoFiscalId, HttpClientErrorException e) {
+        int status = e.getStatusCode().value();
+        String body = e.getResponseBodyAsString();
+
+        if (status == 422) {
+            marcarRechazado(documentoFiscalId, "422", body);
+            return;
+        }
+
+        if (status == 409) {
+            manejarDuplicado409(documentoFiscalId, body);
+            return;
+        }
+
+        marcarPendienteContingencia(
+                documentoFiscalId,
+                "HTTP_" + status,
+                body
+        );
+    }
+
+    @Transactional
+    public void manejarDuplicado409(Long documentoFiscalId, String detalle) {
+        documentoFiscalTxService.manejarDuplicado409(documentoFiscalId, detalle);
+    }
+
+    @Transactional
+    public void marcarRechazado(Long documentoFiscalId, String codigo, String detalle) {
+        documentoFiscalTxService.marcarRechazado(documentoFiscalId, codigo, detalle);
+    }
+
+    @Transactional
+    public void marcarPendienteContingencia(Long documentoFiscalId, String codigo, String detalle) {
+        documentoFiscalTxService.marcarPendienteContingencia(documentoFiscalId, codigo, detalle);
+    }
+
+    @Transactional
+    public void guardarRequestJson(Long documentoFiscalId, FactusFactElectronicaRequestDTO request) {
+        documentoFiscalTxService.guardarRequestJson(documentoFiscalId, request);
     }
 
     @Transactional
@@ -166,6 +218,16 @@ public class DocumentoFiscalService {
         // según tu implementación: por numeroDocumento o por cufe
         return proveedorTecnologicoClient.obtenerPdf(doc.getNumeroDocumento());
     }
+
+    @Transactional(readOnly = true)
+    public byte[] obtenerPdfTirilla(Long documentoFiscalId) {
+        DocumentoFiscal doc = documentoFiscalRepository.findById(documentoFiscalId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Documento fiscal no encontrado"));
+
+        return pdfService.generarPdf(new Factura(doc, establecimiento));
+    }
+
 
     @Transactional(readOnly = true)
     public Page<DocumentoFiscalListDTO> listarDocumentosFiscales(int page,

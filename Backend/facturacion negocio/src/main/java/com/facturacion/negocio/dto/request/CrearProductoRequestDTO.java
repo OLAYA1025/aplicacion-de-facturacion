@@ -1,6 +1,8 @@
 package com.facturacion.negocio.dto.request;
 
 import com.facturacion.negocio.enumerated.TipoGestionProducto;
+import com.facturacion.negocio.enumerated.TipoImpuesto;
+import com.fasterxml.jackson.annotation.JsonAlias;
 
 import java.math.BigDecimal;
 
@@ -11,7 +13,10 @@ public class CrearProductoRequestDTO {
     private String descripcion;
     private TipoGestionProducto tipoProducto;
     private TipoGestionProducto tipoGestion;
-    private BigDecimal ivaPorcentaje;
+    @JsonAlias({"tipo_impuesto"})
+    private TipoImpuesto tipoImpuesto;
+    @JsonAlias({"impuesto_porcentaje", "ivaPorcentaje", "iva_porcentaje"})
+    private BigDecimal impuestoPorcentaje;
     private Integer stockInicial;
     private Integer stockMinimo;
     private Long categoriaId;
@@ -61,12 +66,30 @@ public class CrearProductoRequestDTO {
         return tipoProducto != null ? tipoProducto : tipoGestion;
     }
 
-    public BigDecimal getIvaPorcentaje() {
-        return ivaPorcentaje;
+    public TipoImpuesto getTipoImpuesto() {
+        return tipoImpuesto;
     }
 
+    public void setTipoImpuesto(TipoImpuesto tipoImpuesto) {
+        this.tipoImpuesto = tipoImpuesto;
+    }
+
+    public BigDecimal getImpuestoPorcentaje() {
+        return impuestoPorcentaje;
+    }
+
+    public void setImpuestoPorcentaje(BigDecimal impuestoPorcentaje) {
+        this.impuestoPorcentaje = impuestoPorcentaje;
+    }
+
+    @Deprecated
+    public BigDecimal getIvaPorcentaje() {
+        return impuestoPorcentaje;
+    }
+
+    @Deprecated
     public void setIvaPorcentaje(BigDecimal ivaPorcentaje) {
-        this.ivaPorcentaje = ivaPorcentaje;
+        this.impuestoPorcentaje = ivaPorcentaje;
     }
 
     public Integer getStockInicial() {

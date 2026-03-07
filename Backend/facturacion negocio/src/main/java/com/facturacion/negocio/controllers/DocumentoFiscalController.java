@@ -73,6 +73,24 @@ public class DocumentoFiscalController {
                 .body(pdfBytes);
     }
 
+    @GetMapping("/{id}/tirilla/pdf")
+    public ResponseEntity<byte[]> pdfTirilla(@PathVariable Long id) {
+        DocumentoFiscal doc = documentoFiscalRepository.findById(id).orElseThrow(() ->
+                new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Documento de fiscal no encontrado"))
+                ;
+
+        byte[] pdfBytes = documentoFiscalService.obtenerPdfTirilla(id);
+
+        String filename = (doc.getTipo() == TipoDocumentoFiscal.FEV_CONS_FINAL?"FEV-CONSUMIDOR-FINAL-":"FEV-") + (doc.getNumeroDocumento() != null ? doc.getNumeroDocumento() : doc.getCufe()) + ".pdf";
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_PDF)
+                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + filename + "\"")
+                .body(pdfBytes);
+    }
+
     @PostMapping("/{id}/reenviar")
     public ResponseEntity<Void> reenviarFactura(@PathVariable Long id) throws JsonProcessingException {
         documentoFiscalService.ReenviarFactura(id);

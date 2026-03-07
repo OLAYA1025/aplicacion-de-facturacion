@@ -2,7 +2,8 @@ export interface actualizarProducto {
     nombre: string;
     precio: number;
     tipoGestion: 'INVENTARIABLE' | 'PREPARACION';
-    ivaPorcentaje?: number;
+    tipoImpuesto?: 'IVA' | 'INC';
+    impuestoPorcentaje?: number;
     stockMinimo: number;
     categoriaId: number;
 

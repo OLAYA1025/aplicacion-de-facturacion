@@ -63,7 +63,8 @@ public class ProductoController {
                 request.getDescripcion(),
                 request.getCategoriaId(),
                 request.resolverTipoProducto(),
-                request.getIvaPorcentaje(),
+                request.getTipoImpuesto(),
+                request.getImpuestoPorcentaje(),
                 request.getStockInicial(),
                 request.getStockMinimo()
         );
@@ -83,7 +84,8 @@ public class ProductoController {
                 request.getDescripcion(),
                 request.getCategoriaId(),
                 request.resolverTipoProducto(),
-                request.getIvaPorcentaje(),
+                request.getTipoImpuesto(),
+                request.getImpuestoPorcentaje(),
                 request.getStockMinimo());
 
         return ResponseEntity.ok(ProductoResponseDTO.fromEntity(producto));

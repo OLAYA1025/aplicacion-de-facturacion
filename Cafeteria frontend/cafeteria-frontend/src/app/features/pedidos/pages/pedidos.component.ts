@@ -433,7 +433,14 @@ export class PedidosComponent implements OnInit {
   }
 
   onCobroRealizado(): void {
+    const pedidoCobradoId = this.pedidoRecienCreado?.id ?? null;
     this.cerrarModalCobro();
+
+    if (!pedidoCobradoId) {
+      return;
+    }
+
+    void this.confirmarImpresionFactura(pedidoCobradoId);
   }
 
   cancelarPedido(pedido: Pedido): void {
@@ -538,6 +545,43 @@ export class PedidosComponent implements OnInit {
       titulo,
       mensaje,
       textoConfirmar: 'Entendido',
+    });
+  }
+
+  private async confirmarImpresionFactura(pedidoId: number): Promise<void> {
+    const confirmarImpresion = await this.modalMensajeService.confirmar({
+      titulo: 'Pedido cobrado correctamente',
+      mensaje: '¿Deseas imprimir la factura?',
+      textoConfirmar: 'Imprimir',
+    });
+
+    if (!confirmarImpresion) {
+      return;
+    }
+
+    this.pedidosService.imprimirFactura(pedidoId).subscribe({
+      next: (resultado) => {
+        if (resultado.tipo !== 'PARCIAL') {
+          return;
+        }
+
+        void this.modalMensajeService.abrir({
+          tipo: 'confirmacion',
+          titulo: 'Factura en proceso',
+          mensaje: resultado.mensaje,
+          textoConfirmar: 'Entendido',
+        });
+      },
+      error: (error) => {
+        this.mostrarError(
+          'No se pudo imprimir la factura',
+          this.obtenerMensajeError(
+            error,
+            'No se pudo generar la vista previa de la factura. Intenta nuevamente.'
+          ),
+          error
+        );
+      },
     });
   }
 }

@@ -21,6 +21,7 @@ import {
   ProductoEditarFormState,
   SelectorCategoriaCrear,
   TabProductos,
+  TipoImpuesto,
 } from '../models/productos-ui.model';
 import { CategoriaService } from '../services/categoria.service';
 import { ProductoService } from '../services/producto.service';
@@ -42,6 +43,9 @@ import { obtenerMensajeError } from '../../../shared/utils/error-message.util';
   templateUrl: './productos.component.html',
 })
 export class ProductosComponent implements OnInit, OnDestroy {
+  private static readonly IVA_PERMITIDOS = [0, 5, 19] as const;
+  private static readonly INC_PORCENTAJE = 8;
+
   private readonly cdr = inject(ChangeDetectorRef);
   private readonly productoService = inject(ProductoService);
   private readonly categoriaService = inject(CategoriaService);
@@ -220,6 +224,9 @@ export class ProductosComponent implements OnInit, OnDestroy {
   }
 
   abrirModalEdicion(producto: Producto): void {
+    const tipoImpuesto = this.resolverTipoImpuestoProducto(producto);
+    const porcentajeActual = this.resolverImpuestoPorcentajeProducto(producto);
+
     this.productoEditando = producto;
     this.modalEdicionAbierto = true;
     this.errorEditarProducto = null;
@@ -227,7 +234,11 @@ export class ProductosComponent implements OnInit, OnDestroy {
       nombre: producto.nombre,
       precio: producto.precio,
       tipoGestion: producto.tipoGestion,
-      ivaPorcentaje: producto.tipoGestion === 'INVENTARIABLE' ? Number(producto.ivaPorcentaje ?? 19) : 19,
+      tipoImpuesto: producto.tipoGestion === 'INVENTARIABLE' ? tipoImpuesto : 'INC',
+      impuestoPorcentaje:
+        producto.tipoGestion === 'INVENTARIABLE'
+          ? this.normalizarPorcentajeSegunTipo(tipoImpuesto, porcentajeActual)
+          : ProductosComponent.INC_PORCENTAJE,
       stockMinimo: producto.tipoGestion === 'INVENTARIABLE' ? producto.stockMinimo : null,
       categoriaId: producto.categoria.id,
     };
@@ -242,18 +253,28 @@ export class ProductosComponent implements OnInit, OnDestroy {
 
   onTipoGestionEdicionChange(): void {
     if (this.edicionProducto.tipoGestion === 'PREPARACION') {
-      this.edicionProducto.ivaPorcentaje = 19;
+      this.edicionProducto.tipoImpuesto = 'INC';
+      this.edicionProducto.impuestoPorcentaje = ProductosComponent.INC_PORCENTAJE;
       this.edicionProducto.stockMinimo = null;
       return;
     }
 
-    if (this.edicionProducto.ivaPorcentaje === null) {
-      this.edicionProducto.ivaPorcentaje = 19;
-    }
+    this.edicionProducto.tipoImpuesto = this.edicionProducto.tipoImpuesto ?? 'IVA';
+    this.edicionProducto.impuestoPorcentaje = this.normalizarPorcentajeSegunTipo(
+      this.edicionProducto.tipoImpuesto,
+      this.edicionProducto.impuestoPorcentaje
+    );
 
     if (this.edicionProducto.stockMinimo === null) {
       this.edicionProducto.stockMinimo = 0;
     }
+  }
+
+  onTipoImpuestoEdicionChange(): void {
+    this.edicionProducto.impuestoPorcentaje = this.normalizarPorcentajeSegunTipo(
+      this.edicionProducto.tipoImpuesto,
+      this.edicionProducto.impuestoPorcentaje
+    );
   }
 
   guardarEdicion(form: NgForm): void {
@@ -271,7 +292,10 @@ export class ProductosComponent implements OnInit, OnDestroy {
       precio: Number(this.edicionProducto.precio),
       tipoGestion: this.edicionProducto.tipoGestion,
       ...(this.edicionProducto.tipoGestion === 'INVENTARIABLE'
-        ? { ivaPorcentaje: Number(this.edicionProducto.ivaPorcentaje) }
+        ? {
+            tipoImpuesto: this.edicionProducto.tipoImpuesto,
+            impuestoPorcentaje: Number(this.edicionProducto.impuestoPorcentaje),
+          }
         : {}),
       stockMinimo:
         this.edicionProducto.tipoGestion === 'INVENTARIABLE'
@@ -309,15 +333,18 @@ export class ProductosComponent implements OnInit, OnDestroy {
 
   onTipoGestionCrearChange(): void {
     if (this.nuevoProducto.tipoGestion === 'PREPARACION') {
-      this.nuevoProducto.ivaPorcentaje = 19;
+      this.nuevoProducto.tipoImpuesto = 'INC';
+      this.nuevoProducto.impuestoPorcentaje = ProductosComponent.INC_PORCENTAJE;
       this.nuevoProducto.stockInicial = null;
       this.nuevoProducto.stockMinimo = null;
       return;
     }
 
-    if (this.nuevoProducto.ivaPorcentaje === null) {
-      this.nuevoProducto.ivaPorcentaje = 19;
-    }
+    this.nuevoProducto.tipoImpuesto = this.nuevoProducto.tipoImpuesto ?? 'IVA';
+    this.nuevoProducto.impuestoPorcentaje = this.normalizarPorcentajeSegunTipo(
+      this.nuevoProducto.tipoImpuesto,
+      this.nuevoProducto.impuestoPorcentaje
+    );
 
     if (this.nuevoProducto.stockInicial === null) {
       this.nuevoProducto.stockInicial = 0;
@@ -326,6 +353,13 @@ export class ProductosComponent implements OnInit, OnDestroy {
     if (this.nuevoProducto.stockMinimo === null) {
       this.nuevoProducto.stockMinimo = 0;
     }
+  }
+
+  onTipoImpuestoCrearChange(): void {
+    this.nuevoProducto.impuestoPorcentaje = this.normalizarPorcentajeSegunTipo(
+      this.nuevoProducto.tipoImpuesto,
+      this.nuevoProducto.impuestoPorcentaje
+    );
   }
 
   abrirModalCrearProducto(): void {
@@ -422,7 +456,10 @@ export class ProductosComponent implements OnInit, OnDestroy {
       precio: Number(this.nuevoProducto.precio),
       tipoGestion: this.nuevoProducto.tipoGestion,
       ...(this.nuevoProducto.tipoGestion === 'INVENTARIABLE'
-        ? { ivaPorcentaje: Number(this.nuevoProducto.ivaPorcentaje) }
+        ? {
+            tipoImpuesto: this.nuevoProducto.tipoImpuesto,
+            impuestoPorcentaje: Number(this.nuevoProducto.impuestoPorcentaje),
+          }
         : {}),
       stockInicial:
         this.nuevoProducto.tipoGestion === 'INVENTARIABLE'
@@ -572,7 +609,8 @@ export class ProductosComponent implements OnInit, OnDestroy {
       nombre: '',
       precio: null,
       tipoGestion: 'INVENTARIABLE',
-      ivaPorcentaje: 19,
+      tipoImpuesto: 'IVA',
+      impuestoPorcentaje: 19,
       stockInicial: 0,
       stockMinimo: 0,
       categoriaId: null,
@@ -584,7 +622,8 @@ export class ProductosComponent implements OnInit, OnDestroy {
       nombre: '',
       precio: null,
       tipoGestion: 'INVENTARIABLE',
-      ivaPorcentaje: 19,
+      tipoImpuesto: 'IVA',
+      impuestoPorcentaje: 19,
       stockMinimo: 0,
       categoriaId: null,
     };
@@ -638,8 +677,13 @@ export class ProductosComponent implements OnInit, OnDestroy {
     }
 
     if (this.nuevoProducto.tipoGestion === 'INVENTARIABLE') {
-      if (!this.esIvaPermitido(this.nuevoProducto.ivaPorcentaje)) {
-        return 'Selecciona un IVA válido (0%, 5% o 19%).';
+      if (
+        !this.esCombinacionImpuestoValida(
+          this.nuevoProducto.tipoImpuesto,
+          this.nuevoProducto.impuestoPorcentaje
+        )
+      ) {
+        return 'Selecciona un impuesto válido: IVA (0%, 5%, 19%) o INC (8%).';
       }
 
       if (this.nuevoProducto.stockInicial === null || this.nuevoProducto.stockInicial < 0) {
@@ -672,8 +716,13 @@ export class ProductosComponent implements OnInit, OnDestroy {
     }
 
     if (this.edicionProducto.tipoGestion === 'INVENTARIABLE') {
-      if (!this.esIvaPermitido(this.edicionProducto.ivaPorcentaje)) {
-        return 'Selecciona un IVA válido (0%, 5% o 19%).';
+      if (
+        !this.esCombinacionImpuestoValida(
+          this.edicionProducto.tipoImpuesto,
+          this.edicionProducto.impuestoPorcentaje
+        )
+      ) {
+        return 'Selecciona un impuesto válido: IVA (0%, 5%, 19%) o INC (8%).';
       }
 
       if (this.edicionProducto.stockMinimo === null || this.edicionProducto.stockMinimo < 0) {
@@ -684,8 +733,45 @@ export class ProductosComponent implements OnInit, OnDestroy {
     return null;
   }
 
+  private resolverTipoImpuestoProducto(producto: Producto): TipoImpuesto {
+    if (producto.tipoImpuesto === 'IVA' || producto.tipoImpuesto === 'INC') {
+      return producto.tipoImpuesto;
+    }
+    return producto.tipoGestion === 'PREPARACION' ? 'INC' : 'IVA';
+  }
+
+  private resolverImpuestoPorcentajeProducto(producto: Producto): number | null {
+    if (typeof producto.impuestoPorcentaje === 'number') {
+      return producto.impuestoPorcentaje;
+    }
+    return typeof producto.ivaPorcentaje === 'number' ? producto.ivaPorcentaje : null;
+  }
+
+  private normalizarPorcentajeSegunTipo(
+    tipoImpuesto: TipoImpuesto,
+    impuestoPorcentaje: number | null
+  ): number {
+    if (tipoImpuesto === 'INC') {
+      return ProductosComponent.INC_PORCENTAJE;
+    }
+    return this.esIvaPermitido(impuestoPorcentaje) ? Number(impuestoPorcentaje) : 19;
+  }
+
+  private esCombinacionImpuestoValida(
+    tipoImpuesto: TipoImpuesto | null,
+    impuestoPorcentaje: number | null
+  ): boolean {
+    if (tipoImpuesto === 'INC') {
+      return impuestoPorcentaje === ProductosComponent.INC_PORCENTAJE;
+    }
+    if (tipoImpuesto === 'IVA') {
+      return this.esIvaPermitido(impuestoPorcentaje);
+    }
+    return false;
+  }
+
   private esIvaPermitido(iva: number | null): boolean {
-    return iva === 0 || iva === 5 || iva === 19;
+    return iva !== null && ProductosComponent.IVA_PERMITIDOS.includes(iva as 0 | 5 | 19);
   }
 
   private mostrarError(titulo: string, mensaje: string, error?: unknown): void {

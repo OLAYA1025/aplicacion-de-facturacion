@@ -1,6 +1,7 @@
 package com.facturacion.negocio.domain;
 
 import com.facturacion.negocio.enumerated.TipoGestionProducto;
+import com.facturacion.negocio.enumerated.TipoImpuesto;
 import jakarta.persistence.*;
 
 import java.math.BigDecimal;
@@ -13,14 +14,13 @@ public class Producto {
     private static final BigDecimal IVA_CERO = BigDecimal.ZERO;
     private static final BigDecimal IVA_DIECINUEVE = BigDecimal.valueOf(19);
     private static final Set<Integer> IVA_PERMITIDOS = Set.of(0, 5, 19);
+    private static final BigDecimal INC_OCHO = BigDecimal.valueOf(8);
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long codigo;
 
-
     @Column(nullable = false, unique = true)
-
     private String nombre;
 
     @Column(nullable = false, precision = 10, scale = 2)
@@ -33,8 +33,12 @@ public class Producto {
     @Column
     private TipoGestionProducto tipoGestion;
 
-    @Column(nullable = false, precision = 5, scale = 2)
-    private BigDecimal ivaPorcentaje = IVA_DIECINUEVE;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "tipo_impuesto", nullable = false, length = 10)
+    private TipoImpuesto tipoImpuesto;
+
+    @Column(name = "impuesto_porcentaje", nullable = false, precision = 5, scale = 2)
+    private BigDecimal impuestoPorcentaje;
 
     @Column(nullable = false)
     private Boolean isExcluded = false;
@@ -56,7 +60,7 @@ public class Producto {
     }
 
     public Producto(String nombre, BigDecimal precio, String descripcion, Categoria categoria) {
-        this(nombre, precio, descripcion, categoria, TipoGestionProducto.PREPARACION, null, null, null);
+        this(nombre, precio, descripcion, categoria, TipoGestionProducto.PREPARACION, null, null, null, null);
     }
 
     public Producto(String nombre,
@@ -64,7 +68,8 @@ public class Producto {
                     String descripcion,
                     Categoria categoria,
                     TipoGestionProducto tipoGestion,
-                    BigDecimal ivaPorcentaje,
+                    TipoImpuesto tipoImpuesto,
+                    BigDecimal impuestoPorcentaje,
                     Integer stockInicial,
                     Integer stockMinimo) {
         this.nombre = nombre;
@@ -73,7 +78,7 @@ public class Producto {
         this.descripcion = descripcion;
         this.categoria = Objects.requireNonNull(categoria, "categoria requerida");
         this.tipoGestion = tipoGestion != null ? tipoGestion : TipoGestionProducto.PREPARACION;
-        aplicarReglasIva(ivaPorcentaje);
+        aplicarReglasImpuesto(tipoImpuesto, impuestoPorcentaje);
         this.stockActual = null;
         this.stockMinimo = null;
         this.stockReservado = null;
@@ -83,7 +88,6 @@ public class Producto {
             this.stockReservado = 0;
         }
     }
-
 
     public String getDescripcion() {
         return descripcion;
@@ -100,6 +104,7 @@ public class Producto {
     public void activar() {
         this.activo = true;
     }
+
     public void desactivar() {
         this.activo = false;
     }
@@ -116,7 +121,16 @@ public class Producto {
     }
 
     public void actualizarProducto(String nombre, BigDecimal precio, String descripcion, Categoria categoria) {
-        actualizarProducto(nombre, precio, descripcion, categoria, this.tipoGestion, this.ivaPorcentaje, this.stockMinimo);
+        actualizarProducto(
+                nombre,
+                precio,
+                descripcion,
+                categoria,
+                this.tipoGestion,
+                this.tipoImpuesto,
+                this.impuestoPorcentaje,
+                this.stockMinimo
+        );
     }
 
     public void actualizarProducto(String nombre,
@@ -124,7 +138,8 @@ public class Producto {
                                    String descripcion,
                                    Categoria categoria,
                                    TipoGestionProducto tipoGestion,
-                                   BigDecimal ivaPorcentaje,
+                                   TipoImpuesto tipoImpuesto,
+                                   BigDecimal impuestoPorcentaje,
                                    Integer stockMinimo) {
         TipoGestionProducto gestionNueva = tipoGestion != null ? tipoGestion : this.tipoGestion;
         this.nombre = nombre;
@@ -132,7 +147,7 @@ public class Producto {
         this.descripcion = descripcion;
         this.categoria = Objects.requireNonNull(categoria, "categoria requerida");
         this.tipoGestion = Objects.requireNonNull(gestionNueva, "tipoGestion requerido");
-        aplicarReglasIva(ivaPorcentaje);
+        aplicarReglasImpuesto(tipoImpuesto, impuestoPorcentaje);
         if (this.tipoGestion == TipoGestionProducto.INVENTARIABLE) {
             if (this.stockActual == null) {
                 this.stockActual = 0;
@@ -152,7 +167,6 @@ public class Producto {
         this.stockActual = null;
         this.stockMinimo = null;
         this.stockReservado = null;
-
     }
 
     public void cambiarNombre(String nombre) {
@@ -175,8 +189,17 @@ public class Producto {
         return tipoGestion;
     }
 
+    public TipoImpuesto getTipoImpuesto() {
+        return tipoImpuesto;
+    }
+
+    public BigDecimal getImpuestoPorcentaje() {
+        return impuestoPorcentaje;
+    }
+
+    @Deprecated
     public BigDecimal getIvaPorcentaje() {
-        return ivaPorcentaje;
+        return impuestoPorcentaje;
     }
 
     public Boolean getIsExcluded() {
@@ -309,41 +332,72 @@ public class Producto {
         if (this.tipoGestion == null) {
             this.tipoGestion = TipoGestionProducto.PREPARACION;
         }
-        aplicarReglasIva(this.ivaPorcentaje);
+        aplicarReglasImpuesto(this.tipoImpuesto, this.impuestoPorcentaje);
     }
 
-    private void aplicarReglasIva(BigDecimal ivaSolicitado) {
+    private void aplicarReglasImpuesto(TipoImpuesto tipoImpuestoSolicitado, BigDecimal impuestoPorcentajeSolicitado) {
         if (this.tipoGestion == TipoGestionProducto.PREPARACION) {
-            this.ivaPorcentaje = IVA_DIECINUEVE;
+            this.tipoImpuesto = TipoImpuesto.INC;
+            this.impuestoPorcentaje = INC_OCHO;
             this.isExcluded = false;
             return;
         }
 
-        BigDecimal ivaBase = ivaSolicitado != null
-                ? ivaSolicitado
-                : (this.ivaPorcentaje != null ? this.ivaPorcentaje : IVA_DIECINUEVE);
-        BigDecimal ivaNormalizado = validarIvaPermitido(ivaBase);
-        this.ivaPorcentaje = ivaNormalizado;
+        TipoImpuesto tipoNormalizado = tipoImpuestoSolicitado != null
+                ? tipoImpuestoSolicitado
+                : (this.tipoImpuesto != null ? this.tipoImpuesto : TipoImpuesto.IVA);
+
+        if (tipoNormalizado == TipoImpuesto.INC) {
+            this.tipoImpuesto = TipoImpuesto.INC;
+            this.impuestoPorcentaje = validarIncPermitido(impuestoPorcentajeSolicitado);
+            this.isExcluded = false;
+            return;
+        }
+
+        BigDecimal porcentajeBase = impuestoPorcentajeSolicitado != null
+                ? impuestoPorcentajeSolicitado
+                : (this.tipoImpuesto == TipoImpuesto.IVA && this.impuestoPorcentaje != null
+                ? this.impuestoPorcentaje
+                : IVA_DIECINUEVE);
+
+        BigDecimal ivaNormalizado = validarIvaPermitido(porcentajeBase);
+        this.tipoImpuesto = TipoImpuesto.IVA;
+        this.impuestoPorcentaje = ivaNormalizado;
         this.isExcluded = ivaNormalizado.compareTo(IVA_CERO) == 0;
     }
 
-    private BigDecimal validarIvaPermitido(BigDecimal ivaSolicitado) {
-        if (ivaSolicitado == null) {
-            throw new IllegalArgumentException("ivaPorcentaje no puede ser null");
+    private BigDecimal validarIncPermitido(BigDecimal porcentajeSolicitado) {
+        if (porcentajeSolicitado == null) {
+            return INC_OCHO;
         }
-
-        int ivaEntero;
+        int porcentajeEntero;
         try {
-            ivaEntero = ivaSolicitado.stripTrailingZeros().intValueExact();
+            porcentajeEntero = porcentajeSolicitado.stripTrailingZeros().intValueExact();
         } catch (ArithmeticException ex) {
-            throw new IllegalArgumentException("ivaPorcentaje invalido. Valores permitidos: 0, 5, 19");
+            throw new IllegalArgumentException("impuestoPorcentaje invalido. Para INC el valor permitido es 8");
         }
-
-        if (!IVA_PERMITIDOS.contains(ivaEntero)) {
-            throw new IllegalArgumentException("ivaPorcentaje invalido. Valores permitidos: 0, 5, 19");
+        if (porcentajeEntero != 8) {
+            throw new IllegalArgumentException("impuestoPorcentaje invalido. Para INC el valor permitido es 8");
         }
-
-        return BigDecimal.valueOf(ivaEntero);
+        return INC_OCHO;
     }
 
+    private BigDecimal validarIvaPermitido(BigDecimal porcentajeSolicitado) {
+        if (porcentajeSolicitado == null) {
+            throw new IllegalArgumentException("impuestoPorcentaje no puede ser null para IVA");
+        }
+
+        int porcentajeEntero;
+        try {
+            porcentajeEntero = porcentajeSolicitado.stripTrailingZeros().intValueExact();
+        } catch (ArithmeticException ex) {
+            throw new IllegalArgumentException("impuestoPorcentaje invalido. Para IVA los valores permitidos son: 0, 5, 19");
+        }
+
+        if (!IVA_PERMITIDOS.contains(porcentajeEntero)) {
+            throw new IllegalArgumentException("impuestoPorcentaje invalido. Para IVA los valores permitidos son: 0, 5, 19");
+        }
+
+        return BigDecimal.valueOf(porcentajeEntero);
+    }
 }

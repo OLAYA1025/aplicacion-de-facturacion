@@ -40,7 +40,7 @@ public class DocumentoFiscal {
 
     @Enumerated(EnumType.STRING)
     @Column(name = "tipo", nullable = false, length = 20)
-    private TipoDocumentoFiscal tipo; // FEV / DEE_POS
+    private TipoDocumentoFiscal tipo; // FEV / DEE_POS / FEV_CONS_FINAL
 
     @Enumerated(EnumType.STRING)
     @Column(name = "estado", nullable = false, length = 30)
@@ -71,7 +71,7 @@ public class DocumentoFiscal {
     @Column(name = "cude", length = 128)
     private String cude; // para DEE POS
 
-    @Column(name = "qr", length = 2048)
+    @Column(name = "qr", columnDefinition="text")
     private String qr;
 
     @Column(name = "proveedor", length = 30)
@@ -113,7 +113,6 @@ public class DocumentoFiscal {
     private Instant updatedAt;
 
     protected DocumentoFiscal() {
-        // JPA
     }
 
     private DocumentoFiscal(Pedido pedido, TipoDocumentoFiscal tipo, String referenceCode) {
@@ -278,5 +277,9 @@ public class DocumentoFiscal {
 
     public void setUpdatedAt(Instant updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public void setEstado(EstadoDocumentoFiscal estado) {
+        this.estado = estado;
     }
 }

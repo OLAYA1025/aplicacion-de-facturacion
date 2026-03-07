@@ -25,13 +25,17 @@ public class PedidoService {
     private final CajaRepository cajaRepository;
     private final ClienteRepository clienteRepository;
     private final DocumentoFiscalRepository documentoFiscalRepository;
+    private final DocumentoFiscalService documentoFiscalService;
 
     public PedidoService(PedidoRepository pedidoRepository,
                          MovimientoCajaRepository movimientoCajaRepository,
                          MovimientoInventarioRepository movimientoInventarioRepository,
                          ProductoRepository productoRepository,
                          UsuarioRepository usuarioRepository,
-                         CajaRepository cajaRepository, ClienteRepository clienteRepository, DocumentoFiscalRepository documentoFiscalRepository) {
+                         CajaRepository cajaRepository,
+                         ClienteRepository clienteRepository,
+                         DocumentoFiscalRepository documentoFiscalRepository,
+                         DocumentoFiscalService documentoFiscalService) {
         this.pedidoRepository = pedidoRepository;
         this.movimientoCajaRepository = movimientoCajaRepository;
         this.movimientoInventarioRepository = movimientoInventarioRepository;
@@ -40,6 +44,7 @@ public class PedidoService {
         this.cajaRepository = cajaRepository;
         this.clienteRepository = clienteRepository;
         this.documentoFiscalRepository = documentoFiscalRepository;
+        this.documentoFiscalService = documentoFiscalService;
     }
 
 
@@ -167,6 +172,15 @@ public class PedidoService {
     }
 
 
+
+    @Transactional(readOnly = true)
+    public Pedido buscarPorId(Long pedidoId) {
+        return pedidoRepository.findById(pedidoId)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Pedido no encontrado"));
+    }
+
+
+
     @Transactional
     public Pedido cobrarPedido(Long pedidoId,
                                Long usuarioId,
@@ -187,7 +201,7 @@ public class PedidoService {
 
         // Default para retail
         if (tipoDocumentoFiscal == null) {
-            tipoDocumentoFiscal = TipoDocumentoFiscal.DEE_POS;
+            tipoDocumentoFiscal = TipoDocumentoFiscal.FEV_CONS_FINAL;
         }
 
         // ===== 1) Bloquear y validar PEDIDO primero =====

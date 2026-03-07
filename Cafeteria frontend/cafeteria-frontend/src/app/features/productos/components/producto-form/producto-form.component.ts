@@ -29,6 +29,7 @@ export class ProductoFormComponent {
   @Output() submitForm = new EventEmitter<NgForm>();
   @Output() categoriaChange = new EventEmitter<SelectorCategoriaCrear>();
   @Output() tipoGestionChange = new EventEmitter<void>();
+  @Output() tipoImpuestoChange = new EventEmitter<void>();
   @Output() nuevaCategoriaNombreChange = new EventEmitter<string>();
   @Output() crearCategoria = new EventEmitter<void>();
   @Output() cancelarCrearCategoria = new EventEmitter<void>();
@@ -52,6 +53,10 @@ export class ProductoFormComponent {
 
   onTipoGestionChange(): void {
     this.tipoGestionChange.emit();
+  }
+
+  onTipoImpuestoChange(): void {
+    this.tipoImpuestoChange.emit();
   }
 
   onNuevaCategoriaNombreChange(value: string): void {
