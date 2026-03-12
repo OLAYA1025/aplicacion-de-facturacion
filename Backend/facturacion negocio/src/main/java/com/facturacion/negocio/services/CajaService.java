@@ -53,7 +53,9 @@ public class CajaService {
 
         BigDecimal ingresosEfectivo = calcularIngresosPorMetodo(pedidosCaja, MetodoPago.EFECTIVO);
         BigDecimal ingresosTransferencia = calcularIngresosPorMetodo(pedidosCaja, MetodoPago.TRANSFERENCIA);
-        BigDecimal ingresosTarjeta = calcularIngresosPorMetodo(pedidosCaja, MetodoPago.TARJETA);
+        BigDecimal ingresosTarjetaCredito = calcularIngresosPorMetodo(pedidosCaja, MetodoPago.TARJETA_CREDITO);
+        BigDecimal ingresosTarjetaDebito = calcularIngresosPorMetodo(pedidosCaja, MetodoPago.TARJETA_DEBITO);
+        BigDecimal ingresosTarjeta = ingresosTarjetaCredito.add(ingresosTarjetaDebito);
         BigDecimal ingresos = ingresosEfectivo.add(ingresosTransferencia).add(ingresosTarjeta);
 
         BigDecimal egresos = valorSeguro(movimientoCajaRepository.calcularTotalesByTipoAndCaja(TipoMovimiento.EGRESO,cajaAbierta));

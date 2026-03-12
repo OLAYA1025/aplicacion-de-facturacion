@@ -9,6 +9,7 @@ import org.springframework.stereotype.Component;
 
 
 
+import java.time.Instant;
 import java.util.List;
 
 @Component
@@ -25,10 +26,10 @@ public class DocumentoFiscalScheduler {
 
     @Scheduled(fixedDelayString = "${fiscal.scheduler.delay-ms:10000}")
     public void enviarPendientes() {
-        List<DocumentoFiscal> pendientes =
+        List<DocumentoFiscal> pendientesEnvio =
                 documentoFiscalRepository.findTop50ByEstadoOrderByIdAsc(EstadoDocumentoFiscal.PENDIENTE_ENVIO);
 
-        for (DocumentoFiscal doc : pendientes) {
+        for (DocumentoFiscal doc : pendientesEnvio) {
             try {
                 documentoFiscalService.enviarAlProveedor(doc.getId());
 
@@ -36,6 +37,22 @@ public class DocumentoFiscalScheduler {
                 // Importante: no tumbar el scheduler
                 // Aquí luego metemos logger
                 System.err.println("Error enviando DocumentoFiscal id=" + doc.getId() + ": " + e.getMessage());
+            }
+        }
+
+        List<DocumentoFiscal> enviadosPt =
+                documentoFiscalRepository.findTop50ByEstadoOrderByIdAsc(EstadoDocumentoFiscal.ENVIADO_PT);
+
+        Instant hace15Segundos = Instant.now().minusSeconds(15);
+        for (DocumentoFiscal doc : enviadosPt) {
+            if (doc.getEnviadoAt() != null && doc.getEnviadoAt().isAfter(hace15Segundos)) {
+                continue;
+            }
+
+            try {
+                documentoFiscalService.enviarAlProveedor(doc.getId());
+            } catch (Exception e) {
+                System.err.println("Error reintentando DocumentoFiscal ENVIADO_PT id=" + doc.getId() + ": " + e.getMessage());
             }
         }
     }

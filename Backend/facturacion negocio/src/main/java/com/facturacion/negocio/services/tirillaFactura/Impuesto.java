@@ -1,4 +1,4 @@
-package com.facturacion.negocio.services.tirillaFctura;
+package com.facturacion.negocio.services.tirillaFactura;
 
 import com.facturacion.negocio.enumerated.TipoImpuesto;
 

@@ -1,4 +1,4 @@
-package com.facturacion.negocio.services.tirillaFctura;
+package com.facturacion.negocio.services.tirillaFactura;
 
 import org.springframework.stereotype.Service;
 import org.thymeleaf.context.Context;

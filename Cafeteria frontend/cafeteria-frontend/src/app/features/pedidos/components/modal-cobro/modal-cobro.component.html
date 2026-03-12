@@ -74,7 +74,7 @@
           Metodo de pago
         </label>
 
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3">
           <label
             class="flex items-center gap-3 p-4 border-2 rounded-xl cursor-pointer transition-all hover:shadow-md"
             [class.border-green-500]="metodoPagoSeleccionado === 'EFECTIVO'"
@@ -97,21 +97,41 @@
 
           <label
             class="flex items-center gap-3 p-4 border-2 rounded-xl cursor-pointer transition-all hover:shadow-md"
-            [class.border-blue-500]="metodoPagoSeleccionado === 'TARJETA'"
-            [class.bg-indigo-50]="metodoPagoSeleccionado === 'TARJETA'"
-            [class.border-gray-200]="metodoPagoSeleccionado !== 'TARJETA'"
+            [class.border-blue-500]="metodoPagoSeleccionado === 'TARJETA_DEBITO'"
+            [class.bg-indigo-50]="metodoPagoSeleccionado === 'TARJETA_DEBITO'"
+            [class.border-gray-200]="metodoPagoSeleccionado !== 'TARJETA_DEBITO'"
           >
             <input
               type="radio"
               name="metodoPago"
-              value="TARJETA"
+              value="TARJETA_DEBITO"
               [ngModel]="metodoPagoSeleccionado"
               (ngModelChange)="onMetodoPagoChange($event)"
               class="w-5 h-5 text-blue-600"
             />
             <div>
-              <p class="font-bold text-gray-900">Tarjeta</p>
-              <p class="text-xs text-gray-600">Debito o credito</p>
+              <p class="font-bold text-gray-900">Tarjeta debito</p>
+              <p class="text-xs text-gray-600">Pago con tarjeta debito</p>
+            </div>
+          </label>
+
+          <label
+            class="flex items-center gap-3 p-4 border-2 rounded-xl cursor-pointer transition-all hover:shadow-md"
+            [class.border-sky-500]="metodoPagoSeleccionado === 'TARJETA_CREDITO'"
+            [class.bg-sky-50]="metodoPagoSeleccionado === 'TARJETA_CREDITO'"
+            [class.border-gray-200]="metodoPagoSeleccionado !== 'TARJETA_CREDITO'"
+          >
+            <input
+              type="radio"
+              name="metodoPago"
+              value="TARJETA_CREDITO"
+              [ngModel]="metodoPagoSeleccionado"
+              (ngModelChange)="onMetodoPagoChange($event)"
+              class="w-5 h-5 text-sky-600"
+            />
+            <div>
+              <p class="font-bold text-gray-900">Tarjeta credito</p>
+              <p class="text-xs text-gray-600">Pago con tarjeta credito</p>
             </div>
           </label>
 

@@ -1,0 +1,17 @@
+version: "3.9"
+
+services:
+
+  backend:
+    build: ./backend
+    container_name: facturacion_backend
+    env_file:
+      - .env
+
+  nginx:
+    build: ./nginx
+    container_name: facturacion_nginx
+    ports:
+      - "80:80"
+    depends_on:
+      - backend

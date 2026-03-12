@@ -12,6 +12,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.Instant;
+
 @Service
 public class DocumentoFiscalTxService {
 
@@ -37,12 +39,23 @@ public class DocumentoFiscalTxService {
             return false;
         }
 
-        if (doc.getEstado() == EstadoDocumentoFiscal.ENVIADO_PT) {
-            return false;
-        }
-
         if (doc.getEstado() == EstadoDocumentoFiscal.PENDIENTE_CONTINGENCIA) {
             doc.reenviar();
+        }
+
+        if (doc.getEstado() == EstadoDocumentoFiscal.ENVIADO_PT) {
+            if (tieneDatosAceptacion(doc)) {
+                doc.marcarAceptadoDian(doc.getNumeroDocumento(), doc.getCufe(), doc.getQr());
+                documentoFiscalRepository.save(doc);
+                return false;
+            }
+
+            Instant hace15Segundos = Instant.now().minusSeconds(15);
+            if (doc.getEnviadoAt() != null && doc.getEnviadoAt().isAfter(hace15Segundos)) {
+                return false;
+            }
+
+            doc.reintentarEnvioDesdeEnviadoPT();
         }
 
         if (doc.getEstado() != EstadoDocumentoFiscal.PENDIENTE_ENVIO) {
@@ -91,10 +104,12 @@ public class DocumentoFiscalTxService {
             return;
         }
 
-        doc.marcarPendienteContingencia(
-                "409_DUPLICADO",
-                "Duplicado reference_code: " + doc.getReferenceCode() + ". Detalle: " + detalle
-        );
+        doc.setEstado(EstadoDocumentoFiscal.ENVIADO_PT);
+        if (doc.getEnviadoAt() == null) {
+            doc.setEnviadoAt(Instant.now());
+        }
+        doc.setErrorCodigo("409_EN_PROCESO");
+        doc.setErrorMensaje("Documento en proceso de validacion DIAN en proveedor. Detalle: " + detalle);
 
         documentoFiscalRepository.save(doc);
     }
@@ -131,5 +146,12 @@ public class DocumentoFiscalTxService {
         } catch (JsonProcessingException e) {
             throw new RuntimeException("Error serializando request del documento fiscal", e);
         }
+    }
+
+    private boolean tieneDatosAceptacion(DocumentoFiscal doc) {
+        String numeroDocumento = doc.getNumeroDocumento();
+        String cufe = doc.getCufe();
+        return numeroDocumento != null && !numeroDocumento.isBlank()
+                && cufe != null && !cufe.isBlank();
     }
 }

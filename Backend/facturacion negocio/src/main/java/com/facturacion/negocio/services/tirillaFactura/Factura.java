@@ -1,4 +1,4 @@
-package com.facturacion.negocio.services.tirillaFctura;
+package com.facturacion.negocio.services.tirillaFactura;
 
 import com.facturacion.negocio.domain.Cliente;
 import com.facturacion.negocio.domain.DetallePedido;
@@ -7,12 +7,12 @@ import com.facturacion.negocio.dto.factura.Establecimiento;
 import com.facturacion.negocio.enumerated.TipoImpuesto;
 
 import java.math.BigDecimal;
-import java.math.RoundingMode;
-import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 public class Factura {
     private String empresa;
@@ -75,23 +75,27 @@ public class Factura {
 
     public void listarItemsAndCalcularImpuestos(List<DetallePedido> detalles) {
         List<FacturaItem> items = new ArrayList<>();
-        List<Impuesto> impuestos = new ArrayList<>();
-        List<TipoImpuesto> tipoImpuestos = new ArrayList<>();
+        Map<String, Impuesto> impuestosPorClave = new LinkedHashMap<>();
+
+        this.valorBase = BigDecimal.ZERO;
+        this.totalImpuestos = BigDecimal.ZERO;
+
         for (DetallePedido detalle : detalles) {
             FacturaItem item = FacturaItem.from(detalle);
-           if(!tipoImpuestos.contains(item.getTipoImpuesto())){
-               tipoImpuestos.add(item.getTipoImpuesto());
-               impuestos.add(new Impuesto(item.getImpuesto(), item.getTipoImpuesto()));
-           }
-           for(Impuesto impuesto : impuestos){
-               if(item.getTipoImpuesto().equals(impuesto.getTipoImpuesto())){
-                   impuesto.sumarValorBase(item.calcularSubtotal());
-               }
-           }
-
             items.add(item);
+
+            TipoImpuesto tipoImpuesto = item.getTipoImpuesto() != null ? item.getTipoImpuesto() : TipoImpuesto.IVA;
+            BigDecimal impuestoPorcentaje = item.getImpuesto() != null ? item.getImpuesto() : BigDecimal.ZERO;
+            String claveImpuesto = tipoImpuesto.name() + "|" + impuestoPorcentaje.stripTrailingZeros().toPlainString();
+
+            Impuesto impuesto = impuestosPorClave.computeIfAbsent(
+                    claveImpuesto,
+                    ignored -> new Impuesto(impuestoPorcentaje, tipoImpuesto)
+            );
+            impuesto.sumarValorBase(item.calcularSubtotal());
         }
 
+        List<Impuesto> impuestos = new ArrayList<>(impuestosPorClave.values());
         for(Impuesto impuesto : impuestos){
             impuesto.calcularTotalImpuesto();
             this.valorBase = this.valorBase.add(impuesto.getBase());

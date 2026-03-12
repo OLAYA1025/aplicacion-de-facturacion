@@ -151,6 +151,8 @@ public class DocumentoFiscal {
         this.numeroDocumento = numeroDocumento;
         this.cufe = cufe;
         this.qr = qr;
+        this.errorCodigo = null;
+        this.errorMensaje = null;
         this.aceptadoAt = Instant.now();
     }
 
@@ -169,6 +171,17 @@ public class DocumentoFiscal {
     public void reenviar(){
         if(this.estado != EstadoDocumentoFiscal.PENDIENTE_CONTINGENCIA){
             throw new IllegalStateException("Solo se pueden enviar facturas pendientes por contingencia");
+        }
+
+        this.estado = EstadoDocumentoFiscal.PENDIENTE_ENVIO;
+        this.updatedAt = Instant.now();
+        this.errorCodigo = null;
+        this.errorMensaje = null;
+    }
+
+    public void reintentarEnvioDesdeEnviadoPT() {
+        if (this.estado != EstadoDocumentoFiscal.ENVIADO_PT) {
+            throw new IllegalStateException("Solo se puede reintentar desde estado ENVIADO_PT");
         }
 
         this.estado = EstadoDocumentoFiscal.PENDIENTE_ENVIO;
