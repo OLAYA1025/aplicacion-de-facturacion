@@ -4,7 +4,7 @@ import com.facturacion.negocio.domain.Compra;
 import com.facturacion.negocio.enumerated.EstadoCompra;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 public class CompraResumenResponseDTO {
 
@@ -13,9 +13,9 @@ public class CompraResumenResponseDTO {
     private String proveedorNombre;
     private String numeroFactura;
     private EstadoCompra estado;
-    private LocalDateTime fechaCreacion;
-    private LocalDateTime fechaConfirmacion;
-    private LocalDateTime fechaAnulacion;
+    private Instant fechaCreacion;
+    private Instant fechaConfirmacion;
+    private Instant fechaAnulacion;
     private BigDecimal subtotal;
     private BigDecimal total;
     private String observacion;
@@ -58,15 +58,15 @@ public class CompraResumenResponseDTO {
         return estado;
     }
 
-    public LocalDateTime getFechaCreacion() {
+    public Instant getFechaCreacion() {
         return fechaCreacion;
     }
 
-    public LocalDateTime getFechaConfirmacion() {
+    public Instant getFechaConfirmacion() {
         return fechaConfirmacion;
     }
 
-    public LocalDateTime getFechaAnulacion() {
+    public Instant getFechaAnulacion() {
         return fechaAnulacion;
     }
 

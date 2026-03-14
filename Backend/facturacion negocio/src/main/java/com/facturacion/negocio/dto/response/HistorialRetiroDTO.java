@@ -1,7 +1,7 @@
 package com.facturacion.negocio.dto.response;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 public class HistorialRetiroDTO {
 
@@ -9,14 +9,14 @@ public class HistorialRetiroDTO {
     private Long cajaId;
     private String usuarioNombre;
     private String motivo;
-    private LocalDateTime fecha;
+    private Instant fecha;
     private BigDecimal monto;
 
     public HistorialRetiroDTO(Long retiroId,
                               Long cajaId,
                               String usuarioNombre,
                               String motivo,
-                              LocalDateTime fecha,
+                              Instant fecha,
                               BigDecimal monto) {
         this.retiroId = retiroId;
         this.cajaId = cajaId;
@@ -58,11 +58,11 @@ public class HistorialRetiroDTO {
         this.motivo = motivo;
     }
 
-    public LocalDateTime getFecha() {
+    public Instant getFecha() {
         return fecha;
     }
 
-    public void setFecha(LocalDateTime fecha) {
+    public void setFecha(Instant fecha) {
         this.fecha = fecha;
     }
 

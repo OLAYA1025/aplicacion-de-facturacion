@@ -4,7 +4,7 @@ import com.facturacion.negocio.enumerated.EstadoCaja;
 import jakarta.persistence.*;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Entity
 public class Caja {
@@ -13,9 +13,9 @@ public class Caja {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     @Column(nullable = false)
-    private LocalDateTime fechaApertura;
+    private Instant fechaApertura;
 
-    private LocalDateTime fechaCierre;
+    private Instant fechaCierre;
 
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal montoInicial;
@@ -43,7 +43,7 @@ public class Caja {
         this.montoInicial = montoInicial;
         this.estado = EstadoCaja.ABIERTA;
         this.usuarioApertura = usuarioApertura;
-        this.fechaApertura = LocalDateTime.now();
+        this.fechaApertura = Instant.now();
     }
     public Long getId() {
         return id;
@@ -77,19 +77,19 @@ public class Caja {
         this.montoInicial = montoInicial;
     }
 
-    public LocalDateTime getFechaCierre() {
+    public Instant getFechaCierre() {
         return fechaCierre;
     }
 
-    public void setFechaCierre(LocalDateTime fechaCierre) {
+    public void setFechaCierre(Instant fechaCierre) {
         this.fechaCierre = fechaCierre;
     }
 
-    public LocalDateTime getFechaApertura() {
+    public Instant getFechaApertura() {
         return fechaApertura;
     }
 
-    public void setFechaApertura(LocalDateTime fechaApertura) {
+    public void setFechaApertura(Instant fechaApertura) {
         this.fechaApertura = fechaApertura;
     }
 
@@ -102,7 +102,7 @@ public class Caja {
         this.Utilidad = utilidad;
         this.estado = EstadoCaja.CERRADA;
         this.montoFinal = montoFinal;
-        fechaCierre = LocalDateTime.now();
+        fechaCierre = Instant.now();
     }
 
     public EstadoCaja getEstado() {

@@ -7,14 +7,14 @@ import com.facturacion.negocio.enumerated.MetodoPago;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
 
 public class PedidoResponseDTO {
     private Long id;
     private String nombre;
-    private LocalDateTime fecha;
+    private Instant fecha;
     private EstadoPedido estado;
     private MetodoPago metodoPago;
     private Long usuarioId;
@@ -95,11 +95,11 @@ public class PedidoResponseDTO {
         this.nombre = nombre;
     }
 
-    public LocalDateTime getFecha() {
+    public Instant getFecha() {
         return fecha;
     }
 
-    public void setFecha(LocalDateTime fecha) {
+    public void setFecha(Instant fecha) {
         this.fecha = fecha;
     }
 

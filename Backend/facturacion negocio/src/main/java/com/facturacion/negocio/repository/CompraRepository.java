@@ -11,7 +11,7 @@ import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.Optional;
 
 public interface CompraRepository extends JpaRepository<Compra, Long> {
@@ -23,14 +23,14 @@ public interface CompraRepository extends JpaRepository<Compra, Long> {
     Page<Compra> findAll(Pageable pageable);
 
     @EntityGraph(attributePaths = {"proveedor"})
-    Page<Compra> findByFechaCreacionGreaterThanEqual(LocalDateTime desde, Pageable pageable);
+    Page<Compra> findByFechaCreacionGreaterThanEqual(Instant desde, Pageable pageable);
 
     @EntityGraph(attributePaths = {"proveedor"})
-    Page<Compra> findByFechaCreacionLessThan(LocalDateTime hastaExclusiva, Pageable pageable);
+    Page<Compra> findByFechaCreacionLessThan(Instant hastaExclusiva, Pageable pageable);
 
     @EntityGraph(attributePaths = {"proveedor"})
-    Page<Compra> findByFechaCreacionGreaterThanEqualAndFechaCreacionLessThan(LocalDateTime desde,
-                                                                              LocalDateTime hastaExclusiva,
+    Page<Compra> findByFechaCreacionGreaterThanEqualAndFechaCreacionLessThan(Instant desde,
+                                                                              Instant hastaExclusiva,
                                                                               Pageable pageable);
 
     @EntityGraph(attributePaths = {"proveedor"})
@@ -38,18 +38,18 @@ public interface CompraRepository extends JpaRepository<Compra, Long> {
 
     @EntityGraph(attributePaths = {"proveedor"})
     Page<Compra> findByEstadoAndFechaCreacionGreaterThanEqual(EstadoCompra estado,
-                                                               LocalDateTime desde,
+                                                               Instant desde,
                                                                Pageable pageable);
 
     @EntityGraph(attributePaths = {"proveedor"})
     Page<Compra> findByEstadoAndFechaCreacionLessThan(EstadoCompra estado,
-                                                       LocalDateTime hastaExclusiva,
+                                                       Instant hastaExclusiva,
                                                        Pageable pageable);
 
     @EntityGraph(attributePaths = {"proveedor"})
     Page<Compra> findByEstadoAndFechaCreacionGreaterThanEqualAndFechaCreacionLessThan(EstadoCompra estado,
-                                                                                        LocalDateTime desde,
-                                                                                        LocalDateTime hastaExclusiva,
+                                                                                        Instant desde,
+                                                                                        Instant hastaExclusiva,
                                                                                         Pageable pageable);
 
     @Query("""

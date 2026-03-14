@@ -7,7 +7,7 @@ import jakarta.validation.constraints.NotBlank;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.*;
 
 @Entity
@@ -21,7 +21,7 @@ public class Pedido {
     @NotBlank
     private String nombre;
 
-    private LocalDateTime fecha;
+    private Instant fecha;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -50,7 +50,7 @@ public class Pedido {
         this.nombre = resolverNombre(nombre, null);
         this.estado = EstadoPedido.PENDIENTE;
         this.caja = caja;
-        this.fecha = LocalDateTime.now();
+        this.fecha = Instant.now();
         if (detallePedidos != null) {
             for (DetallePedido detalle : detallePedidos) {
                 agregarDetalle(detalle);
@@ -65,7 +65,7 @@ public class Pedido {
         return Collections.unmodifiableList(detallePedidos);
     }
 
-    public LocalDateTime getFecha() {
+    public Instant getFecha() {
         return fecha;
     }
 
@@ -125,7 +125,7 @@ public class Pedido {
         this.metodoPago = Objects.requireNonNull(metodoPago, "metodoPago requerido");
         this.estado = EstadoPedido.PAGO;
         this.usuario = usuario;
-        this.fecha = LocalDateTime.now();
+        this.fecha = Instant.now();
     }
 
     public void cancelar(Usuario usuario) {
@@ -134,7 +134,7 @@ public class Pedido {
         }
         this.estado = EstadoPedido.CANCELADO;
         this.usuario = usuario;
-        this.fecha = LocalDateTime.now();
+        this.fecha = Instant.now();
     }
 
     public Boolean isPendiente() {

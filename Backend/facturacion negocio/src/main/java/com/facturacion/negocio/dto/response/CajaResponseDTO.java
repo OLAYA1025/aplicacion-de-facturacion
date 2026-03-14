@@ -5,12 +5,12 @@ import com.facturacion.negocio.domain.Usuario;
 import com.facturacion.negocio.enumerated.EstadoCaja;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 public class CajaResponseDTO {
     private Long id;
-    private LocalDateTime fechaApertura;
-    private LocalDateTime fechaCierre;
+    private Instant fechaApertura;
+    private Instant fechaCierre;
     private BigDecimal montoInicial;
     private BigDecimal montoFinal;
     private EstadoCaja estado;
@@ -58,19 +58,19 @@ public class CajaResponseDTO {
         this.utilidad = utilidad;
     }
 
-    public LocalDateTime getFechaApertura() {
+    public Instant getFechaApertura() {
         return fechaApertura;
     }
 
-    public void setFechaApertura(LocalDateTime fechaApertura) {
+    public void setFechaApertura(Instant fechaApertura) {
         this.fechaApertura = fechaApertura;
     }
 
-    public LocalDateTime getFechaCierre() {
+    public Instant getFechaCierre() {
         return fechaCierre;
     }
 
-    public void setFechaCierre(LocalDateTime fechaCierre) {
+    public void setFechaCierre(Instant fechaCierre) {
         this.fechaCierre = fechaCierre;
     }
 

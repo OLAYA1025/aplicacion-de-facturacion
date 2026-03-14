@@ -3,12 +3,12 @@ package com.facturacion.negocio.dto.response;
 import com.facturacion.negocio.enumerated.EstadoPedido;
 import com.facturacion.negocio.enumerated.MetodoPago;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 public record PedidoListadoItemDTO(
         Long id,
         String nombre,
-        LocalDateTime fecha,
+        Instant fecha,
         EstadoPedido estado,
         MetodoPago metodoPago,
         Long usuarioId,

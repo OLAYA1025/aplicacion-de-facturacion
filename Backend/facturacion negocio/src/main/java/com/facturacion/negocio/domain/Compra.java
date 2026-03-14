@@ -17,7 +17,7 @@ import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -43,11 +43,11 @@ public class Compra {
     private String numeroFactura;
 
     @Column(nullable = false)
-    private LocalDateTime fechaCreacion;
+    private Instant fechaCreacion;
 
-    private LocalDateTime fechaConfirmacion;
+    private Instant fechaConfirmacion;
 
-    private LocalDateTime fechaAnulacion;
+    private Instant fechaAnulacion;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -74,7 +74,7 @@ public class Compra {
     public Compra(Proveedor proveedor, String numeroFactura, String observacion) {
         this.proveedor = Objects.requireNonNull(proveedor, "proveedor requerido");
         this.numeroFactura = Objects.requireNonNull(numeroFactura, "numeroFactura requerido");
-        this.fechaCreacion = LocalDateTime.now();
+        this.fechaCreacion = Instant.now();
         this.estado = EstadoCompra.BORRADOR;
         this.subtotal = BigDecimal.ZERO;
         this.total = BigDecimal.ZERO;
@@ -93,15 +93,15 @@ public class Compra {
         return numeroFactura;
     }
 
-    public LocalDateTime getFechaCreacion() {
+    public Instant getFechaCreacion() {
         return fechaCreacion;
     }
 
-    public LocalDateTime getFechaConfirmacion() {
+    public Instant getFechaConfirmacion() {
         return fechaConfirmacion;
     }
 
-    public LocalDateTime getFechaAnulacion() {
+    public Instant getFechaAnulacion() {
         return fechaAnulacion;
     }
 
@@ -156,7 +156,7 @@ public class Compra {
             throw new IllegalStateException("La compra debe estar en BORRADOR para confirmar");
         }
         this.estado = EstadoCompra.CONFIRMADA;
-        this.fechaConfirmacion = LocalDateTime.now();
+        this.fechaConfirmacion = Instant.now();
     }
 
     public void anular(String anuladoPor) {
@@ -169,7 +169,7 @@ public class Compra {
         }
         this.estado = EstadoCompra.ANULADA;
         this.anuladoPor = usuarioAnulacion;
-        this.fechaAnulacion = LocalDateTime.now();
+        this.fechaAnulacion = Instant.now();
     }
 
     private void recalcularTotales() {

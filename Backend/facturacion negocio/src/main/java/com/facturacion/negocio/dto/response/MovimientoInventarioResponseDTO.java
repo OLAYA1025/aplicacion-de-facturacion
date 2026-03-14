@@ -3,7 +3,7 @@ package com.facturacion.negocio.dto.response;
 import com.facturacion.negocio.domain.MovimientoInventario;
 import com.facturacion.negocio.enumerated.TipoMovimientoInventario;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 public class MovimientoInventarioResponseDTO {
 
@@ -15,7 +15,7 @@ public class MovimientoInventarioResponseDTO {
     private String referenciaTipo;
     private Long referenciaId;
     private String motivo;
-    private LocalDateTime fecha;
+    private Instant fecha;
 
     public static MovimientoInventarioResponseDTO from(MovimientoInventario movimiento) {
         MovimientoInventarioResponseDTO dto = new MovimientoInventarioResponseDTO();
@@ -63,7 +63,7 @@ public class MovimientoInventarioResponseDTO {
         return motivo;
     }
 
-    public LocalDateTime getFecha() {
+    public Instant getFecha() {
         return fecha;
     }
 }

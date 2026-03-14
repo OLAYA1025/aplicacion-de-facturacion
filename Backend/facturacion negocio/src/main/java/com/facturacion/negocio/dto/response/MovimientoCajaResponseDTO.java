@@ -5,7 +5,7 @@ import com.facturacion.negocio.domain.Usuario;
 import com.facturacion.negocio.enumerated.TipoMovimiento;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 public class MovimientoCajaResponseDTO {
     private Long id;
@@ -13,7 +13,7 @@ public class MovimientoCajaResponseDTO {
     private TipoMovimiento tipo;
     private String username;
     private String motivo;
-    private LocalDateTime fecha;
+    private Instant fecha;
 
     public MovimientoCajaResponseDTO() {
     }
@@ -23,7 +23,7 @@ public class MovimientoCajaResponseDTO {
                                      TipoMovimiento tipo,
                                      String username,
                                      String motivo,
-                                     LocalDateTime fecha) {
+                                     Instant fecha) {
         this.id = id;
         this.monto = monto;
         this.tipo = tipo;
@@ -39,6 +39,7 @@ public class MovimientoCajaResponseDTO {
         movimientoCajaResponseDTO.setTipo(movimientoCaja.getTipo());
         movimientoCajaResponseDTO.setUsername(movimientoCaja.getUsuario().getUsername());
         movimientoCajaResponseDTO.setMotivo(movimientoCaja.getMotivo());
+        movimientoCajaResponseDTO.setFecha(movimientoCaja.getFecha());
         return movimientoCajaResponseDTO;
     }
 
@@ -75,16 +76,18 @@ public class MovimientoCajaResponseDTO {
         this.username = username;
     }
 
-    public LocalDateTime getFecha() {
+    public Instant getFecha() {
         return fecha;
     }
 
-    public void setFecha(LocalDateTime fecha) {
+    public void setFecha(Instant fecha) {
         this.fecha = fecha;
     }
 
     public String getMotivo() {
         return motivo;
     }
-    public void setMotivo(String motivo) {}
+    public void setMotivo(String motivo) {
+        this.motivo = motivo;
+    }
 }

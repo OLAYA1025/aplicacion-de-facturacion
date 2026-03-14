@@ -13,6 +13,7 @@ import com.facturacion.negocio.repository.CompraRepository;
 import com.facturacion.negocio.repository.MovimientoInventarioRepository;
 import com.facturacion.negocio.repository.ProductoRepository;
 import com.facturacion.negocio.repository.ProveedorRepository;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -24,8 +25,9 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.time.ZoneId;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -40,15 +42,18 @@ public class CompraService {
     private final ProveedorRepository proveedorRepository;
     private final ProductoRepository productoRepository;
     private final MovimientoInventarioRepository movimientoInventarioRepository;
+    private final ZoneId zonaAplicacion;
 
     public CompraService(CompraRepository compraRepository,
                         ProveedorRepository proveedorRepository,
                         ProductoRepository productoRepository,
-                        MovimientoInventarioRepository movimientoInventarioRepository) {
+                        MovimientoInventarioRepository movimientoInventarioRepository,
+                        @Value("${app.time-zone:America/Bogota}") String zonaHoraria) {
         this.compraRepository = compraRepository;
         this.proveedorRepository = proveedorRepository;
         this.productoRepository = productoRepository;
         this.movimientoInventarioRepository = movimientoInventarioRepository;
+        this.zonaAplicacion = ZoneId.of(zonaHoraria);
     }
 
     @Transactional
@@ -140,8 +145,8 @@ public class CompraService {
         if (desde != null && hasta != null && desde.isAfter(hasta)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "rango de fechas invalido");
         }
-        LocalDateTime desdeInclusive = desde != null ? desde.atStartOfDay() : null;
-        LocalDateTime hastaExclusiva = hasta != null ? hasta.plusDays(1).atStartOfDay() : null;
+        Instant desdeInclusive = desde != null ? desde.atStartOfDay(zonaAplicacion).toInstant() : null;
+        Instant hastaExclusiva = hasta != null ? hasta.plusDays(1).atStartOfDay(zonaAplicacion).toInstant() : null;
 
         if (estado != null && desdeInclusive != null && hastaExclusiva != null) {
             return compraRepository

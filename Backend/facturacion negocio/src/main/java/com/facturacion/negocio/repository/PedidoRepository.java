@@ -14,10 +14,9 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
-
-import java.time.LocalDateTime;
 
 @Repository
 public interface PedidoRepository extends JpaRepository<Pedido, Long> {
@@ -53,8 +52,8 @@ public interface PedidoRepository extends JpaRepository<Pedido, Long> {
     List<Pedido> findByEstado(EstadoPedido estadoPedido);
 
     List<Pedido> findByFechaBetween(
-            LocalDateTime inicio,
-            LocalDateTime fin
+            Instant inicio,
+            Instant fin
     );
 
 }

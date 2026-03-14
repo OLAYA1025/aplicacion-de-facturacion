@@ -12,7 +12,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.Objects;
 
 @Entity
@@ -40,7 +40,7 @@ public class MovimientoInventario {
     private Long referenciaId;
 
     @Column(nullable = false)
-    private LocalDateTime fecha;
+    private Instant fecha;
 
     @Column(length = 255)
     private String motivo;
@@ -63,7 +63,7 @@ public class MovimientoInventario {
         }
         this.cantidad = cantidad;
         this.motivo = motivo;
-        this.fecha = LocalDateTime.now();
+        this.fecha = Instant.now();
     }
 
     public Long getId() {
@@ -90,7 +90,7 @@ public class MovimientoInventario {
         return referenciaId;
     }
 
-    public LocalDateTime getFecha() {
+    public Instant getFecha() {
         return fecha;
     }
 

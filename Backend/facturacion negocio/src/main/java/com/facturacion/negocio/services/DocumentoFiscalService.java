@@ -18,6 +18,7 @@ import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.persistence.criteria.Join;
 import jakarta.persistence.criteria.JoinType;
 import jakarta.persistence.criteria.Predicate;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -32,10 +33,13 @@ import org.springframework.web.server.ResponseStatusException;
 import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
+import java.time.ZoneId;
+import java.time.ZonedDateTime;
+import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
+import java.time.temporal.TemporalAccessor;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -58,6 +62,7 @@ public class DocumentoFiscalService {
     private final Establecimiento establecimiento;
     private final PdfService pdfService;
     private final DocumentoFiscalTxService documentoFiscalTxService;
+    private final ZoneId zonaAplicacion;
 
     public DocumentoFiscalService(DocumentoFiscalRepository documentoFiscalRespository,
                                   DetallePedidoRepository detallePedidoRepository,
@@ -65,7 +70,8 @@ public class DocumentoFiscalService {
                                   FactusFactElectronicaRequestMapper mapper,
                                   Establecimiento establecimiento,
                                   PdfService pdfService,
-                                  DocumentoFiscalTxService documentoFiscalTxService) {
+                                  DocumentoFiscalTxService documentoFiscalTxService,
+                                  @Value("${app.time-zone:America/Bogota}") String zonaHoraria) {
 
         this.documentoFiscalRepository = documentoFiscalRespository;
         this.detallePedidoRepository = detallePedidoRepository;
@@ -74,6 +80,7 @@ public class DocumentoFiscalService {
         this.establecimiento = establecimiento;
         this.pdfService = pdfService;
         this.documentoFiscalTxService = documentoFiscalTxService;
+        this.zonaAplicacion = ZoneId.of(zonaHoraria);
     }
 
     @Transactional(readOnly = true)
@@ -336,9 +343,9 @@ public class DocumentoFiscalService {
         try {
             LocalDate date = LocalDate.parse(value);
             if (isFrom) {
-                return date.atStartOfDay(ZoneOffset.UTC).toInstant();
+                return date.atStartOfDay(zonaAplicacion).toInstant();
             }
-            return date.plusDays(1).atStartOfDay(ZoneOffset.UTC).minusNanos(1).toInstant();
+            return date.plusDays(1).atStartOfDay(zonaAplicacion).toInstant().minusNanos(1);
         } catch (DateTimeParseException ignored) {
         }
 
@@ -353,7 +360,12 @@ public class DocumentoFiscalService {
         }
 
         try {
-            return LocalDateTime.parse(value).toInstant(ZoneOffset.UTC);
+            TemporalAccessor parsed = DateTimeFormatter.ISO_LOCAL_DATE_TIME.parse(value);
+            return ZonedDateTime.of(
+                    LocalDate.from(parsed),
+                    LocalTime.from(parsed),
+                    zonaAplicacion
+            ).toInstant();
         } catch (DateTimeParseException ignored) {
         }
 

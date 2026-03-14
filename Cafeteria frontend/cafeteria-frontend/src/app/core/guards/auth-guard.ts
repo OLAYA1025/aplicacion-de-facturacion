@@ -2,7 +2,8 @@ import { CanActivateChildFn, CanActivateFn, Router, UrlTree } from '@angular/rou
 import { AuthService } from '../services/auth.service';
 import { inject } from '@angular/core';
 
-const CAJERO_ALLOWED_PATHS = ['/caja', '/pedidos', '/productos', '/facturas', '/clientes', '/perfil'] as const;
+const CAJERO_ALLOWED_EXACT_PATHS = ['/caja', '/pedidos', '/facturas', '/clientes', '/perfil'] as const;
+const CAJERO_ALLOWED_PREFIX_PATHS = ['/productos/inventariables', '/productos/preparaciones'] as const;
 
 function resolveAuthGuard(authService: AuthService, router: Router): boolean | UrlTree {
   if (authService.isAuthenticated()) {
@@ -30,9 +31,13 @@ function resolveCajeroRouteGuard(
   }
 
   const urlWithoutQuery = targetUrl.split('?')[0];
-  const hasAccess = CAJERO_ALLOWED_PATHS.some(
+  const hasExactAccess = CAJERO_ALLOWED_EXACT_PATHS.includes(
+    urlWithoutQuery as (typeof CAJERO_ALLOWED_EXACT_PATHS)[number]
+  );
+  const hasPrefixAccess = CAJERO_ALLOWED_PREFIX_PATHS.some(
     (allowedPath) => urlWithoutQuery === allowedPath || urlWithoutQuery.startsWith(`${allowedPath}/`)
   );
+  const hasAccess = hasExactAccess || hasPrefixAccess;
 
   if (hasAccess) {
     return true;

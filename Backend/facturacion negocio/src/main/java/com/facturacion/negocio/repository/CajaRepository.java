@@ -12,7 +12,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 import java.util.List;
 import java.util.Optional;
@@ -57,27 +57,27 @@ AND c.fechaCierre = (
 
     List<Caja> findByEstadoAndFechaCierreGreaterThanEqualAndFechaCierreLessThan(
             EstadoCaja estado,
-            LocalDateTime desdeInclusive,
-            LocalDateTime hastaExclusive
+            Instant desdeInclusive,
+            Instant hastaExclusive
     );
 
     List<Caja> findByEstadoAndFechaCierreGreaterThanEqualAndFechaCierreLessThanOrderByFechaCierreDesc(
             EstadoCaja estado,
-            LocalDateTime desdeInclusive,
-            LocalDateTime hastaExclusive
+            Instant desdeInclusive,
+            Instant hastaExclusive
     );
 
     Page<Caja> findByEstadoAndFechaCierreGreaterThanEqualAndFechaCierreLessThanOrderByFechaCierreDesc(
             EstadoCaja estado,
-            LocalDateTime desdeInclusive,
-            LocalDateTime hastaExclusive,
+            Instant desdeInclusive,
+            Instant hastaExclusive,
             Pageable pageable
     );
 
     long countByEstadoAndFechaCierreGreaterThanEqualAndFechaCierreLessThan(
             EstadoCaja estado,
-            LocalDateTime desdeInclusive,
-            LocalDateTime hastaExclusive
+            Instant desdeInclusive,
+            Instant hastaExclusive
     );
 
 

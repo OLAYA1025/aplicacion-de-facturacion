@@ -4,7 +4,7 @@ import com.facturacion.negocio.enumerated.TipoMovimiento;
 import jakarta.persistence.*;
 
 import java.math.BigDecimal;
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Entity
 public class MovimientoCaja {
@@ -18,7 +18,7 @@ public class MovimientoCaja {
     private TipoMovimiento tipo;
 
     private String motivo;
-    private LocalDateTime fecha;
+    private Instant fecha;
 
     @ManyToOne(optional = false)
     private Usuario usuario;
@@ -37,7 +37,7 @@ public class MovimientoCaja {
         this.monto = monto;
         this.tipo = tipo;
         this.motivo = motivo;
-        this.fecha = LocalDateTime.now();
+        this.fecha = Instant.now();
         this.usuario = usuario;
         this.caja = caja;
     }
@@ -55,11 +55,11 @@ public class MovimientoCaja {
         this.usuario = usuario;
     }
 
-    public LocalDateTime getFecha() {
+    public Instant getFecha() {
         return fecha;
     }
 
-    public void setFecha(LocalDateTime fecha) {
+    public void setFecha(Instant fecha) {
         this.fecha = fecha;
     }
 

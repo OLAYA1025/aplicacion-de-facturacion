@@ -1,35 +1,29 @@
 import { Routes } from '@angular/router';
-import { LoginComponent } from './features/auth/pages/login/login.component';
-import { CajaComponent } from './features/caja/pages/caja.component';
-import { LayoutComponent } from './layout/layout.component';
-import { PedidosComponent } from './features/pedidos/pages/pedidos.component';
-import { ProductosComponent } from './features/productos/pages/productos.component';
-import { ComprasComponent } from './features/compra/pages/compras.component';
-import { ProveedoresComponent } from './features/proveedor/pages/proveedores.component';
-import { ClientesComponent } from './features/cliente/pages/clientes.component';
-import { EstadisticasComponent } from './features/estadisticas/pages/estadisticas.component';
-import { FacturasComponent } from './features/facturas/pages/facturas.component';
-import { PerfilComponent } from './features/perfil/pages/perfil.component';
-import { UsuariosComponent } from './features/usuarios/pages/usuarios.component';
 import { authChildGuard, authGuard } from './core/guards/auth-guard';
 //import { ConfiguracionComponent } from './features/configuracion/pages/configuracion.component';
 
 export const routes: Routes = [
-  { path: '', component: LoginComponent },
+  {
+    path: '',
+    loadComponent: () =>
+      import('./features/auth/pages/login/login.component').then((m) => m.LoginComponent),
+  },
 
   {
     path: '',
-    component: LayoutComponent,
+    loadComponent: () => import('./layout/layout.component').then((m) => m.LayoutComponent),
     canActivate:[authGuard],
     canActivateChild:[authChildGuard],
     children: [
       { path: 'caja',
-        component: CajaComponent,
+        loadComponent: () =>
+          import('./features/caja/pages/caja.component').then((m) => m.CajaComponent),
         data: { title: 'Caja' }
       },
 
       { path: 'pedidos', 
-        component: PedidosComponent,
+        loadComponent: () =>
+          import('./features/pedidos/pages/pedidos.component').then((m) => m.PedidosComponent),
         data: { title: 'Pedidos' }
       },
       {
@@ -37,12 +31,14 @@ export const routes: Routes = [
         children: [
           {
             path: 'listado',
-            component: ComprasComponent,
+            loadComponent: () =>
+              import('./features/compra/pages/compras.component').then((m) => m.ComprasComponent),
             data: { title: 'Compras', comprasTab: 'listado' },
           },
           {
             path: 'nueva',
-            component: ComprasComponent,
+            loadComponent: () =>
+              import('./features/compra/pages/compras.component').then((m) => m.ComprasComponent),
             data: { title: 'Registrar compra', comprasTab: 'nueva' },
           },
           {
@@ -57,12 +53,18 @@ export const routes: Routes = [
         children: [
           {
             path: 'listado',
-            component: ProveedoresComponent,
+            loadComponent: () =>
+              import('./features/proveedor/pages/proveedores.component').then(
+                (m) => m.ProveedoresComponent
+              ),
             data: { title: 'Proveedores', proveedoresTab: 'listado' },
           },
           {
             path: 'nuevo',
-            component: ProveedoresComponent,
+            loadComponent: () =>
+              import('./features/proveedor/pages/proveedores.component').then(
+                (m) => m.ProveedoresComponent
+              ),
             data: { title: 'Registrar proveedor', proveedoresTab: 'nuevo' },
           },
           {
@@ -77,17 +79,26 @@ export const routes: Routes = [
         children: [
           {
             path: 'inventariables',
-            component: ProductosComponent,
+            loadComponent: () =>
+              import('./features/productos/pages/productos.component').then(
+                (m) => m.ProductosComponent
+              ),
             data: { title: 'Inventario', productosTab: 'inventariables' },
           },
           {
             path: 'preparaciones',
-            component: ProductosComponent,
+            loadComponent: () =>
+              import('./features/productos/pages/productos.component').then(
+                (m) => m.ProductosComponent
+              ),
             data: { title: 'Preparaciones', productosTab: 'preparaciones' },
           },
           {
             path: 'crear-producto',
-            component: ProductosComponent,
+            loadComponent: () =>
+              import('./features/productos/pages/productos.component').then(
+                (m) => m.ProductosComponent
+              ),
             data: { title: 'Crear producto', productosTab: 'crear-producto' },
           },
           {
@@ -104,28 +115,35 @@ export const routes: Routes = [
       },
       {
         path: 'estadisticas',
-        component: EstadisticasComponent,
+        loadComponent: () =>
+          import('./features/estadisticas/pages/estadisticas.component').then(
+            (m) => m.EstadisticasComponent
+          ),
         data: { title: 'Estadisticas' },
       },
       {
         path: 'clientes',
-        component: ClientesComponent,
+        loadComponent: () =>
+          import('./features/cliente/pages/clientes.component').then((m) => m.ClientesComponent),
         data: { title: 'Clientes' },
       },
       {
         path: 'facturas',
-        component: FacturasComponent,
+        loadComponent: () =>
+          import('./features/facturas/pages/facturas.component').then((m) => m.FacturasComponent),
         data: { title: 'Facturas' },
       },
       {
         path: 'perfil',
-        component: PerfilComponent,
+        loadComponent: () =>
+          import('./features/perfil/pages/perfil.component').then((m) => m.PerfilComponent),
         data: { title: 'Perfil' },
       },
 
       { 
         path: 'usuarios', 
-        component: UsuariosComponent, 
+        loadComponent: () =>
+          import('./features/usuarios/pages/usuarios.component').then((m) => m.UsuariosComponent),
         data: { title: 'Usuarios' } 
       },
       //{ path: 'configuracion', component: ConfiguracionComponent, data: { title: 'Configuración' } },

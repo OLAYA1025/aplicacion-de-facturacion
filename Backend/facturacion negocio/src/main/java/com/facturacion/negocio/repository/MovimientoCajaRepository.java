@@ -13,8 +13,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.time.Instant;
 import java.util.List;
 
 @Repository
@@ -33,26 +32,26 @@ public interface MovimientoCajaRepository extends JpaRepository<MovimientoCaja, 
     @Query("SELECT COALESCE(SUM(m.monto),0) FROM MovimientoCaja m " +
             "WHERE m.tipo = :tipoMovimiento AND m.fecha >= :desde AND m.fecha < :hasta")
     BigDecimal calcularTotalByMovimientoAndFechaRango(@Param("tipoMovimiento") TipoMovimiento tipoMovimiento,
-                                                       @Param("desde") LocalDateTime desde,
-                                                       @Param("hasta") LocalDateTime hasta);
+                                                       @Param("desde") Instant desde,
+                                                       @Param("hasta") Instant hasta);
 
     @Query("SELECT m FROM MovimientoCaja m where m.tipo = :tipoMovimiento AND m.fecha BETWEEN :desde AND :hasta")
     List<MovimientoCaja> findByTipoMovimientoAndDateBetween(
             @Param("tipoMovimiento") TipoMovimiento tipoMovimiento,
-            @Param("desde") LocalDate desde,
-            @Param("hasta") LocalDate hasta);
+            @Param("desde") Instant desde,
+            @Param("hasta") Instant hasta);
 
     Page<MovimientoCaja> findByTipoAndFechaGreaterThanEqualAndFechaLessThanOrderByFechaDesc(
             TipoMovimiento tipo,
-            LocalDateTime desdeInclusive,
-            LocalDateTime hastaExclusive,
+            Instant desdeInclusive,
+            Instant hastaExclusive,
             Pageable pageable
     );
 
     @Query("SELECT m FROM MovimientoCaja m WHERE m.fecha BETWEEN :desde AND :hasta")
     List<MovimientoCaja> findByDateBetween(
-            @Param("desde") LocalDate desde,
-            @Param("hasta") LocalDate hasta);
+            @Param("desde") Instant desde,
+            @Param("hasta") Instant hasta);
 
     @Query("SELECT m FROM MovimientoCaja m where m.usuario = :usuario")
     List<MovimientoCaja> findByUsuario(@Param("usuario") Usuario usuario);

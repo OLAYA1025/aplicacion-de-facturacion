@@ -1,24 +1,24 @@
 package com.facturacion.negocio.dto.response;
 
 import java.math.BigDecimal;
+import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 
 public class HistorialCajaCerradaDTO {
 
     private Long cajaId;
     private String usuarioAperturaNombre;
     private String usuarioCierreNombre;
-    private LocalDateTime horaApertura;
-    private LocalDateTime horaCierre;
+    private Instant horaApertura;
+    private Instant horaCierre;
     private LocalDate fecha;
     private BigDecimal utilidad;
 
     public HistorialCajaCerradaDTO(Long cajaId,
                                    String usuarioAperturaNombre,
                                    String usuarioCierreNombre,
-                                   LocalDateTime horaApertura,
-                                   LocalDateTime horaCierre,
+                                   Instant horaApertura,
+                                   Instant horaCierre,
                                    LocalDate fecha,
                                    BigDecimal utilidad) {
         this.cajaId = cajaId;
@@ -54,19 +54,19 @@ public class HistorialCajaCerradaDTO {
         this.usuarioCierreNombre = usuarioCierreNombre;
     }
 
-    public LocalDateTime getHoraApertura() {
+    public Instant getHoraApertura() {
         return horaApertura;
     }
 
-    public void setHoraApertura(LocalDateTime horaApertura) {
+    public void setHoraApertura(Instant horaApertura) {
         this.horaApertura = horaApertura;
     }
 
-    public LocalDateTime getHoraCierre() {
+    public Instant getHoraCierre() {
         return horaCierre;
     }
 
-    public void setHoraCierre(LocalDateTime horaCierre) {
+    public void setHoraCierre(Instant horaCierre) {
         this.horaCierre = horaCierre;
     }
 

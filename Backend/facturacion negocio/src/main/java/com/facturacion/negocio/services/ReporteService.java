@@ -16,6 +16,7 @@ import com.facturacion.negocio.repository.CajaRepository;
 import com.facturacion.negocio.repository.DetallePedidoRepository;
 import com.facturacion.negocio.repository.MovimientoCajaRepository;
 import com.facturacion.negocio.repository.TopProductoVendidoProjection;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
@@ -24,7 +25,9 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.math.BigDecimal;
 import java.time.DayOfWeek;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.time.temporal.TemporalAdjusters;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -41,13 +44,16 @@ public class ReporteService {
     private final CajaRepository cajaRepository;
     private final DetallePedidoRepository detallePedidoRepository;
     private final MovimientoCajaRepository movimientoCajaRepository;
+    private final ZoneId zonaAplicacion;
 
     public ReporteService(CajaRepository cajaRepository,
                           DetallePedidoRepository detallePedidoRepository,
-                          MovimientoCajaRepository movimientoCajaRepository) {
+                          MovimientoCajaRepository movimientoCajaRepository,
+                          @Value("${app.time-zone:America/Bogota}") String zonaHoraria) {
         this.cajaRepository = cajaRepository;
         this.detallePedidoRepository = detallePedidoRepository;
         this.movimientoCajaRepository = movimientoCajaRepository;
+        this.zonaAplicacion = ZoneId.of(zonaHoraria);
     }
 
     public ResumenEstadisticasDTO obtenerUtilidad(String modo,
@@ -117,8 +123,8 @@ public class ReporteService {
         Page<Caja> paginaHistorialCajasCerradas = cajaRepository
                 .findByEstadoAndFechaCierreGreaterThanEqualAndFechaCierreLessThanOrderByFechaCierreDesc(
                 EstadoCaja.CERRADA,
-                periodo.inicio().atStartOfDay(),
-                periodo.finExclusivo().atStartOfDay(),
+                inicioDia(periodo.inicio()),
+                inicioDia(periodo.finExclusivo()),
                 PageRequest.of(paginaHistorialCajas, tamanioHistorialCajas)
         );
 
@@ -128,23 +134,23 @@ public class ReporteService {
 
         long totalCajasCerradas = cajaRepository.countByEstadoAndFechaCierreGreaterThanEqualAndFechaCierreLessThan(
                 EstadoCaja.CERRADA,
-                periodo.inicio().atStartOfDay(),
-                periodo.finExclusivo().atStartOfDay()
+                inicioDia(periodo.inicio()),
+                inicioDia(periodo.finExclusivo())
         );
 
         PaginacionDTO paginacionCajasCerradas = construirPaginacion(paginaHistorialCajasCerradas);
 
         BigDecimal totalRetiros = valorSeguro(movimientoCajaRepository.calcularTotalByMovimientoAndFechaRango(
                 TipoMovimiento.RETIRO,
-                periodo.inicio().atStartOfDay(),
-                periodo.finExclusivo().atStartOfDay()
+                inicioDia(periodo.inicio()),
+                inicioDia(periodo.finExclusivo())
         ));
 
         Page<MovimientoCaja> paginaHistorialRetirosMovimientos = movimientoCajaRepository
                 .findByTipoAndFechaGreaterThanEqualAndFechaLessThanOrderByFechaDesc(
                 TipoMovimiento.RETIRO,
-                periodo.inicio().atStartOfDay(),
-                periodo.finExclusivo().atStartOfDay(),
+                inicioDia(periodo.inicio()),
+                inicioDia(periodo.finExclusivo()),
                 PageRequest.of(paginaHistorialRetiros, tamanioHistorialRetiros)
         );
 
@@ -189,8 +195,8 @@ public class ReporteService {
         Periodo periodo = resolverPeriodoPorModo(modoNormalizado, fecha, anio, desde, hasta);
 
         List<TopProductoVendidoProjection> topProductos = detallePedidoRepository.findTopProductosVendidos(
-                periodo.inicio().atStartOfDay(),
-                periodo.finExclusivo().atStartOfDay(),
+                inicioDia(periodo.inicio()),
+                inicioDia(periodo.finExclusivo()),
                 PageRequest.of(0, limiteNormalizado)
         );
 
@@ -233,7 +239,7 @@ public class ReporteService {
             if (caja.getFechaCierre() == null) {
                 continue;
             }
-            int index = caja.getFechaCierre().getDayOfWeek().getValue() - 1;
+            int index = caja.getFechaCierre().atZone(zonaAplicacion).getDayOfWeek().getValue() - 1;
             valores[index] = valores[index].add(valorSeguro(caja.getUtilidad()));
         }
 
@@ -259,7 +265,7 @@ public class ReporteService {
             if (caja.getFechaCierre() == null) {
                 continue;
             }
-            int index = caja.getFechaCierre().getMonthValue() - 1;
+            int index = caja.getFechaCierre().atZone(zonaAplicacion).getMonthValue() - 1;
             valores[index] = valores[index].add(valorSeguro(caja.getUtilidad()));
         }
 
@@ -286,7 +292,7 @@ public class ReporteService {
             if (caja.getFechaCierre() == null) {
                 continue;
             }
-            int index = caja.getFechaCierre().getYear() - desde;
+            int index = caja.getFechaCierre().atZone(zonaAplicacion).getYear() - desde;
             if (index >= 0 && index < cantidadAnios) {
                 valores[index] = valores[index].add(valorSeguro(caja.getUtilidad()));
             }
@@ -312,8 +318,8 @@ public class ReporteService {
         List<HistorialCajaCerradaDTO> historial = new ArrayList<>(cajasCerradas.size());
         for (Caja caja : cajasCerradas) {
             LocalDate fechaCaja = caja.getFechaCierre() != null
-                    ? caja.getFechaCierre().toLocalDate()
-                    : (caja.getFechaApertura() != null ? caja.getFechaApertura().toLocalDate() : null);
+                    ? caja.getFechaCierre().atZone(zonaAplicacion).toLocalDate()
+                    : (caja.getFechaApertura() != null ? caja.getFechaApertura().atZone(zonaAplicacion).toLocalDate() : null);
 
             historial.add(new HistorialCajaCerradaDTO(
                     caja.getId(),
@@ -373,9 +379,13 @@ public class ReporteService {
     private List<Caja> buscarCajasCerradas(LocalDate desdeInclusive, LocalDate hastaExclusive) {
         return cajaRepository.findByEstadoAndFechaCierreGreaterThanEqualAndFechaCierreLessThan(
                 EstadoCaja.CERRADA,
-                desdeInclusive.atStartOfDay(),
-                hastaExclusive.atStartOfDay()
+                inicioDia(desdeInclusive),
+                inicioDia(hastaExclusive)
         );
+    }
+
+    private Instant inicioDia(LocalDate fecha) {
+        return fecha.atStartOfDay(zonaAplicacion).toInstant();
     }
 
     private Periodo resolverPeriodoSemana(LocalDate fecha) {
