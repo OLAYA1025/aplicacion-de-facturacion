@@ -14,7 +14,6 @@ import java.net.URI;
 import java.util.List;
 
 @RestController
-@PreAuthorize("hasRole('ADMINISTRADOR')")
 @RequestMapping("usuario")
 public class UsuarioController {
 
@@ -24,12 +23,14 @@ public class UsuarioController {
         this.usuarioService = usuarioService;
     }
 
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     @GetMapping("/{id}")
     public ResponseEntity<UsuarioResponseDTO> obtenerUsuario(@PathVariable Long id) {
         Usuario usuario = usuarioService.obtenerUsuario(id);
         return ResponseEntity.ok(UsuarioResponseDTO.from(usuario));
     }
 
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     @GetMapping
     public ResponseEntity<List<UsuarioResponseDTO>> listarUsuarios() {
         List<UsuarioResponseDTO> usuarios = usuarioService.listarUsuarios()
@@ -47,6 +48,7 @@ public class UsuarioController {
 
     }
 
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     @PutMapping("/{id}")
     public ResponseEntity<UsuarioResponseDTO> actualizarUsuario(@PathVariable Long id,
                                                                 @RequestBody ActualizarUsuarioRequestDTO request) {
@@ -60,6 +62,7 @@ public class UsuarioController {
         return ResponseEntity.ok(UsuarioResponseDTO.from(usuario));
     }
 
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     @PutMapping("/{id}/password")
     public ResponseEntity<UsuarioResponseDTO> cambiarPassword(@PathVariable Long id,
                                                               @RequestBody CambiarPasswordUsuarioRequestDTO request) {
@@ -67,12 +70,14 @@ public class UsuarioController {
         return ResponseEntity.ok(UsuarioResponseDTO.from(usuario));
     }
 
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     @PostMapping("/{id}/activar")
     public ResponseEntity<UsuarioResponseDTO> activarUsuario(@PathVariable Long id) {
         Usuario usuario = usuarioService.activarUsuario(id);
         return ResponseEntity.ok(UsuarioResponseDTO.from(usuario));
     }
 
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     @PostMapping("/{id}/desactivar")
     public ResponseEntity<UsuarioResponseDTO> desactivarUsuario(@PathVariable Long id) {
         Usuario usuario = usuarioService.desactivarUsuario(id);

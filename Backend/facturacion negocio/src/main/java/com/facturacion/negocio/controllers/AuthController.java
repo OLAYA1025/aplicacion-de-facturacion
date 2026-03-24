@@ -3,12 +3,11 @@ package com.facturacion.negocio.controllers;
 import com.facturacion.negocio.dto.request.LoginRequestDTO;
 import com.facturacion.negocio.dto.response.LoginResponseDTO;
 import com.facturacion.negocio.services.AuthService;
+import com.facturacion.negocio.services.dian.certificate.DianCertificateData;
+import com.facturacion.negocio.services.dian.certificate.DianCertificateLoader;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 @RestController
@@ -30,4 +29,6 @@ public class AuthController {
         LoginResponseDTO response = authService.login(request.getUsername(), request.getPassword());
         return ResponseEntity.ok(response);
     }
+
+
 }

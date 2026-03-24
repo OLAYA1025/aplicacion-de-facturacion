@@ -26,6 +26,7 @@ public class PedidoService {
     private final ClienteRepository clienteRepository;
     private final DocumentoFiscalRepository documentoFiscalRepository;
     private final DocumentoFiscalService documentoFiscalService;
+    private final NumberingRangeRepository numberingRangeRepository;
 
     public PedidoService(PedidoRepository pedidoRepository,
                          MovimientoCajaRepository movimientoCajaRepository,
@@ -35,7 +36,8 @@ public class PedidoService {
                          CajaRepository cajaRepository,
                          ClienteRepository clienteRepository,
                          DocumentoFiscalRepository documentoFiscalRepository,
-                         DocumentoFiscalService documentoFiscalService) {
+                         DocumentoFiscalService documentoFiscalService,
+                         NumberingRangeRepository numberingRangeRepository) {
         this.pedidoRepository = pedidoRepository;
         this.movimientoCajaRepository = movimientoCajaRepository;
         this.movimientoInventarioRepository = movimientoInventarioRepository;
@@ -45,6 +47,7 @@ public class PedidoService {
         this.clienteRepository = clienteRepository;
         this.documentoFiscalRepository = documentoFiscalRepository;
         this.documentoFiscalService = documentoFiscalService;
+        this.numberingRangeRepository = numberingRangeRepository;
     }
 
 
@@ -186,7 +189,8 @@ public class PedidoService {
                                Long usuarioId,
                                MetodoPago metodoPago,
                                TipoDocumentoFiscal tipoDocumentoFiscal,
-                               ClienteFiscalDTO clienteDto) {
+                               ClienteFiscalDTO clienteDto,
+                               Long rangeId) {
 
         // ===== Validaciones básicas =====
         if (pedidoId == null) {
@@ -303,7 +307,16 @@ public class PedidoService {
         pedido.pagar(usuario, metodoPago);
 
         // El documento queda listo para que un worker lo envíe al PT
-        documentoFiscal.marcarPendienteEnvio();
+
+        NumberingRange numberingRange = numberingRangeRepository.findById(rangeId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "El rango no existe"));
+
+        if (!numberingRange.getActive()){
+            throw new ResponseStatusException(HttpStatus.NOT_FOUND, "El rango esta deshabilitado");
+        }
+
+        if(numberingRange.getProvider() != ProveedorFacturacion.DIAN) {
+            documentoFiscal.marcarPendienteEnvio();
+        }
 
         // ===== 7) Movimiento de caja =====
         MovimientoCaja movimiento = new MovimientoCaja(

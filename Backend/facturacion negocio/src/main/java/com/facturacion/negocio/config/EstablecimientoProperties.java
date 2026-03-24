@@ -12,21 +12,24 @@ public class EstablecimientoProperties {
 
     private String nombre;
     private String nit;
+    private String dv;
     private String direccion;
     private String telefono;
     private String email;
     private Integer municipaly;
-
+    private String municipalityCodeDian;
 
     @Bean
     public Establecimiento establecimiento(EstablecimientoProperties props) {
         Establecimiento establecimiento = new Establecimiento();
         establecimiento.setName(props.getNombre());
         establecimiento.setNit(props.getNit());
+        establecimiento.setDv(props.getDv());
         establecimiento.setAddress(props.getDireccion());
         establecimiento.setPhone_number(props.getTelefono());
         establecimiento.setEmail(props.getEmail());
         establecimiento.setMunicipality_id(props.getMunicipaly());
+        establecimiento.setMunicipality_code_dian(props.getMunicipalityCodeDian());
         return establecimiento;
     }
 
@@ -36,6 +39,14 @@ public class EstablecimientoProperties {
 
     public void setNit(String nit) {
         this.nit = nit;
+    }
+
+    public String getDv() {
+        return dv;
+    }
+
+    public void setDv(String dv) {
+        this.dv = dv;
     }
 
     public String getNombre() {
@@ -76,5 +87,13 @@ public class EstablecimientoProperties {
 
     public void setMunicipaly(Integer municipaly) {
         this.municipaly = municipaly;
+    }
+
+    public String getMunicipalityCodeDian() {
+        return municipalityCodeDian;
+    }
+
+    public void setMunicipalityCodeDian(String municipalityCodeDian) {
+        this.municipalityCodeDian = municipalityCodeDian;
     }
 }

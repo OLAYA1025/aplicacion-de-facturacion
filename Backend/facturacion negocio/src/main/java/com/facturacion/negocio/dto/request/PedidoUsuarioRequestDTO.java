@@ -8,7 +8,12 @@ public class PedidoUsuarioRequestDTO {
     private MetodoPago metodoPago;
     private TipoDocumentoFiscal tipoDocumentoFiscal; // DEE_POS / FEV / FEV_CONS_FINAL
     private ClienteFiscalDTO cliente;
+    private Long rangeId;
 
+
+    public Long getRangeId() {
+        return rangeId;
+    }
 
     public Long getUsuarioId() {
         return usuarioId;

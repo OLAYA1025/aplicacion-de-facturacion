@@ -53,6 +53,12 @@ public class DocumentoFiscal {
     @Column(name = "reference_code", nullable = false, length = 60)
     private String referenceCode;
 
+    @Column(name = "consecutivo")
+    private Long consecutivo;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "numbering_range_fk")
+    private NumberingRange numberingRange;
     /**
      * Rango de numeración en Factus (numbering_range_id)
      */
@@ -294,5 +300,21 @@ public class DocumentoFiscal {
 
     public void setEstado(EstadoDocumentoFiscal estado) {
         this.estado = estado;
+    }
+
+    public NumberingRange getNumberingRange() {
+        return numberingRange;
+    }
+
+    public void setNumberingRange(NumberingRange numberingRange) {
+        this.numberingRange = numberingRange;
+    }
+
+    public Long getConsecutivo() {
+        return consecutivo;
+    }
+
+    public void setConsecutivo(Long consecutivo) {
+        this.consecutivo = consecutivo;
     }
 }

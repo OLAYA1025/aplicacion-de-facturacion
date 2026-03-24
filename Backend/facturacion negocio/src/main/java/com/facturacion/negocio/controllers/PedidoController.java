@@ -161,7 +161,8 @@ public class PedidoController {
                 request.getUsuarioId(),
                 request.getMetodoPago(),
                 request.getTipoDocumentoFiscal(),
-                request.getCliente());
+                request.getCliente(),
+                request.getRangeId());
         List<DetallePedido> detalles = pedidoService.obtenerDetalles(id);
         return ResponseEntity.ok(PedidoResponseDTO.from(pedido, detalles));
     }

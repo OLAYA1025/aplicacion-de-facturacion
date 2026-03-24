@@ -1,7 +1,9 @@
 package com.facturacion.negocio.services;
 
 import com.facturacion.negocio.domain.DocumentoFiscal;
+import com.facturacion.negocio.domain.NumberingRange;
 import com.facturacion.negocio.dto.factura.Establecimiento;
+import com.facturacion.negocio.dto.factura.NumberAllocationResult;
 import com.facturacion.negocio.dto.response.DocumentoFiscalListDTO;
 import com.facturacion.negocio.dto.factura.FactusFactElectronicaRequestDTO;
 import com.facturacion.negocio.enumerated.EstadoDocumentoFiscal;
@@ -9,6 +11,7 @@ import com.facturacion.negocio.errors.FactusSinConexionException;
 import com.facturacion.negocio.mock.ProveedorTecnologicoClientFactus;
 import com.facturacion.negocio.repository.DetallePedidoRepository;
 import com.facturacion.negocio.repository.DocumentoFiscalRepository;
+import com.facturacion.negocio.repository.NumberingRangeRepository;
 import com.facturacion.negocio.repository.PedidoTotalProjection;
 import com.facturacion.negocio.services.factus.FactusFactElectronicaRequestMapper;
 import com.facturacion.negocio.services.tirillaFactura.Factura;
@@ -63,6 +66,8 @@ public class DocumentoFiscalService {
     private final PdfService pdfService;
     private final DocumentoFiscalTxService documentoFiscalTxService;
     private final ZoneId zonaAplicacion;
+    private final NumberingRangeService numberingRangeService;
+    private final NumberingRangeRepository numberingRangeRepository;
 
     public DocumentoFiscalService(DocumentoFiscalRepository documentoFiscalRespository,
                                   DetallePedidoRepository detallePedidoRepository,
@@ -71,7 +76,9 @@ public class DocumentoFiscalService {
                                   Establecimiento establecimiento,
                                   PdfService pdfService,
                                   DocumentoFiscalTxService documentoFiscalTxService,
-                                  @Value("${app.time-zone:America/Bogota}") String zonaHoraria) {
+                                  @Value("${app.time-zone:America/Bogota}") String zonaHoraria,
+                                  NumberingRangeService numberingRangeService,
+                                  NumberingRangeRepository numberingRangeRepository) {
 
         this.documentoFiscalRepository = documentoFiscalRespository;
         this.detallePedidoRepository = detallePedidoRepository;
@@ -81,6 +88,28 @@ public class DocumentoFiscalService {
         this.pdfService = pdfService;
         this.documentoFiscalTxService = documentoFiscalTxService;
         this.zonaAplicacion = ZoneId.of(zonaHoraria);
+        this.numberingRangeService = numberingRangeService;
+        this.numberingRangeRepository = numberingRangeRepository;
+    }
+
+    @Transactional
+    public void enviarDocumentoDian(Long documentoFiscalId, Long numberingRangeId) {
+        DocumentoFiscal doc = documentoFiscalRepository.findById(documentoFiscalId)
+                .orElseThrow();
+
+        NumberAllocationResult allocation = numberingRangeService.allocateNext(numberingRangeId);
+
+        NumberingRange range = numberingRangeRepository.findById(allocation.rangeId())
+                .orElseThrow();
+
+        doc.setNumberingRange(range);
+        doc.setConsecutivo(allocation.consecutive());
+        doc.setNumeroDocumento(allocation.documentNumber());
+
+        // luego:
+        // DianInvoiceData data = dianInvoiceMapper.from(doc);
+        // String xml = dianInvoiceXmlBuilder.build(data);
+        // ...
     }
 
     @Transactional(readOnly = true)
