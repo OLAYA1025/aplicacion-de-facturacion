@@ -30,6 +30,7 @@ public class Usuario {
     protected Usuario() {
     }
 
+
     public Usuario(String nombre, String username, String password, String email, Rol rol) {
         this.activo = true;
         this.nombre = nombre;

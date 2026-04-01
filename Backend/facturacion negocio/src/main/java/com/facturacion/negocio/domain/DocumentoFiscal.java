@@ -128,10 +128,10 @@ public class DocumentoFiscal {
         this.estado = EstadoDocumentoFiscal.BORRADOR;
     }
 
-    public static DocumentoFiscal crearBorrador(Pedido pedido, TipoDocumentoFiscal tipo) {
+    public static DocumentoFiscal crearBorrador(Pedido pedido, TipoDocumentoFiscal tipo, String prefijoProveedor) {
         if (pedido == null) throw new IllegalArgumentException("pedido requerido");
         if (tipo == null) throw new IllegalArgumentException("tipo requerido");
-        String referenceCode = "PED-" + pedido.getId();
+        String referenceCode = prefijoProveedor + "-" + pedido.getId();
         return new DocumentoFiscal(pedido, tipo, referenceCode);
     }
 

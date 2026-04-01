@@ -5,6 +5,7 @@ import com.facturacion.negocio.dto.request.ClienteFiscalDTO;
 import com.facturacion.negocio.dto.response.PedidoListadoItemDTO;
 import com.facturacion.negocio.enumerated.*;
 import com.facturacion.negocio.repository.*;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,6 +28,7 @@ public class PedidoService {
     private final DocumentoFiscalRepository documentoFiscalRepository;
     private final DocumentoFiscalService documentoFiscalService;
     private final NumberingRangeRepository numberingRangeRepository;
+    private final String prefijoProveedor;
 
     public PedidoService(PedidoRepository pedidoRepository,
                          MovimientoCajaRepository movimientoCajaRepository,
@@ -37,7 +39,8 @@ public class PedidoService {
                          ClienteRepository clienteRepository,
                          DocumentoFiscalRepository documentoFiscalRepository,
                          DocumentoFiscalService documentoFiscalService,
-                         NumberingRangeRepository numberingRangeRepository) {
+                         NumberingRangeRepository numberingRangeRepository,
+                         @Value("${factus.prefijo-code}") String prefijoProveedor) {
         this.pedidoRepository = pedidoRepository;
         this.movimientoCajaRepository = movimientoCajaRepository;
         this.movimientoInventarioRepository = movimientoInventarioRepository;
@@ -48,6 +51,7 @@ public class PedidoService {
         this.documentoFiscalRepository = documentoFiscalRepository;
         this.documentoFiscalService = documentoFiscalService;
         this.numberingRangeRepository = numberingRangeRepository;
+        this.prefijoProveedor = prefijoProveedor;
     }
 
 
@@ -288,7 +292,7 @@ public class PedidoService {
         }
 
         // ===== 5) Crear DocumentoFiscal y asociarlo al pedido =====
-        DocumentoFiscal documentoFiscal = DocumentoFiscal.crearBorrador(pedido, tipoDocumentoFiscal);
+        DocumentoFiscal documentoFiscal = DocumentoFiscal.crearBorrador(pedido, tipoDocumentoFiscal, prefijoProveedor);
 
 
         if (cliente != null) {
@@ -307,7 +311,7 @@ public class PedidoService {
         pedido.pagar(usuario, metodoPago);
 
         // El documento queda listo para que un worker lo envíe al PT
-
+        /*
         NumberingRange numberingRange = numberingRangeRepository.findById(rangeId).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "El rango no existe"));
 
         if (!numberingRange.getActive()){
@@ -316,7 +320,12 @@ public class PedidoService {
 
         if(numberingRange.getProvider() != ProveedorFacturacion.DIAN) {
             documentoFiscal.marcarPendienteEnvio();
+            //TODO: implementar los numberingRanges despues
         }
+
+         */
+
+        documentoFiscal.marcarPendienteEnvio(); //si se implementan los numbering ranges, se debe primero verificar si es o no de la DIAN
 
         // ===== 7) Movimiento de caja =====
         MovimientoCaja movimiento = new MovimientoCaja(

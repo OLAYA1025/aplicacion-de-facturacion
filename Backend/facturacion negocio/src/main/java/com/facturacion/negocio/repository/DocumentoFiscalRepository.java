@@ -23,7 +23,7 @@ public interface DocumentoFiscalRepository extends JpaRepository<DocumentoFiscal
     @Query("select d from DocumentoFiscal d where d.id = :id")
     Optional<DocumentoFiscal> findByIdForEnvio(@Param("id") Long id);
 
-    List<DocumentoFiscal> findTop50ByEstadoOrderByIdAsc(EstadoDocumentoFiscal estado);
+    List<DocumentoFiscal> findTop20ByEstadoOrderByIdAsc(EstadoDocumentoFiscal estado);
 
     @EntityGraph(attributePaths = {"cliente", "pedido"})
     Page<DocumentoFiscal> findAll(Specification<DocumentoFiscal> spec, Pageable pageable);

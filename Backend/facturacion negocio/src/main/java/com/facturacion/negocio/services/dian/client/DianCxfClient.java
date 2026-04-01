@@ -45,35 +45,6 @@ public class DianCxfClient {
 
         Client client = ClientProxy.getClient(port);
 
-        client.getOutInterceptors().add(new AbstractSoapInterceptor(Phase.PREPARE_SEND) {
-
-            @Override
-            public void handleMessage(SoapMessage message) {
-
-                try {
-
-                    org.w3c.dom.Element body =
-                            message.getContent(org.w3c.dom.Document.class)
-                                    .getDocumentElement()
-                                    .getElementsByTagNameNS(
-                                            "http://www.w3.org/2003/05/soap-envelope",
-                                            "Body"
-                                    )
-                                    .item(0);
-
-                    body.setAttributeNS(
-                            "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd",
-                            "wsu:Id",
-                            "id-Body"
-                    );
-
-                } catch (Exception e) {
-                    throw new RuntimeException(e);
-                }
-
-            }
-        });
-
 
         LoggingOutInterceptor out = new LoggingOutInterceptor();
         out.setPrettyLogging(true);

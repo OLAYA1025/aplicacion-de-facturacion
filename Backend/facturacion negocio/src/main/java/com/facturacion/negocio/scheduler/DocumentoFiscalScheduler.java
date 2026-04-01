@@ -24,10 +24,10 @@ public class DocumentoFiscalScheduler {
         this.documentoFiscalService = documentoFiscalService;
     }
 
-    @Scheduled(fixedDelayString = "${fiscal.scheduler.delay-ms:10000}")
+    @Scheduled(fixedDelayString = "${fiscal.scheduler.delay-ms:60000}")
     public void enviarPendientes() {
         List<DocumentoFiscal> pendientesEnvio =
-                documentoFiscalRepository.findTop50ByEstadoOrderByIdAsc(EstadoDocumentoFiscal.PENDIENTE_ENVIO);
+                documentoFiscalRepository.findTop20ByEstadoOrderByIdAsc(EstadoDocumentoFiscal.PENDIENTE_ENVIO);
 
         for (DocumentoFiscal doc : pendientesEnvio) {
             try {
@@ -41,7 +41,7 @@ public class DocumentoFiscalScheduler {
         }
 
         List<DocumentoFiscal> enviadosPt =
-                documentoFiscalRepository.findTop50ByEstadoOrderByIdAsc(EstadoDocumentoFiscal.ENVIADO_PT);
+                documentoFiscalRepository.findTop20ByEstadoOrderByIdAsc(EstadoDocumentoFiscal.ENVIADO_PT);
 
         Instant hace15Segundos = Instant.now().minusSeconds(15);
         for (DocumentoFiscal doc : enviadosPt) {

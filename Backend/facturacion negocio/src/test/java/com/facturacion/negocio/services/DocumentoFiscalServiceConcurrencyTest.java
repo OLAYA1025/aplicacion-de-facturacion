@@ -199,7 +199,7 @@ class DocumentoFiscalServiceConcurrencyTest {
     }
 
     @Test
-    void cuandoProveedorResponde409DebeQuedarPendienteContingenciaYNoRechazado() throws Exception {
+    void cuandoProveedorResponde409DebeQuedarEnviadoPtYNoRechazado() throws Exception {
         DocumentoFiscal documento = crearDocumentoFiscalPendienteEnvio();
         Long docId = documento.getId();
 
@@ -220,9 +220,9 @@ class DocumentoFiscalServiceConcurrencyTest {
         verify(proveedorTecnologicoClient, times(1)).validarFactura(any(FactusFactElectronicaRequestDTO.class));
 
         DocumentoFiscal actualizado = documentoFiscalRepository.findById(docId).orElseThrow();
-        assertThat(actualizado.getEstado()).isEqualTo(EstadoDocumentoFiscal.PENDIENTE_CONTINGENCIA);
+        assertThat(actualizado.getEstado()).isEqualTo(EstadoDocumentoFiscal.ENVIADO_PT);
         assertThat(actualizado.getEstado()).isNotEqualTo(EstadoDocumentoFiscal.RECHAZADO);
-        assertThat(actualizado.getErrorCodigo()).isEqualTo("409_DUPLICADO");
+        assertThat(actualizado.getErrorCodigo()).isEqualTo("409_EN_PROCESO");
         assertThat(actualizado.getErrorMensaje()).contains("Duplicado reference_code");
     }
 
@@ -273,7 +273,7 @@ class DocumentoFiscalServiceConcurrencyTest {
                 "cliente" + n + "@mail.test"
         ));
 
-        DocumentoFiscal documentoFiscal = DocumentoFiscal.crearBorrador(pedido, TipoDocumentoFiscal.FEV);
+        DocumentoFiscal documentoFiscal = DocumentoFiscal.crearBorrador(pedido, TipoDocumentoFiscal.FEV, "PED");
         documentoFiscal.setCliente(cliente);
         documentoFiscal.marcarPendienteEnvio();
 
