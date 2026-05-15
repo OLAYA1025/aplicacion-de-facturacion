@@ -6,7 +6,7 @@ public class DetalleCompraRequestDTO {
 
     private Long productoId;
     private Integer cantidad;
-    private BigDecimal costoUnitario;
+    private BigDecimal subtotal;
 
     public Long getProductoId() {
         return productoId;
@@ -24,11 +24,11 @@ public class DetalleCompraRequestDTO {
         this.cantidad = cantidad;
     }
 
-    public BigDecimal getCostoUnitario() {
-        return costoUnitario;
+    public BigDecimal getSubtotal() {
+        return subtotal;
     }
 
-    public void setCostoUnitario(BigDecimal costoUnitario) {
-        this.costoUnitario = costoUnitario;
+    public void setSubtotal(BigDecimal subtotal) {
+        this.subtotal = subtotal;
     }
 }

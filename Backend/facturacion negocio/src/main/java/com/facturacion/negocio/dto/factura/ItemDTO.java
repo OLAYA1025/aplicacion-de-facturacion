@@ -22,12 +22,21 @@ public class ItemDTO {
     private Integer tribute_id = 1; //1 para IVA (0%, 5%, 19%) y 4 para INC (8% impuesto nacional al consumo. Para preparaciones)
 
     public static ItemDTO from(DetallePedido detalle) {
+        return from(detalle.getProducto(), detalle.getCantidad(), detalle.getPrecioUnitario());
+    }
+
+    public static ItemDTO from(Producto producto, Integer cantidad, BigDecimal precioUnitario) {
+        if (producto == null) {
+            throw new IllegalArgumentException("producto invalido");
+        }
+        if (cantidad == null || cantidad <= 0) {
+            throw new IllegalArgumentException("cantidad invalida");
+        }
         ItemDTO itemDTO = new ItemDTO();
-        Producto producto = detalle.getProducto();
         itemDTO.setCode_reference(producto.getCodigo().toString());
         itemDTO.setName(producto.getNombre());
-        itemDTO.setQuantity(detalle.getCantidad());
-        itemDTO.setPrice(detalle.getPrecioUnitario());
+        itemDTO.setQuantity(cantidad);
+        itemDTO.setPrice(precioUnitario);
         itemDTO.setIsExcluded(Boolean.TRUE.equals(producto.getIsExcluded()) ? 1 : 0);
         TipoImpuesto tipoImpuesto = producto.getTipoImpuesto() != null ? producto.getTipoImpuesto() : TipoImpuesto.IVA;
         itemDTO.setTribute_id(tipoImpuesto.getTributeId());

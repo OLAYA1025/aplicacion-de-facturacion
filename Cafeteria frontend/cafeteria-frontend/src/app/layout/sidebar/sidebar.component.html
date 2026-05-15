@@ -23,7 +23,7 @@
     <span 
       *ngIf="!collapsed" 
       class="text-xl font-bold text-gray-800 transition-opacity duration-300">
-      Montara
+      App
     </span>
 
     <!-- Toggle button (Desktop) -->
@@ -147,6 +147,7 @@
 
     <!-- Clientes -->
     <a
+      *ngIf="esAdministrador || esCajero"
       routerLink="/clientes"
       routerLinkActive="border-r-2 border-indigo-500 bg-indigo-50 text-indigo-600"
       class="group relative flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 hover:text-indigo-600 lg:text-base"
@@ -179,6 +180,7 @@
 
     <!-- Facturas -->
     <a
+      *ngIf="esAdministrador || esCajero"
       routerLink="/facturas"
       routerLinkActive="border-r-2 border-indigo-500 bg-indigo-50 text-indigo-600"
       class="group relative flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 hover:text-indigo-600 lg:text-base"
@@ -211,7 +213,7 @@
 
     <!-- Estadisticas -->
     <a
-      *ngIf="!esCajero"
+      *ngIf="esAdministrador"
       routerLink="/estadisticas"
       routerLinkActive="border-r-2 border-indigo-500 bg-indigo-50 text-indigo-600"
       class="group relative flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 hover:text-indigo-600 lg:text-base"
@@ -249,7 +251,7 @@
     </a>
 
     <!-- Compras con subrutas -->
-    <div *ngIf="!esCajero">
+    <div *ngIf="esAdministrador">
       <button
         (click)="toggleCompras()"
         class="group relative flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 hover:text-indigo-600 lg:text-base"
@@ -325,7 +327,7 @@
     </div>
 
     <!-- Proveedores con subrutas -->
-    <div *ngIf="!esCajero">
+    <div *ngIf="esAdministrador">
       <button
         (click)="toggleProveedores()"
         class="group relative flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 hover:text-indigo-600 lg:text-base"
@@ -476,11 +478,20 @@
 
     <!-- Crear Producto -->
     <a 
-      *ngIf="!esCajero"
+      *ngIf="esAdministrador"
       routerLink="/productos/crear-producto"
       routerLinkActive="text-indigo-600 font-semibold"
       class="block rounded-md px-3 py-2 text-sm text-gray-600 transition-colors hover:bg-gray-100 hover:text-indigo-600">
       Crear Producto
+    </a>
+
+    <a
+      *ngIf="esAdministrador"
+      routerLink="/productos/categorias"
+      routerLinkActive="text-indigo-600 font-semibold"
+      class="block rounded-md px-3 py-2 text-sm text-gray-600 transition-colors hover:bg-gray-100 hover:text-indigo-600"
+    >
+      Categorías
     </a>
 
   </div>
@@ -488,7 +499,7 @@
 
     <!-- Pro -->
     <a 
-      *ngIf="!esCajero"
+      *ngIf="esAdministrador"
       routerLink="/usuarios"
       routerLinkActive="border-r-2 border-indigo-500 bg-indigo-50 text-indigo-600"
       class="group relative flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 hover:text-indigo-600 lg:text-base"

@@ -25,6 +25,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -100,7 +102,7 @@ public class CompraService {
             CompraDetalle detalle = new CompraDetalle(
                     producto,
                     detalleRequest.getCantidad(),
-                    detalleRequest.getCostoUnitario()
+                    resolverCostoUnitario(detalleRequest)
             );
             compra.agregarDetalle(detalle);
         }
@@ -239,6 +241,22 @@ public class CompraService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "numeroFactura invalido");
         }
         return numeroFactura.trim();
+    }
+
+    private BigDecimal resolverCostoUnitario(DetalleCompraRequestDTO detalleRequest) {
+        Integer cantidad = detalleRequest.getCantidad();
+        if (cantidad == null || cantidad <= 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "cantidad invalida");
+        }
+
+        BigDecimal subtotal = detalleRequest.getSubtotal();
+        if (subtotal == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "subtotal requerido");
+        }
+        if (subtotal.compareTo(BigDecimal.ZERO) <= 0) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "subtotal invalido");
+        }
+        return subtotal.divide(BigDecimal.valueOf(cantidad), 2, RoundingMode.HALF_UP);
     }
 
     private String obtenerUsernameAutenticado() {

@@ -7,6 +7,7 @@ import com.facturacion.negocio.dto.response.CajaResponseDTO;
 import com.facturacion.negocio.dto.response.CajaResumenResponseDTO;
 import com.facturacion.negocio.services.CajaService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.net.URI;
@@ -38,6 +39,7 @@ public class CajaController {
         return ResponseEntity.ok().body(CajaResponseDTO.from(caja));
     }
 
+    @PreAuthorize("hasAnyRole('CAJERO', 'ADMINISTRADOR')")
     @PostMapping("/abrir")
     public ResponseEntity<CajaResponseDTO> abrirCaja(@RequestBody CajaAperturaRequestDTO cajaAperturaRequestDTO) {
         Caja caja = cajaService.abrirCaja(cajaAperturaRequestDTO.getUsuarioAperturaId());
@@ -48,7 +50,7 @@ public class CajaController {
 
 
 
-
+    @PreAuthorize("hasAnyRole('CAJERO', 'ADMINISTRADOR')")
     @PostMapping("/cerrar")
     public ResponseEntity<CajaResponseDTO> cerrarCaja(@RequestBody CajaCierreRequestDTO cajaCierreRequestDTO) {
         Caja caja = cajaService.cerrarCaja(

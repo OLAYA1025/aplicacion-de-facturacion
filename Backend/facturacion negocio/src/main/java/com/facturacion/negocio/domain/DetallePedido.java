@@ -6,14 +6,14 @@ import jakarta.validation.constraints.NotNull;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 @Entity
-@Table(
-        uniqueConstraints = {
-                @UniqueConstraint(columnNames = {"pedido_id", "producto_codigo"})
-        }
-)
 public class DetallePedido {
 
     @Id
@@ -36,6 +36,9 @@ public class DetallePedido {
     @Column(nullable = false, precision = 10, scale = 2)
     @NotNull
     private BigDecimal precioUnitario;
+
+    @OneToMany(mappedBy = "detallePedido", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private List<DetallePedidoNota> detallePedidoNotas = new ArrayList<>();
 
     protected DetallePedido() {}
 
@@ -63,6 +66,10 @@ public class DetallePedido {
 
     public BigDecimal getPrecioUnitario() { return precioUnitario; }
 
+    public List<DetallePedidoNota> getDetallePedidoNotas() {
+        return Collections.unmodifiableList(detallePedidoNotas);
+    }
+
     public void cambiarPrecioUnitario(BigDecimal precioUnitario) {
         if (precioUnitario == null) throw new IllegalArgumentException("precioUnitario null");
         this.precioUnitario = precioUnitario.setScale(2, RoundingMode.HALF_UP);
@@ -70,6 +77,24 @@ public class DetallePedido {
 
     public void asignarPedido(Pedido pedido) {
         this.pedido = pedido;
+    }
+
+    public void reemplazarNotas(List<NotaPredefinida> notasPredefinidas) {
+        this.detallePedidoNotas.clear();
+        if (notasPredefinidas == null || notasPredefinidas.isEmpty()) {
+            return;
+        }
+
+        Set<Long> notasIds = new HashSet<>();
+        for (NotaPredefinida notaPredefinida : notasPredefinidas) {
+            if (notaPredefinida == null || notaPredefinida.getId() == null) {
+                throw new IllegalArgumentException("nota predefinida invalida");
+            }
+            if (!notasIds.add(notaPredefinida.getId())) {
+                throw new IllegalArgumentException("nota predefinida duplicada");
+            }
+            this.detallePedidoNotas.add(new DetallePedidoNota(this, notaPredefinida));
+        }
     }
 
     public BigDecimal calcularSubtotal() {

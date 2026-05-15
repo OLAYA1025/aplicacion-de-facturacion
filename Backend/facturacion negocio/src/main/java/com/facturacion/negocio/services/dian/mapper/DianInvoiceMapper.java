@@ -6,6 +6,8 @@ import com.facturacion.negocio.services.dian.dto.DianCustomerData;
 import com.facturacion.negocio.services.dian.dto.DianInvoiceData;
 import com.facturacion.negocio.services.dian.dto.DianInvoiceLineData;
 import com.facturacion.negocio.services.dian.dto.DianSupplierData;
+import com.facturacion.negocio.services.DetallePedidoAgrupador;
+import com.facturacion.negocio.services.DetallePedidoAgrupador.DetallePedidoAgrupado;
 import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
@@ -125,11 +127,7 @@ public class DianInvoiceMapper {
         return supplier;
     }
 
-    private DianInvoiceLineData mapLine(DetallePedido detalle) {
-
-        Producto producto = detalle.getProducto();
-
-        BigDecimal precioVenta = detalle.getPrecioUnitario();
+    private DianInvoiceLineData mapLine(Producto producto, Integer cantidad, BigDecimal precioVenta) {
         BigDecimal porcentaje = producto.getImpuestoPorcentaje();
 
         BigDecimal divisor = BigDecimal.ONE.add(
@@ -139,7 +137,7 @@ public class DianInvoiceMapper {
         BigDecimal baseUnitPrice = precioVenta.divide(divisor, 2, RoundingMode.HALF_UP);
         BigDecimal taxUnitAmount = precioVenta.subtract(baseUnitPrice);
 
-        BigDecimal quantity = BigDecimal.valueOf(detalle.getCantidad());
+        BigDecimal quantity = BigDecimal.valueOf(cantidad);
 
         BigDecimal lineExtensionAmount = baseUnitPrice.multiply(quantity);
         BigDecimal taxAmount = taxUnitAmount.multiply(quantity);
@@ -148,7 +146,7 @@ public class DianInvoiceMapper {
 
         line.setCode(producto.getCodigo().toString());
         line.setDescription(producto.getNombre());
-        line.setQuantity(detalle.getCantidad());
+        line.setQuantity(cantidad);
 
         line.setUnitPrice(baseUnitPrice);
 
@@ -166,9 +164,13 @@ public class DianInvoiceMapper {
     private List<DianInvoiceLineData> mapLines(List<DetallePedido> detalles) {
 
         List<DianInvoiceLineData> lines = new ArrayList<>();
-
-        for (DetallePedido d : detalles) {
-            lines.add(mapLine(d));
+        List<DetallePedidoAgrupado> detallesAgrupados = DetallePedidoAgrupador.agruparPorProducto(detalles);
+        for (DetallePedidoAgrupado detalleAgrupado : detallesAgrupados) {
+            lines.add(mapLine(
+                    detalleAgrupado.getProducto(),
+                    detalleAgrupado.getCantidad(),
+                    detalleAgrupado.getPrecioUnitario()
+            ));
         }
 
         return lines;

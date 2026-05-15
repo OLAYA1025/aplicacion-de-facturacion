@@ -272,13 +272,10 @@
                 Usuario cierre
               </th>
               <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
-                Hora apertura
+                Fecha apertura
               </th>
               <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
-                Hora cierre
-              </th>
-              <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
-                Fecha
+                Fecha cierre
               </th>
               <th class="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-500">
                 Utilidad
@@ -290,9 +287,8 @@
             <tr *ngFor="let caja of data.historialCajasCerradas; trackBy: trackByCajaId" class="hover:bg-gray-50">
               <td class="px-5 py-4 text-sm font-medium text-gray-900">{{ caja.usuarioAperturaNombre || '-' }}</td>
               <td class="px-5 py-4 text-sm font-medium text-gray-900">{{ caja.usuarioCierreNombre || '-' }}</td>
-              <td class="px-5 py-4 text-sm text-gray-700">{{ formatearHora(caja.horaApertura) }}</td>
-              <td class="px-5 py-4 text-sm text-gray-700">{{ formatearHora(caja.horaCierre) }}</td>
-              <td class="px-5 py-4 text-sm text-gray-700">{{ formatearFechaDiaAnio(caja.fecha) }}</td>
+              <td class="px-5 py-4 text-sm text-gray-700">{{ formatearFechaHora(caja.fechaApertura) }}</td>
+              <td class="px-5 py-4 text-sm text-gray-700">{{ formatearFechaHora(caja.fechaCierre) }}</td>
               <td class="px-5 py-4 text-right text-sm font-semibold text-gray-900">
                 {{ formatearMoneda(caja.utilidad) }}
               </td>

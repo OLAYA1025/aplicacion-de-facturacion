@@ -1,9 +1,13 @@
 package com.facturacion.negocio.dto.response;
 
 import com.facturacion.negocio.domain.DetallePedido;
+import com.facturacion.negocio.domain.DetallePedidoNota;
 import com.facturacion.negocio.domain.Producto;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
 
 public class DetallePedidoResponseDTO {
     private Long id;
@@ -12,6 +16,7 @@ public class DetallePedidoResponseDTO {
     private Integer cantidad;
     private BigDecimal precioUnitario;
     private BigDecimal subtotal;
+    private List<DetallePedidoNotaResponseDTO> notas = new ArrayList<>();
 
     public static DetallePedidoResponseDTO from(DetallePedido detalle) {
         DetallePedidoResponseDTO dto = new DetallePedidoResponseDTO();
@@ -24,6 +29,25 @@ public class DetallePedidoResponseDTO {
         dto.setCantidad(detalle.getCantidad());
         dto.setPrecioUnitario(detalle.getPrecioUnitario());
         dto.setSubtotal(detalle.calcularSubtotal());
+        List<DetallePedidoNota> detalleNotas = new ArrayList<>(detalle.getDetallePedidoNotas());
+        detalleNotas.sort(Comparator.comparing(
+                (DetallePedidoNota nota) -> {
+                    if (nota.getNotaPredefinida() == null || nota.getNotaPredefinida().getGrupo() == null) {
+                        return "";
+                    }
+                    return nota.getNotaPredefinida().getGrupo().getNombre();
+                },
+                String.CASE_INSENSITIVE_ORDER
+        ).thenComparing(
+                (DetallePedidoNota nota) -> nota.getNotaPredefinida() != null ? nota.getNotaPredefinida().getDescripcion() : "",
+                String.CASE_INSENSITIVE_ORDER
+        ));
+
+        List<DetallePedidoNotaResponseDTO> notasDto = new ArrayList<>(detalleNotas.size());
+        for (DetallePedidoNota detalleNota : detalleNotas) {
+            notasDto.add(DetallePedidoNotaResponseDTO.from(detalleNota));
+        }
+        dto.setNotas(notasDto);
         return dto;
     }
 
@@ -73,5 +97,13 @@ public class DetallePedidoResponseDTO {
 
     public void setSubtotal(BigDecimal subtotal) {
         this.subtotal = subtotal;
+    }
+
+    public List<DetallePedidoNotaResponseDTO> getNotas() {
+        return notas;
+    }
+
+    public void setNotas(List<DetallePedidoNotaResponseDTO> notas) {
+        this.notas = notas;
     }
 }

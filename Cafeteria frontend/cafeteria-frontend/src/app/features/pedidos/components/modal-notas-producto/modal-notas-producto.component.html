@@ -1,0 +1,133 @@
+<div *ngIf="visible" class="fixed inset-0 z-[240] flex items-center justify-center bg-black/60 p-4 backdrop-blur-sm">
+  <div class="w-full max-w-2xl overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl">
+    <div class="border-b border-gray-200 bg-indigo-600 px-6 py-4">
+      <div class="flex items-center justify-between gap-3">
+        <div>
+          <h3 class="text-lg font-bold text-white">Configura tu producto</h3>
+          <p class="text-sm text-indigo-100">{{ productoNombre }}</p>
+        </div>
+        <button
+          type="button"
+          (click)="intentarCerrar()"
+          class="rounded-lg bg-white/20 p-2 text-white transition-colors hover:bg-white/30"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2.3" stroke="currentColor" class="h-5 w-5">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="max-h-[60vh] space-y-4 overflow-y-auto p-5">
+      <article class="rounded-xl border border-gray-200 bg-gray-50 p-4">
+        <div class="mb-2">
+          <h4 class="text-sm font-bold text-gray-900">Cantidad</h4>
+          <p class="text-xs text-gray-600">Define cuántas unidades agregar en esta línea.</p>
+        </div>
+
+        <div class="grid grid-cols-[2.5rem_minmax(0,1fr)_2.5rem] items-center gap-2">
+          <button
+            type="button"
+            (click)="disminuirCantidad()"
+            class="h-10 rounded-lg border border-gray-300 text-lg font-bold text-gray-700 transition-colors hover:bg-gray-100"
+          >
+            -
+          </button>
+
+          <input
+            type="number"
+            min="1"
+            [max]="cantidadMaxima ?? null"
+            [ngModel]="cantidad"
+            (ngModelChange)="onCantidadChange($event)"
+            class="w-full rounded-lg border border-gray-300 px-3 py-2 text-center text-base font-semibold focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+          />
+
+          <button
+            type="button"
+            (click)="aumentarCantidad()"
+            class="h-10 rounded-lg border border-gray-300 text-lg font-bold text-gray-700 transition-colors hover:bg-gray-100"
+          >
+            +
+          </button>
+        </div>
+
+        <p *ngIf="cantidadMaxima !== null" class="mt-2 text-xs text-gray-600">
+          Máximo disponible: {{ cantidadMaxima }}
+        </p>
+      </article>
+
+      <article
+        *ngFor="let grupo of grupos"
+        class="rounded-xl border p-4"
+        [class.border-red-300]="esGrupoInvalido(grupo.id)"
+        [class.bg-red-50]="esGrupoInvalido(grupo.id)"
+        [class.border-gray-200]="!esGrupoInvalido(grupo.id)"
+        [class.bg-gray-50]="!esGrupoInvalido(grupo.id)"
+      >
+        <div class="mb-3 flex items-center justify-between gap-3">
+          <div>
+            <h4 class="text-sm font-bold text-gray-900">{{ grupo.nombre }}</h4>
+            <p class="text-xs text-gray-600">
+              {{ grupo.tipoSeleccion === 'UNICO' ? 'Selecciona una opción' : 'Puedes elegir varias opciones' }}
+            </p>
+          </div>
+          <span
+            class="rounded-full px-2 py-0.5 text-[10px] font-bold"
+            [class.bg-red-100]="grupo.obligatorio"
+            [class.text-red-700]="grupo.obligatorio"
+            [class.bg-orange-100]="!grupo.obligatorio"
+            [class.text-yellow-600]="!grupo.obligatorio"
+          >
+            {{ grupo.obligatorio ? 'Obligatorio' : 'Opcional' }}
+          </span>
+        </div>
+
+        <div class="space-y-2">
+          <label
+            *ngFor="let nota of grupo.notas"
+            class="flex cursor-pointer items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-800 transition-colors hover:border-indigo-300"
+          >
+            <input
+              *ngIf="grupo.tipoSeleccion === 'UNICO'"
+              type="radio"
+              [name]="'grupo-' + grupo.id"
+              [checked]="estaNotaSeleccionada(grupo.id, nota.id)"
+              (change)="seleccionarNotaUnica(grupo.id, nota.id)"
+              class="h-4 w-4 border-gray-300 text-indigo-600 focus:ring-indigo-500"
+            />
+            <input
+              *ngIf="grupo.tipoSeleccion === 'MULTIPLE'"
+              type="checkbox"
+              [checked]="estaNotaSeleccionada(grupo.id, nota.id)"
+              (change)="toggleNotaMultiple(grupo.id, nota.id, $any($event.target).checked)"
+              class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+            />
+            <span>{{ nota.descripcion }}</span>
+          </label>
+        </div>
+
+        <p *ngIf="esGrupoInvalido(grupo.id)" class="mt-2 text-xs font-semibold text-red-700">
+          Debes seleccionar al menos una nota en este grupo.
+        </p>
+      </article>
+    </div>
+
+    <div class="flex items-center justify-end gap-2 border-t border-gray-200 bg-gray-50 px-5 py-4">
+      <button
+        type="button"
+        (click)="intentarCerrar()"
+        class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-100"
+      >
+        Cancelar
+      </button>
+      <button
+        type="button"
+        (click)="confirmarSeleccion()"
+        class="rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white hover:bg-indigo-700"
+      >
+        Agregar al pedido
+      </button>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,216 @@
+package com.facturacion.negocio.services;
+
+import com.facturacion.negocio.domain.Caja;
+import com.facturacion.negocio.domain.Categoria;
+import com.facturacion.negocio.domain.DetallePedido;
+import com.facturacion.negocio.domain.MovimientoCaja;
+import com.facturacion.negocio.domain.Pedido;
+import com.facturacion.negocio.domain.Producto;
+import com.facturacion.negocio.domain.Usuario;
+import com.facturacion.negocio.dto.response.CajaResumenResponseDTO;
+import com.facturacion.negocio.enumerated.EstadoCaja;
+import com.facturacion.negocio.enumerated.MetodoPago;
+import com.facturacion.negocio.enumerated.Rol;
+import com.facturacion.negocio.enumerated.TipoMovimiento;
+import com.facturacion.negocio.repository.CajaRepository;
+import com.facturacion.negocio.repository.MovimientoCajaRepository;
+import com.facturacion.negocio.repository.PedidoRepository;
+import com.facturacion.negocio.repository.UsuarioRepository;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpStatus;
+import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.web.server.ResponseStatusException;
+
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.Optional;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+@ExtendWith(MockitoExtension.class)
+class CajaServiceTest {
+
+    @Mock
+    private CajaRepository cajaRepository;
+    @Mock
+    private MovimientoCajaRepository movimientoCajaRepository;
+    @Mock
+    private UsuarioRepository usuarioRepository;
+    @Mock
+    private PedidoRepository pedidoRepository;
+
+    private CajaService cajaService;
+
+    @BeforeEach
+    void setUp() {
+        cajaService = new CajaService(
+                cajaRepository,
+                movimientoCajaRepository,
+                usuarioRepository,
+                pedidoRepository
+        );
+    }
+
+    @Nested
+    class AbrirCaja {
+
+        @Test
+        void debeUsarMontoFinalDeUltimaCajaCerradaComoMontoInicial() {
+            Usuario usuario = usuarioActivo(1L, "admin");
+            Caja ultimaCajaCerrada = new Caja(BigDecimal.ZERO, usuario);
+            ultimaCajaCerrada.setEstado(EstadoCaja.CERRADA);
+            ultimaCajaCerrada.setMontoFinal(new BigDecimal("350000.00"));
+
+            when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
+            when(cajaRepository.existeCajaAbierta()).thenReturn(false);
+            when(cajaRepository.obtenerUltimaCajaCerrada()).thenReturn(Optional.of(ultimaCajaCerrada));
+            when(cajaRepository.save(any(Caja.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+            Caja cajaAbierta = cajaService.abrirCaja(1L);
+
+            assertThat(cajaAbierta.getMontoInicial()).isEqualByComparingTo("350000.00");
+            assertThat(cajaAbierta.isAbierta()).isTrue();
+        }
+
+        @Test
+        void debeRetornarConflictCuandoYaExisteCajaAbierta() {
+            Usuario usuario = usuarioActivo(1L, "admin");
+
+            when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
+            when(cajaRepository.existeCajaAbierta()).thenReturn(true);
+
+            assertThatThrownBy(() -> cajaService.abrirCaja(1L))
+                    .isInstanceOf(ResponseStatusException.class)
+                    .satisfies(ex -> {
+                        ResponseStatusException response = (ResponseStatusException) ex;
+                        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+                        assertThat(response.getReason()).isEqualTo("Ya hay una caja abierta");
+                    });
+        }
+    }
+
+    @Nested
+    class CerrarCaja {
+
+        @Test
+        void debeRetornarConflictSiHayPedidosPendientes() {
+            Caja cajaAbierta = cajaAbierta(10L, new BigDecimal("100000.00"));
+            Usuario usuarioCierre = usuarioActivo(2L, "cierre");
+            Pedido pedidoPendiente = pedidoPendiente(cajaAbierta);
+
+            when(cajaRepository.obtenerCajaAbierta()).thenReturn(Optional.of(cajaAbierta));
+            when(usuarioRepository.findById(2L)).thenReturn(Optional.of(usuarioCierre));
+            when(pedidoRepository.findPedidosByCaja(10L)).thenReturn(List.of(pedidoPendiente));
+
+            assertThatThrownBy(() -> cajaService.cerrarCaja(2L, BigDecimal.ZERO))
+                    .isInstanceOf(ResponseStatusException.class)
+                    .satisfies(ex -> {
+                        ResponseStatusException response = (ResponseStatusException) ex;
+                        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+                        assertThat(response.getReason()).isEqualTo("no se puede cerrar caja con pedidos pendientes");
+                    });
+        }
+
+        @Test
+        void debeCerrarCajaYRegistrarRetiroCuandoEsValido() {
+            Caja cajaAbierta = cajaAbierta(10L, new BigDecimal("100000.00"));
+            Usuario usuarioCierre = usuarioActivo(2L, "cierre");
+            Pedido pedidoPagado = pedidoPagado(
+                    cajaAbierta,
+                    new BigDecimal("12000.00"),
+                    MetodoPago.EFECTIVO,
+                    usuarioActivo(3L, "cajero")
+            );
+
+            when(cajaRepository.obtenerCajaAbierta()).thenReturn(Optional.of(cajaAbierta));
+            when(usuarioRepository.findById(2L)).thenReturn(Optional.of(usuarioCierre));
+            when(pedidoRepository.findPedidosByCaja(10L)).thenReturn(List.of(pedidoPagado));
+            when(cajaRepository.calcularSaldoPorCaja(10L)).thenReturn(new BigDecimal("50000.00"));
+            when(movimientoCajaRepository.save(any(MovimientoCaja.class)))
+                    .thenAnswer(invocation -> invocation.getArgument(0));
+            when(cajaRepository.save(any(Caja.class))).thenAnswer(invocation -> invocation.getArgument(0));
+
+            Caja cajaCerrada = cajaService.cerrarCaja(2L, new BigDecimal("20000.00"));
+
+            assertThat(cajaCerrada.isAbierta()).isFalse();
+            assertThat(cajaCerrada.getMontoFinal()).isEqualByComparingTo("130000.00");
+            assertThat(cajaCerrada.getUtilidad()).isEqualByComparingTo("50000.00");
+            assertThat(cajaCerrada.getUsuarioCierre()).isEqualTo(usuarioCierre);
+
+            ArgumentCaptor<MovimientoCaja> movimientoCaptor = ArgumentCaptor.forClass(MovimientoCaja.class);
+            verify(movimientoCajaRepository).save(movimientoCaptor.capture());
+            assertThat(movimientoCaptor.getValue().getTipo()).isEqualTo(TipoMovimiento.RETIRO);
+            assertThat(movimientoCaptor.getValue().getMonto()).isEqualByComparingTo("20000.00");
+        }
+    }
+
+    @Nested
+    class ObtenerCajaResumen {
+
+        @Test
+        void debeCalcularIngresosPorMetodoYEstructuraDelResumen() {
+            Caja cajaAbierta = cajaAbierta(25L, new BigDecimal("100000.00"));
+            Usuario cajero = usuarioActivo(9L, "cajero");
+
+            Pedido efectivo = pedidoPagado(cajaAbierta, new BigDecimal("30000.00"), MetodoPago.EFECTIVO, cajero);
+            Pedido transferencia = pedidoPagado(cajaAbierta, new BigDecimal("40000.00"), MetodoPago.TRANSFERENCIA, cajero);
+            Pedido credito = pedidoPagado(cajaAbierta, new BigDecimal("50000.00"), MetodoPago.TARJETA_CREDITO, cajero);
+            Pedido debito = pedidoPagado(cajaAbierta, new BigDecimal("20000.00"), MetodoPago.TARJETA_DEBITO, cajero);
+            Pedido pendiente = pedidoPendiente(cajaAbierta);
+
+            when(cajaRepository.obtenerCajaAbierta()).thenReturn(Optional.of(cajaAbierta));
+            when(pedidoRepository.findPedidosByCaja(25L))
+                    .thenReturn(List.of(efectivo, transferencia, credito, debito, pendiente));
+            when(movimientoCajaRepository.calcularTotalesByTipoAndCaja(TipoMovimiento.EGRESO, cajaAbierta))
+                    .thenReturn(new BigDecimal("15000.00"));
+            when(movimientoCajaRepository.calcularTotalesByTipoAndCaja(TipoMovimiento.RETIRO, cajaAbierta))
+                    .thenReturn(new BigDecimal("5000.00"));
+
+            CajaResumenResponseDTO resumen = cajaService.obtenerCajaResumen();
+
+            assertThat(resumen.getMontoInicial()).isEqualByComparingTo("100000.00");
+            assertThat(resumen.getIngresos()).isEqualByComparingTo("140000.00");
+            assertThat(resumen.getIngresosEfectivo()).isEqualByComparingTo("30000.00");
+            assertThat(resumen.getIngresosTransferencia()).isEqualByComparingTo("40000.00");
+            assertThat(resumen.getIngresosTarjeta()).isEqualByComparingTo("70000.00");
+            assertThat(resumen.getEgresos()).isEqualByComparingTo("15000.00");
+            assertThat(resumen.getRetiros()).isEqualByComparingTo("5000.00");
+            assertThat(resumen.getSaldo()).isEqualByComparingTo("220000.00");
+        }
+    }
+
+    private Pedido pedidoPendiente(Caja caja) {
+        Producto producto = new Producto("Producto Pendiente", new BigDecimal("10000.00"), "test", new Categoria("Cat"));
+        return new Pedido("Pedido pendiente", List.of(new DetallePedido(producto, 1)), caja);
+    }
+
+    private Pedido pedidoPagado(Caja caja, BigDecimal precio, MetodoPago metodoPago, Usuario usuario) {
+        Producto producto = new Producto("Producto " + precio, precio, "test", new Categoria("Cat"));
+        Pedido pedido = new Pedido("Pedido pagado", List.of(new DetallePedido(producto, 1)), caja);
+        pedido.pagar(usuario, metodoPago);
+        return pedido;
+    }
+
+    private Caja cajaAbierta(Long id, BigDecimal montoInicial) {
+        Usuario usuarioApertura = usuarioActivo(1L, "apertura");
+        Caja caja = new Caja(montoInicial, usuarioApertura);
+        ReflectionTestUtils.setField(caja, "id", id);
+        return caja;
+    }
+
+    private Usuario usuarioActivo(Long id, String username) {
+        Usuario usuario = new Usuario("Usuario " + username, username, "hash", username + "@mail.test", Rol.ADMINISTRADOR);
+        ReflectionTestUtils.setField(usuario, "id", id);
+        return usuario;
+    }
+}

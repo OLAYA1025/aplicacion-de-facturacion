@@ -23,15 +23,12 @@ export class ModalProductosComponent {
   @Input() productos: Producto[] = [];
   @Input() productosFiltrados: Producto[] = [];
   @Input() detallesSeleccionados: DetalleTemp[] = [];
+  @Input() cantidadesOriginalesEdicion: Record<number, number> = {};
 
   @Output() cerrar = new EventEmitter<void>();
   @Output() busquedaChange = new EventEmitter<string>();
   @Output() categoriaChange = new EventEmitter<number | null>();
   @Output() agregarProducto = new EventEmitter<Producto>();
-  @Output() cantidadProductoChange = new EventEmitter<{
-    producto: Producto;
-    cantidad: number;
-  }>();
 
   onBusquedaChange(value: string): void {
     this.busquedaChange.emit(value);
@@ -43,16 +40,6 @@ export class ModalProductosComponent {
 
   onAgregarProducto(producto: Producto): void {
     this.agregarProducto.emit(producto);
-  }
-
-  onCantidadProductoChange(producto: Producto, value: string | number): void {
-    const cantidad = Number(value);
-    if (Number.isNaN(cantidad)) return;
-
-    this.cantidadProductoChange.emit({
-      producto,
-      cantidad: Math.max(0, Math.floor(cantidad)),
-    });
   }
 
   obtenerIdProducto(producto: Producto): number {
@@ -79,11 +66,30 @@ export class ModalProductosComponent {
     return stockActual - stockReservado;
   }
 
+  stockDisponibleParaPedido(producto: Producto): number {
+    const productoId = this.obtenerIdProducto(producto);
+    if (productoId <= 0) {
+      return this.stockDisponible(producto);
+    }
+
+    return this.stockDisponible(producto) + (this.cantidadesOriginalesEdicion[productoId] ?? 0);
+  }
+
   obtenerCantidadSeleccionada(productoId: number): number {
-    return (
-      this.detallesSeleccionados.find((d) => this.obtenerIdProducto(d.producto) === productoId)
-        ?.cantidad || 0
-    );
+    if (productoId <= 0) {
+      return 0;
+    }
+    return this.detallesSeleccionados
+      .filter((detalle) => this.obtenerIdProducto(detalle.producto) === productoId)
+      .reduce((total, detalle) => total + detalle.cantidad, 0);
+  }
+
+  obtenerLineasSeleccionadas(productoId: number): number {
+    if (productoId <= 0) {
+      return 0;
+    }
+    return this.detallesSeleccionados
+      .filter((detalle) => this.obtenerIdProducto(detalle.producto) === productoId).length;
   }
 
   esProductoSeleccionado(productoId: number): boolean {

@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8" />
+    <title>Pre factura térmica</title>
+    <style>
+        @page {
+            size: 80mm 297mm;
+            margin: 2mm;
+        }
+
+        body {
+            font-family: monospace;
+            font-size: 11px;
+            width: 76mm;
+            margin: 0 auto;
+            color: #000;
+        }
+
+        .center {
+            text-align: center;
+        }
+
+        .right {
+            text-align: right;
+        }
+
+        .bold {
+            font-weight: bold;
+        }
+
+        .small {
+            font-size: 10px;
+        }
+
+        .mt-1 {
+            margin-top: 4px;
+        }
+
+        .mt-2 {
+            margin-top: 8px;
+        }
+
+        .mt-3 {
+            margin-top: 20px;
+            margin-bottom: 20px;
+        }
+        .mt-4 {
+            margin-top: 30px;
+            margin-bottom: 20px;
+        }
+
+
+        .line {
+            border-top: 1px dashed #000;
+            margin: 6px 0;
+        }
+
+        .line2 {
+            border: none;
+            border-top: 1px solid black;
+            margin: 6px 0;
+        }
+        .preline {
+            white-space: pre-line;
+            word-wrap: break-word;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            table-layout: fixed;
+        }
+
+        .items th,
+        .items td,
+        .impuestos th,
+        .impuestos td {
+            padding: 2px 0;
+            vertical-align: top;
+        }
+
+        .items thead th,
+        .impuestos thead th {
+            border-bottom: 1px dashed #000;
+        }
+
+        .totales td {
+            padding: 2px 0;
+        }
+
+        .w-item   { width: 10%; }
+        .w-desc   { width: 45%; }
+        .w-cant   { width: 10%; }
+        .w-valor  { width: 35%; }
+
+        .w-imp    { width: 20%; }
+        .w-base   { width: 40%; }
+        .w-total  { width: 40%; }
+    </style>
+</head>
+<body>
+
+<div th:text="|fecha ${factura.fechaHora}|">fecha: </div>
+<div class="line2"></div>
+
+
+<table class="items">
+    <thead>
+    <tr>
+        <th class="w-item">ITEM</th>
+        <th class="w-desc">DESCRIPCION</th>
+        <th class="w-cant right">CANT</th>
+        <th class="w-valor right">VALOR</th>
+    </tr>
+    </thead>
+    <tbody>
+    <tr th:each="item, stat : ${factura.items}">
+        <td th:text="${stat.count}">1</td>
+        <td>
+            <div th:text="${item.nombre}">CAPUCCINO</div>
+        </td>
+        <td class="right" th:text="${item.cantidad}">1</td>
+        <td class="right" th:text="'$' + ${#numbers.formatDecimal(item.valorUnitario, 0, 'COMMA', 2, 'POINT')}">$5000.00</td>
+    </tr>
+    </tbody>
+</table>
+
+<div class="line"></div>
+
+
+
+<table class="totales">
+
+    <tr>
+        <td class="bold">TOTAL</td>
+        <td class="right bold" th:text="'$' + ${#numbers.formatDecimal(factura.total, 0, 'COMMA', 2, 'POINT')}">$0</td>
+    </tr>
+</table>
+
+
+</body>
+</html>

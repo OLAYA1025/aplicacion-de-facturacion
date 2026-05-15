@@ -10,7 +10,7 @@ import { ModalMensajeService } from '../../../shared/services/modal-mensaje.serv
 import { obtenerMensajeError } from '../../../shared/utils/error-message.util';
 
 type FiltroEstadoUsuario = 'TODOS' | 'ACTIVOS' | 'DESACTIVADOS';
-type RolUsuario = 'ADMINISTRADOR' | 'CAJERO';
+type RolUsuario = 'ADMINISTRADOR' | 'CAJERO' | 'MESERO' | 'COCINERO';
 
 interface NuevoUsuarioFormState {
   nombre: string;
@@ -50,7 +50,7 @@ export class UsuariosComponent implements OnInit {
 
   busqueda: string = '';
   filtroEstado: FiltroEstadoUsuario = 'TODOS';
-  readonly roles: RolUsuario[] = ['ADMINISTRADOR', 'CAJERO'];
+  readonly roles: RolUsuario[] = ['ADMINISTRADOR', 'CAJERO', 'MESERO', 'COCINERO'];
 
   modalCrearUsuarioAbierto: boolean = false;
   modalCambiarPasswordAbierto: boolean = false;
@@ -289,13 +289,13 @@ export class UsuariosComponent implements OnInit {
   }
 
   toggleEstadoUsuario(usuario: UsuarioResponse): void {
-    if (usuario.rol !== 'CAJERO') {
+     if (usuario.rol === 'ADMINISTRADOR') {
       this.mostrarError(
         'Acción no permitida',
-        'Solo los usuarios con rol CAJERO pueden cambiar su estado.',
+        'Solo los usuarios con rol distinto de administrador pueden cambiar su estado.',
       );
       return;
-    }
+    } 
 
     if (this.estaProcesandoEstado(usuario.id)) {
       return;

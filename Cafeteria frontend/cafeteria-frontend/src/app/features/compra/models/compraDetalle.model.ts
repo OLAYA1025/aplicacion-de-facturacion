@@ -1,5 +1,5 @@
 export interface DetalleCompraRequest {
-    productoId: number;
-    cantidad: number;
-    costoUnitario: number
+  productoId: number;
+  cantidad: number;
+  subtotal: number;
 }

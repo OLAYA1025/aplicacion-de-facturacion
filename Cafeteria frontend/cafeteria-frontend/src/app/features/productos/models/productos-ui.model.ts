@@ -1,4 +1,4 @@
-export type TabProductos = 'inventariables' | 'preparaciones' | 'crear-producto';
+export type TabProductos = 'inventariables' | 'preparaciones' | 'categorias' | 'crear-producto';
 
 export type TipoGestion = 'INVENTARIABLE' | 'PREPARACION';
 export type TipoImpuesto = 'IVA' | 'INC';

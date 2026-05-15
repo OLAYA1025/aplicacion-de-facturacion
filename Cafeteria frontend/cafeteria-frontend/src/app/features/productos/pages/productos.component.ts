@@ -10,6 +10,7 @@ import { ProductosFiltrosComponent } from '../components/productos-filtros/produ
 import { ProductosHeaderComponent } from '../components/productos-header/productos-header.component';
 import { ProductosListadoComponent } from '../components/productos-listado/productos-listado.component';
 import { ProductosToastExitoComponent } from '../components/productos-toast-exito/productos-toast-exito.component';
+import { ProductosCategoriasComponent } from '../components/productos-categorias/productos-categorias.component';
 import { actualizarProducto } from '../models/actualizarProducto.model';
 import { Categoria } from '../models/categoria.model';
 import { CrearProducto } from '../models/crearProducto.model';
@@ -39,6 +40,7 @@ import { obtenerMensajeError } from '../../../shared/utils/error-message.util';
     ProductoFormComponent,
     ProductosToastExitoComponent,
     ProductosEdicionModalComponent,
+    ProductosCategoriasComponent,
   ],
   templateUrl: './productos.component.html',
 })
@@ -513,10 +515,16 @@ export class ProductosComponent implements OnInit, OnDestroy {
 
   private obtenerTabDesdeRuta(): TabProductos {
     const tab = this.route.snapshot.data['productosTab'];
-    if (tab === 'preparaciones' || tab === 'inventariables' || tab === 'crear-producto') {
+    if (tab === 'preparaciones' || tab === 'inventariables' || tab === 'categorias' || tab === 'crear-producto') {
       return tab;
     }
     return 'inventariables';
+  }
+
+  actualizarCategoriasDesdeGestion(categorias: Categoria[]): void {
+    this.categorias = this.normalizarCategorias(categorias);
+    this.sincronizarCategoriaSeleccionadaEnFormulario();
+    this.cdr.detectChanges();
   }
 
   private cargarCategorias(): void {

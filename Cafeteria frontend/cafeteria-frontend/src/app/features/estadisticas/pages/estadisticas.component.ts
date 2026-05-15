@@ -163,29 +163,6 @@ export class EstadisticasComponent implements OnInit {
     });
   }
 
-  formatearHora(valor: string): string {
-    if (!valor) {
-      return '-';
-    }
-
-    if (valor.includes('T')) {
-      const fecha = new Date(valor);
-      if (!Number.isNaN(fecha.getTime())) {
-        return fecha.toLocaleTimeString('es-CO', {
-          hour: '2-digit',
-          minute: '2-digit',
-        });
-      }
-    }
-
-    const partes = valor.split(':');
-    if (partes.length >= 2) {
-      return `${partes[0]}:${partes[1]}`;
-    }
-
-    return valor;
-  }
-
   formatearFechaHora(fechaIso: string): string {
     if (!fechaIso) {
       return '-';
@@ -469,11 +446,17 @@ export class EstadisticasComponent implements OnInit {
       data.historialRetiros?.length ?? 0
     );
 
+    const historialCajasCerradas = (data.historialCajasCerradas ?? []).map((caja) => ({
+      ...caja,
+      fechaApertura: caja.fechaApertura ?? caja.horaApertura ?? '',
+      fechaCierre: caja.fechaCierre ?? caja.horaCierre ?? '',
+    }));
+
     return {
       ...data,
       graficoUtilidades,
       graficoTopProductos,
-      historialCajasCerradas: data.historialCajasCerradas ?? [],
+      historialCajasCerradas,
       historialRetiros: data.historialRetiros ?? [],
       paginacionCajasCerradas,
       paginacionRetiros,

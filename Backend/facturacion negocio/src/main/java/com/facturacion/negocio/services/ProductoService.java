@@ -7,6 +7,7 @@ import com.facturacion.negocio.enumerated.TipoImpuesto;
 import com.facturacion.negocio.repository.CategoriaRepository;
 import com.facturacion.negocio.repository.ProductoRepository;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -55,6 +56,7 @@ public class ProductoService {
         return productoRepository.findByCategoria(categoria);
     }
 
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public Producto crearProducto(String nombre,
                                   BigDecimal precio,
                                   String descripcion,
@@ -90,6 +92,7 @@ public class ProductoService {
         }
     }
 
+    @PreAuthorize("hasRole('ADMINISTRADOR')")
     public Producto editarProducto(Long id,
                                    String nombre,
                                    BigDecimal precio,

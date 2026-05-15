@@ -24,6 +24,9 @@ export class SidebarComponent implements OnInit {
   comprasExpanded = false;
   proveedoresExpanded = false;
   esCajero = false;
+  esAdministrador = false;
+  esMesero = false;
+  esCocinero = false;
 
   toggleInventario() {
     this.inventarioExpanded = !this.inventarioExpanded;
@@ -40,6 +43,9 @@ export class SidebarComponent implements OnInit {
   ngOnInit(): void {
     const rolUsuario = this.authService.getUsuario()?.rol?.toUpperCase();
     this.esCajero = rolUsuario === 'CAJERO';
+    this.esAdministrador = rolUsuario === 'ADMINISTRADOR';
+    this.esMesero = rolUsuario === 'MESERO';
+    this.esCocinero = rolUsuario === 'COCINERO';
 
     this.actualizarExpansionSegunRuta(this.router.url);
     this.router.events.pipe(filter((event) => event instanceof NavigationEnd)).subscribe(() => {

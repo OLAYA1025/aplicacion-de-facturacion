@@ -20,7 +20,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 @RestController
-@PreAuthorize("hasRole('ADMINISTRADOR')")
 @RequestMapping("/proveedor")
 public class ProveedorController {
 

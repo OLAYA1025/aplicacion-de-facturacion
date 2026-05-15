@@ -9,6 +9,8 @@ import com.facturacion.negocio.dto.factura.FactusFactElectronicaRequestDTO;
 import com.facturacion.negocio.dto.factura.ItemDTO;
 import org.springframework.stereotype.Component;
 import com.facturacion.negocio.enumerated.TipoDocumentoFiscal;
+import com.facturacion.negocio.services.DetallePedidoAgrupador;
+import com.facturacion.negocio.services.DetallePedidoAgrupador.DetallePedidoAgrupado;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -42,8 +44,13 @@ public class FactusFactElectronicaRequestMapper {
 
     private List<ItemDTO> mapItems(List<DetallePedido> detalles) {
         List<ItemDTO> itemsDTO = new ArrayList<>();
-        for (DetallePedido detalle : detalles) {
-            itemsDTO.add(ItemDTO.from(detalle));
+        List<DetallePedidoAgrupado> detallesAgrupados = DetallePedidoAgrupador.agruparPorProducto(detalles);
+        for (DetallePedidoAgrupado detalleAgrupado : detallesAgrupados) {
+            itemsDTO.add(ItemDTO.from(
+                    detalleAgrupado.getProducto(),
+                    detalleAgrupado.getCantidad(),
+                    detalleAgrupado.getPrecioUnitario()
+            ));
         }
         return itemsDTO;
     }

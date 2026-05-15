@@ -102,6 +102,14 @@ export const routes: Routes = [
             data: { title: 'Crear producto', productosTab: 'crear-producto' },
           },
           {
+            path: 'categorias',
+            loadComponent: () =>
+              import('./features/productos/pages/productos.component').then(
+                (m) => m.ProductosComponent
+              ),
+            data: { title: 'Categorías', productosTab: 'categorias' },
+          },
+          {
             path: 'nuevo',
             pathMatch: 'full',
             redirectTo: 'crear-producto',

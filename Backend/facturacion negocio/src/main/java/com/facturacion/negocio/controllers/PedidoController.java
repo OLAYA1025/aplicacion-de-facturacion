@@ -3,8 +3,6 @@ package com.facturacion.negocio.controllers;
 import com.facturacion.negocio.domain.DetallePedido;
 import com.facturacion.negocio.domain.DocumentoFiscal;
 import com.facturacion.negocio.domain.Pedido;
-import com.facturacion.negocio.domain.Producto;
-import com.facturacion.negocio.dto.request.DetallePedidoRequestDTO;
 import com.facturacion.negocio.dto.request.PedidoCreateRequestDTO;
 import com.facturacion.negocio.dto.request.PedidoUpdateRequestDTO;
 import com.facturacion.negocio.dto.request.PedidoUsuarioRequestDTO;
@@ -13,13 +11,14 @@ import com.facturacion.negocio.dto.response.PedidoResponseDTO;
 import com.facturacion.negocio.dto.response.PedidoTotalResponseDTO;
 import com.facturacion.negocio.enumerated.EstadoDocumentoFiscal;
 import com.facturacion.negocio.enumerated.TipoDocumentoFiscal;
-import com.facturacion.negocio.repository.ProductoRepository;
+import com.facturacion.negocio.repository.PedidoRepository;
 import com.facturacion.negocio.services.DocumentoFiscalService;
 import com.facturacion.negocio.services.PedidoService;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
@@ -27,23 +26,21 @@ import java.math.BigDecimal;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 @RestController
 @RequestMapping("/pedido")
 public class PedidoController {
 
     private final PedidoService pedidoService;
-    private final ProductoRepository productoRepository;
     private final DocumentoFiscalService documentoFiscalService;
+    private final PedidoRepository pedidoRepository;
 
-    public PedidoController(PedidoService pedidoService, ProductoRepository productoRepository, DocumentoFiscalService documentoFiscalService) {
+    public PedidoController(PedidoService pedidoService, DocumentoFiscalService documentoFiscalService, PedidoRepository pedidoRepository) {
         this.pedidoService = pedidoService;
-        this.productoRepository = productoRepository;
         this.documentoFiscalService = documentoFiscalService;
+        this.pedidoRepository = pedidoRepository;
     }
 
     @GetMapping("/{id}")
@@ -129,28 +126,31 @@ public class PedidoController {
         return ResponseEntity.ok(response);
     }
 
+    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'CAJERO', 'MESERO')")
     @PostMapping
     public ResponseEntity<PedidoResponseDTO> crearPedido(@RequestBody PedidoCreateRequestDTO request) {
         if (request == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "body invalido");
         }
-        List<DetallePedido> detalles = mapDetalles(request.getDetalles());
-        Pedido pedido = pedidoService.crearPedido(detalles, request.getNombre());
+        Pedido pedido = pedidoService.crearPedido(request.getDetalles(), request.getNombre());
+        List<DetallePedido> detalles = pedidoService.obtenerDetalles(pedido.getId());
         URI location = URI.create("/pedido/" + pedido.getId());
         return ResponseEntity.created(location).body(PedidoResponseDTO.from(pedido, detalles));
     }
 
+    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'CAJERO', 'MESERO')")
     @PutMapping("/{id}")
     public ResponseEntity<PedidoResponseDTO> editarPedido(@PathVariable Long id,
                                                          @RequestBody PedidoUpdateRequestDTO request) {
         if (request == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "body invalido");
         }
-        List<DetallePedido> detalles = mapDetalles(request.getDetalles());
-        Pedido pedido = pedidoService.editarPedido(id, detalles, request.getNombre());
+        Pedido pedido = pedidoService.editarPedido(id, request.getDetalles(), request.getNombre());
+        List<DetallePedido> detalles = pedidoService.obtenerDetalles(pedido.getId());
         return ResponseEntity.ok(PedidoResponseDTO.from(pedido, detalles));
     }
 
+    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'CAJERO')")
     @PostMapping("/{id}/cobrar")
     public ResponseEntity<PedidoResponseDTO> cobrarPedido(@PathVariable Long id,
                                                           @RequestBody PedidoUsuarioRequestDTO request) {
@@ -167,6 +167,7 @@ public class PedidoController {
         return ResponseEntity.ok(PedidoResponseDTO.from(pedido, detalles));
     }
 
+    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'CAJERO')")
     @PostMapping("/{id}/imprimir")
     public ResponseEntity<?> imprimirPedido(@PathVariable Long id) {
         Pedido pedido = pedidoService.buscarPorId(id);
@@ -206,6 +207,7 @@ public class PedidoController {
                 .body(pdf);
     }
 
+    @PreAuthorize("hasAnyRole('ADMINISTRADOR', 'CAJERO')")
     @PostMapping("/{id}/cancelar")
     public ResponseEntity<PedidoResponseDTO> cancelarPedido(@PathVariable Long id,
                                                             @RequestBody PedidoUsuarioRequestDTO request) {
@@ -217,37 +219,21 @@ public class PedidoController {
         return ResponseEntity.ok(PedidoResponseDTO.from(pedido, detalles));
     }
 
-    private List<DetallePedido> mapDetalles(List<DetallePedidoRequestDTO> detalles) {
-        if (detalles == null) {
-            return new ArrayList<>();
-        }
+    @GetMapping("/{id}/tirilla/pdf")
+    public ResponseEntity<byte[]> pdfTirilla(@PathVariable Long id) {
+        Pedido pedido = pedidoRepository.findById(id).orElseThrow(() ->
+                new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Pedido no encontrado"))
+                ;
 
-        Set<Long> productoIds = new HashSet<>();
-        List<DetallePedido> resultado = new ArrayList<>();
-        for (DetallePedidoRequestDTO detalle : detalles) {
-            if (detalle == null) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "detalle invalido");
-            }
+        byte[] pdfBytes = pedidoService.obtenerPdfTirillaPreFactura(id);
 
-            Long productoId = detalle.getProductoId();
-            if (productoId == null) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "productoId invalido");
-            }
-            if (!productoIds.add(productoId)) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "productoId repetido");
-            }
+        String filename = "PEDIDO-"+pedido.getId()+".pdf";
 
-            Integer cantidad = detalle.getCantidad();
-            if (cantidad == null || cantidad <= 0) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "cantidad invalida");
-            }
-
-            Producto producto = productoRepository.findById(productoId)
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Producto no encontrado"));
-
-            resultado.add(new DetallePedido(producto, cantidad));
-        }
-
-        return resultado;
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_PDF)
+                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + filename + "\"")
+                .body(pdfBytes);
     }
 }

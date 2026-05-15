@@ -21,10 +21,26 @@ import java.util.Optional;
 @Repository
 public interface PedidoRepository extends JpaRepository<Pedido, Long> {
 
-    @Query("SELECT d FROM DetallePedido d JOIN FETCH d.producto WHERE d.pedido.id = :pedidoId")
+    @Query("""
+            SELECT DISTINCT d
+            FROM DetallePedido d
+            JOIN FETCH d.producto p
+            LEFT JOIN FETCH d.detallePedidoNotas dn
+            LEFT JOIN FETCH dn.notaPredefinida np
+            LEFT JOIN FETCH np.grupo g
+            WHERE d.pedido.id = :pedidoId
+            """)
     List<DetallePedido> findDetallesPedidoByPedido(@Param("pedidoId") Long pedidoId);
 
-    @Query("SELECT d FROM DetallePedido d JOIN FETCH d.producto WHERE d.pedido.id IN :pedidoIds")
+    @Query("""
+            SELECT DISTINCT d
+            FROM DetallePedido d
+            JOIN FETCH d.producto p
+            LEFT JOIN FETCH d.detallePedidoNotas dn
+            LEFT JOIN FETCH dn.notaPredefinida np
+            LEFT JOIN FETCH np.grupo g
+            WHERE d.pedido.id IN :pedidoIds
+            """)
     List<DetallePedido> findDetallesByPedidoIds(@Param("pedidoIds") List<Long> pedidoIds);
 
     @Query("SELECT p FROM Pedido p WHERE p.caja.estado = com.facturacion.negocio.enumerated.EstadoCaja.ABIERTA")

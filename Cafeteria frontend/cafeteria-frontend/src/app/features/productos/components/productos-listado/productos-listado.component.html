@@ -76,6 +76,7 @@
           <td class="px-5 py-4">
             <div class="flex items-center justify-end gap-2">
               <button
+                *ngIf="esAdministrador"
                 type="button"
                 (click)="onEditar(producto)"
                 class="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-semibold text-gray-700 transition-colors hover:bg-gray-100"

@@ -1,4 +1,5 @@
 export interface DetallePedidoRequest {
-    productoId: number;
-    cantidad: number
+  productoId: number;
+  cantidad: number;
+  notaPredefinidaIds?: number[];
 }

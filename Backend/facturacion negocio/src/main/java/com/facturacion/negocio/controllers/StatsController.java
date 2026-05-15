@@ -15,7 +15,6 @@ import org.springframework.web.bind.annotation.RestController;
 import java.time.LocalDate;
 
 @RestController
-@PreAuthorize("hasRole('ADMINISTRADOR')")
 @RequestMapping("/stats")
 public class StatsController {
 

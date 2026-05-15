@@ -35,6 +35,11 @@
               {{ detalle.producto.nombre }}
             </p>
             <p class="text-xs text-gray-500 mt-0.5">{{ formatearMonto(detalle.producto.precio) }} c/u</p>
+            <div *ngIf="detalle.notas.length" class="mt-1 space-y-0.5">
+              <p *ngFor="let nota of detalle.notas" class="text-[11px] text-indigo-700">
+                - {{ nota.grupoNombre }}: {{ nota.descripcion }}
+              </p>
+            </div>
           </div>
           <button (click)="eliminarDetalle.emit(i)" class="p-1.5 hover:bg-red-100 rounded-lg transition-colors flex-shrink-0">
             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor" class="w-4 h-4 text-red-600">

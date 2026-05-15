@@ -1,5 +1,13 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import {
+  Component,
+  EventEmitter,
+  Input,
+  OnChanges,
+  OnInit,
+  Output,
+  SimpleChanges,
+} from '@angular/core';
 import { Pedido } from '../../../../core/models/pedido.model';
 
 @Component({
@@ -8,12 +16,29 @@ import { Pedido } from '../../../../core/models/pedido.model';
   imports: [CommonModule],
   templateUrl: './pedido-card.component.html',
 })
-export class PedidoCardComponent {
+export class PedidoCardComponent implements OnInit, OnChanges {
   @Input({ required: true }) pedido!: Pedido;
+  @Input() imprimiendoPrefactura = false;
 
   @Output() editar = new EventEmitter<Pedido>();
   @Output() cobrar = new EventEmitter<Pedido>();
   @Output() cancelar = new EventEmitter<Pedido>();
+  @Output() imprimirPrefactura = new EventEmitter<Pedido>();
+  esPendiente = false;
+  esCancelado = false;
+
+  ngOnInit(): void {
+    this.actualizarEstado();
+  }
+
+  ngOnChanges(_: SimpleChanges): void {
+    this.actualizarEstado();
+  }
+
+  private actualizarEstado(): void {
+    this.esPendiente = this.pedido.estado === 'PENDIENTE';
+    this.esCancelado = this.pedido.estado === 'CANCELADO';
+  }
 
   onEditar(): void {
     this.editar.emit(this.pedido);
@@ -25,6 +50,10 @@ export class PedidoCardComponent {
 
   onCancelar(): void {
     this.cancelar.emit(this.pedido);
+  }
+
+  onImprimirPrefactura(): void {
+    this.imprimirPrefactura.emit(this.pedido);
   }
 
   formatearMonto(monto: number): string {

@@ -25,8 +25,17 @@ public class SecurityConfig {
         http.authorizeHttpRequests(auth -> auth
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers("/auth/**").permitAll()
-                .requestMatchers("/usuario/**").permitAll()
+                .requestMatchers("/usuario/**").hasRole("ADMINISTRADOR")
                 .requestMatchers("/actuator/**").permitAll()
+                .requestMatchers("/caja/**").hasAnyRole("ADMINISTRADOR", "CAJERO", "MESERO", "COCINERO")
+                .requestMatchers("/cliente/**").hasAnyRole("ADMINISTRADOR", "CAJERO")
+                .requestMatchers("/compra/**").hasRole("ADMINISTRADOR")
+                .requestMatchers("/documentos-fiscales/**").hasAnyRole("ADMINISTRADOR", "CAJERO")
+                .requestMatchers("/movimientos/**").hasAnyRole("ADMINISTRADOR", "CAJERO")
+                .requestMatchers("/movimientos/**").hasAnyRole("ADMINISTRADOR", "CAJERO")
+                .requestMatchers("/producto/**").hasAnyRole("ADMINISTRADOR", "MESERO", "CAJERO", "COCINERO")
+                .requestMatchers("/proveedor/**").hasRole("ADMINISTRADOR")
+                .requestMatchers("/stats/**").hasRole("ADMINISTRADOR")
                 .anyRequest().authenticated()
         );
         http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);

@@ -29,4 +29,20 @@ public class PdfService {
             throw new RuntimeException("Error generando PDF", e);
         }
     }
+
+    public byte[] generarPdfPreFactura(PreFactura preFactura){
+        try (ByteArrayOutputStream os = new ByteArrayOutputStream()) {
+            String html = facturaTemplateService.renderPreFactura(preFactura);
+
+            PdfRendererBuilder builder = new PdfRendererBuilder();
+
+            builder.withHtmlContent(html, null);
+            builder.toStream(os);
+            builder.run();
+
+            return os.toByteArray();
+        } catch (Exception e) {
+            throw new RuntimeException("Error generando PDF pre factura", e);
+        }
+    }
 }

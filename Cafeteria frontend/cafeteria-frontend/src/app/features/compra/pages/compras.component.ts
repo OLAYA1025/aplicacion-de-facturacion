@@ -15,6 +15,7 @@ import { ProveedorService } from '../../proveedor/services/proveedor.service';
 import { CompraResponse } from '../models/compraResponse.model';
 import { CompraResumenResponse } from '../models/compraResumenResponse.model';
 import { CompraService } from '../services/compra.service';
+import { DetalleCompraRequest } from '../models/compraDetalle.model';
 import { ModalMensajeService } from '../../../shared/services/modal-mensaje.service';
 import { obtenerMensajeError } from '../../../shared/utils/error-message.util';
 
@@ -32,7 +33,7 @@ type OpcionAgregarProveedor = typeof OPCION_AGREGAR_PROVEEDOR;
 interface DetalleCompraFormState {
   productoId: number | OpcionAgregarProducto | null;
   cantidad: number | null;
-  costoUnitario: number | null;
+  subtotal: number | null;
 }
 
 interface NuevaCompraFormState {
@@ -328,7 +329,7 @@ export class ComprasComponent implements OnInit {
     this.nuevaCompra.detalles.push({
       productoId: null,
       cantidad: null,
-      costoUnitario: null,
+      subtotal: null,
     });
   }
 
@@ -337,7 +338,7 @@ export class ComprasComponent implements OnInit {
       this.nuevaCompra.detalles[0] = {
         productoId: null,
         cantidad: null,
-        costoUnitario: null,
+        subtotal: null,
       };
       return;
     }
@@ -369,15 +370,79 @@ export class ComprasComponent implements OnInit {
       return;
     }
 
-    if (detalle.costoUnitario === null || detalle.costoUnitario <= 0) {
-      detalle.costoUnitario = productoSeleccionado.precio;
+    const cantidad = this.normalizarCantidad(detalle.cantidad) ?? 1;
+    if (detalle.cantidad === null || detalle.cantidad <= 0) {
+      detalle.cantidad = cantidad;
+    }
+    if (this.normalizarValorMonetario(detalle.subtotal) === null) {
+      detalle.subtotal = this.redondearMoneda(cantidad * Number(productoSeleccionado.precio));
     }
   }
 
+  onCantidadDetalleChange(index: number): void {
+    const detalle = this.nuevaCompra.detalles[index];
+    if (!detalle) {
+      return;
+    }
+
+    const cantidad = this.normalizarCantidad(detalle.cantidad);
+    if (cantidad === null) {
+      return;
+    }
+
+    const subtotal = this.normalizarValorMonetario(detalle.subtotal);
+    if (subtotal !== null) {
+      detalle.subtotal = subtotal;
+      return;
+    }
+
+    if (typeof detalle.productoId !== 'number') {
+      return;
+    }
+
+    const productoSeleccionado = this.productosDisponibles.find(
+      (producto) => producto.codigo === detalle.productoId
+    );
+    if (!productoSeleccionado) {
+      return;
+    }
+    detalle.subtotal = this.redondearMoneda(cantidad * Number(productoSeleccionado.precio));
+  }
+
+  onSubtotalDetalleChange(index: number): void {
+    const detalle = this.nuevaCompra.detalles[index];
+    if (!detalle) {
+      return;
+    }
+
+    const subtotal = this.normalizarValorMonetario(detalle.subtotal);
+    detalle.subtotal = subtotal;
+  }
+
+  calcularCostoUnitarioDetalle(detalle: DetalleCompraFormState): number | null {
+    const cantidad = this.normalizarCantidad(detalle.cantidad);
+    const subtotal = this.normalizarValorMonetario(detalle.subtotal);
+    if (cantidad === null || subtotal === null) {
+      return null;
+    }
+
+    return this.redondearMoneda(subtotal / cantidad);
+  }
+
+  formatearCostoUnitarioDetalle(detalle: DetalleCompraFormState): string {
+    const costoUnitario = this.calcularCostoUnitarioDetalle(detalle);
+    if (costoUnitario === null) {
+      return '-';
+    }
+    return this.formatearMoneda(costoUnitario);
+  }
+
   calcularSubtotalDetalle(detalle: DetalleCompraFormState): number {
-    const cantidad = Number(detalle.cantidad ?? 0);
-    const costoUnitario = Number(detalle.costoUnitario ?? 0);
-    return cantidad * costoUnitario;
+    const subtotal = this.normalizarValorMonetario(detalle.subtotal);
+    if (subtotal !== null) {
+      return subtotal;
+    }
+    return 0;
   }
 
   crearCompra(form: NgForm): void {
@@ -395,23 +460,11 @@ export class ComprasComponent implements OnInit {
     }
 
     const detalles = this.nuevaCompra.detalles
-      .filter((detalle) => {
-        return (
-          typeof detalle.productoId === 'number' &&
-          detalle.cantidad !== null &&
-          detalle.costoUnitario !== null
-        );
-      })
-      .map((detalle) => ({
-        productoId: detalle.productoId as number,
-        cantidad: Number(detalle.cantidad),
-        costoUnitario: Number(detalle.costoUnitario),
-      }))
-      .filter((detalle) => detalle.cantidad > 0 && detalle.costoUnitario > 0);
+      .map((detalle) => this.construirDetalleCompraRequest(detalle))
+      .filter((detalle): detalle is DetalleCompraRequest => detalle !== null);
 
     if (!detalles.length) {
-      this.errorCrearCompra =
-        'Agrega al menos un producto con cantidad y costo unitario mayores a cero.';
+      this.errorCrearCompra = 'Agrega al menos un producto con cantidad y subtotal mayores a cero.';
       return;
     }
 
@@ -671,8 +724,12 @@ export class ComprasComponent implements OnInit {
             const detalle = this.nuevaCompra.detalles[indiceDetalle];
             if (detalle) {
               detalle.productoId = productoCreado.codigo;
-              if (detalle.costoUnitario === null || detalle.costoUnitario <= 0) {
-                detalle.costoUnitario = productoCreado.precio;
+              const cantidad = this.normalizarCantidad(detalle.cantidad) ?? 1;
+              if (detalle.cantidad === null || detalle.cantidad <= 0) {
+                detalle.cantidad = cantidad;
+              }
+              if (this.normalizarValorMonetario(detalle.subtotal) === null) {
+                detalle.subtotal = this.redondearMoneda(cantidad * Number(productoCreado.precio));
               }
             }
           }
@@ -1006,10 +1063,64 @@ export class ComprasComponent implements OnInit {
         {
           productoId: null,
           cantidad: null,
-          costoUnitario: null,
+          subtotal: null,
         },
       ],
     };
+  }
+
+  private construirDetalleCompraRequest(detalle: DetalleCompraFormState): DetalleCompraRequest | null {
+    if (typeof detalle.productoId !== 'number') {
+      return null;
+    }
+
+    const cantidad = this.normalizarCantidad(detalle.cantidad);
+    if (cantidad === null) {
+      return null;
+    }
+
+    const subtotal = this.normalizarValorMonetario(detalle.subtotal);
+    if (subtotal === null) {
+      return null;
+    }
+
+    detalle.subtotal = subtotal;
+
+    return {
+      productoId: detalle.productoId,
+      cantidad,
+      subtotal,
+    };
+  }
+
+  private normalizarCantidad(valor: number | null): number | null {
+    if (valor === null) {
+      return null;
+    }
+
+    const numero = Number(valor);
+    if (!Number.isFinite(numero) || numero <= 0) {
+      return null;
+    }
+
+    return numero;
+  }
+
+  private normalizarValorMonetario(valor: number | null): number | null {
+    if (valor === null) {
+      return null;
+    }
+
+    const numero = Number(valor);
+    if (!Number.isFinite(numero) || numero <= 0) {
+      return null;
+    }
+
+    return this.redondearMoneda(numero);
+  }
+
+  private redondearMoneda(valor: number): number {
+    return Math.round((valor + Number.EPSILON) * 100) / 100;
   }
 
   private crearFormularioProductoRapidoInicial(): NuevoProductoRapidoFormState {

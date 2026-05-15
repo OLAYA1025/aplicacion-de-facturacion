@@ -5,6 +5,8 @@ import com.facturacion.negocio.domain.DetallePedido;
 import com.facturacion.negocio.domain.DocumentoFiscal;
 import com.facturacion.negocio.dto.factura.Establecimiento;
 import com.facturacion.negocio.enumerated.TipoImpuesto;
+import com.facturacion.negocio.services.DetallePedidoAgrupador;
+import com.facturacion.negocio.services.DetallePedidoAgrupador.DetallePedidoAgrupado;
 
 import java.math.BigDecimal;
 import java.time.ZoneId;
@@ -80,8 +82,13 @@ public class Factura {
         this.valorBase = BigDecimal.ZERO;
         this.totalImpuestos = BigDecimal.ZERO;
 
-        for (DetallePedido detalle : detalles) {
-            FacturaItem item = FacturaItem.from(detalle);
+        List<DetallePedidoAgrupado> detallesAgrupados = DetallePedidoAgrupador.agruparPorProducto(detalles);
+        for (DetallePedidoAgrupado detalleAgrupado : detallesAgrupados) {
+            FacturaItem item = FacturaItem.from(
+                    detalleAgrupado.getProducto(),
+                    detalleAgrupado.getCantidad(),
+                    detalleAgrupado.getPrecioUnitario()
+            );
             items.add(item);
 
             TipoImpuesto tipoImpuesto = item.getTipoImpuesto() != null ? item.getTipoImpuesto() : TipoImpuesto.IVA;

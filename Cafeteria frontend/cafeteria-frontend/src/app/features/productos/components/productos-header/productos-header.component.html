@@ -10,7 +10,11 @@
     </div>
 
     <div class="flex w-full flex-col gap-3 sm:w-auto sm:flex-row sm:flex-wrap sm:items-center">
-      <div class="grid w-full grid-cols-2 rounded-xl border border-gray-200 bg-gray-50 p-1 text-sm font-semibold sm:inline-flex sm:w-auto">
+      <div
+        class="grid w-full rounded-xl border border-gray-200 bg-gray-50 p-1 text-sm font-semibold sm:inline-flex sm:w-auto"
+        [class.grid-cols-3]="esAdministrador"
+        [class.grid-cols-2]="!esAdministrador"
+      >
         <a
           routerLink="/productos/inventariables"
           class="rounded-lg px-4 py-2 text-center transition-colors"
@@ -34,10 +38,23 @@
         >
           Preparaciones
         </a>
+
+        <a
+          *ngIf="esAdministrador"
+          routerLink="/productos/categorias"
+          class="rounded-lg px-4 py-2 text-center transition-colors"
+          [class.bg-white]="tabActual === 'categorias'"
+          [class.text-indigo-600]="tabActual === 'categorias'"
+          [class.shadow-sm]="tabActual === 'categorias'"
+          [class.text-gray-600]="tabActual !== 'categorias'"
+          [class.hover:bg-white]="tabActual !== 'categorias'"
+        >
+          Categorías
+        </a>
       </div>
 
       <button
-        *ngIf="esVistaListado"
+        *ngIf="esVistaListado && esAdministrador"
         type="button"
         (click)="onCrearProducto()"
         class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-indigo-700 sm:w-auto"
@@ -57,4 +74,3 @@
     </div>
   </div>
 </section>
-

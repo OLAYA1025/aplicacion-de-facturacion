@@ -36,6 +36,13 @@
     />
   </ng-container>
 
+  <section *ngIf="tabActual === 'categorias'" class="mx-auto">
+    <app-productos-categorias
+      [categorias]="categorias"
+      (categoriasActualizadas)="actualizarCategoriasDesdeGestion($event)"
+    />
+  </section>
+
   <section
     *ngIf="tabActual === 'crear-producto'"
     class="mx-auto max-w-4xl rounded-2xl border border-gray-200 bg-white shadow-sm"

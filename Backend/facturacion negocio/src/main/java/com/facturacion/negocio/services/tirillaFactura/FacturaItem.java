@@ -17,12 +17,21 @@ public class FacturaItem {
     public FacturaItem(){}
 
     public static FacturaItem from(DetallePedido detalle){
+        return from(detalle.getProducto(), detalle.getCantidad(), detalle.getPrecioUnitario());
+    }
+
+    public static FacturaItem from(Producto producto, Integer cantidad, BigDecimal precioUnitario){
+        if (producto == null) {
+            throw new IllegalArgumentException("producto invalido");
+        }
+        if (cantidad == null || cantidad <= 0) {
+            throw new IllegalArgumentException("cantidad invalida");
+        }
         FacturaItem facturaItem = new FacturaItem();
-        Producto producto = detalle.getProducto();
         facturaItem.setCodigo(producto.getCodigo().toString());
         facturaItem.setNombre(producto.getNombre());
-        facturaItem.setCantidad(detalle.getCantidad());
-        facturaItem.setValorUnitario(detalle.getPrecioUnitario());
+        facturaItem.setCantidad(cantidad);
+        facturaItem.setValorUnitario(precioUnitario);
         facturaItem.setImpuesto(producto.getImpuestoPorcentaje());
         facturaItem.setTipoImpuesto(producto.getTipoImpuesto());
         return facturaItem;

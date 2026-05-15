@@ -23,7 +23,6 @@ import org.springframework.web.server.ResponseStatusException;
 import java.net.URI;
 import java.time.LocalDate;
 @RestController
-@PreAuthorize("hasRole('ADMINISTRADOR')")
 @RequestMapping("/compra")
 public class CompraController {
 

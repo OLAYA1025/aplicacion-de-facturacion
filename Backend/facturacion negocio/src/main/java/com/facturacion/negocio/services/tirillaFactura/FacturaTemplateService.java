@@ -5,6 +5,7 @@ import org.thymeleaf.context.Context;
 import org.thymeleaf.spring6.SpringTemplateEngine;
 
 import java.io.InputStream;
+import java.util.Objects;
 import java.util.Base64;
 
 @Service
@@ -25,10 +26,18 @@ public class FacturaTemplateService {
         return templateEngine.process("factura-termica", context);
     }
 
+    public String renderPreFactura(PreFactura preFactura){
+        Context context = new Context();
+        context.setVariable("factura", preFactura);
+        return templateEngine.process("prefactura-termica", context);
+    }
 
     public String logoToBase64() {
         try {
-            InputStream is = getClass().getResourceAsStream("/static/images/montaraLogo.png");
+            InputStream is = Objects.requireNonNull(
+                    getClass().getResourceAsStream("/static/images/logoParrilla.png"),
+                    "No se encontro el recurso /static/images/logoParrilla.png"
+            );
 
             byte[] bytes = is.readAllBytes();
 

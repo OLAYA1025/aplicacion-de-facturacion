@@ -2,9 +2,13 @@ package com.facturacion.negocio.services;
 
 import com.facturacion.negocio.domain.*;
 import com.facturacion.negocio.dto.request.ClienteFiscalDTO;
+import com.facturacion.negocio.dto.request.DetallePedidoRequestDTO;
 import com.facturacion.negocio.dto.response.PedidoListadoItemDTO;
 import com.facturacion.negocio.enumerated.*;
 import com.facturacion.negocio.repository.*;
+import com.facturacion.negocio.services.tirillaFactura.Factura;
+import com.facturacion.negocio.services.tirillaFactura.PdfService;
+import com.facturacion.negocio.services.tirillaFactura.PreFactura;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -29,6 +33,9 @@ public class PedidoService {
     private final DocumentoFiscalService documentoFiscalService;
     private final NumberingRangeRepository numberingRangeRepository;
     private final String prefijoProveedor;
+    private final SseService sseService;
+    private final NotasPredefinidasService notasPredefinidasService;
+    private final PdfService pdfService;
 
     public PedidoService(PedidoRepository pedidoRepository,
                          MovimientoCajaRepository movimientoCajaRepository,
@@ -40,7 +47,10 @@ public class PedidoService {
                          DocumentoFiscalRepository documentoFiscalRepository,
                          DocumentoFiscalService documentoFiscalService,
                          NumberingRangeRepository numberingRangeRepository,
-                         @Value("${factus.prefijo-code}") String prefijoProveedor) {
+                         @Value("${factus.prefijo-code}") String prefijoProveedor,
+                         SseService sseService,
+                         NotasPredefinidasService notasPredefinidasService,
+                         PdfService pdfService) {
         this.pedidoRepository = pedidoRepository;
         this.movimientoCajaRepository = movimientoCajaRepository;
         this.movimientoInventarioRepository = movimientoInventarioRepository;
@@ -52,6 +62,9 @@ public class PedidoService {
         this.documentoFiscalService = documentoFiscalService;
         this.numberingRangeRepository = numberingRangeRepository;
         this.prefijoProveedor = prefijoProveedor;
+        this.sseService = sseService;
+        this.notasPredefinidasService = notasPredefinidasService;
+        this.pdfService = pdfService;
     }
 
 
@@ -115,7 +128,7 @@ public class PedidoService {
     }
 
     @Transactional
-    public Pedido crearPedido(List<DetallePedido> detallePedidos,
+    public Pedido crearPedido(List<DetallePedidoRequestDTO> detallePedidos,
                               String nombre) {
         Caja caja = cajaRepository.obtenerCajaAbierta()
                 .orElseThrow(() ->
@@ -140,13 +153,24 @@ public class PedidoService {
             pedido.actualizarNombre(nombre);
             pedido = pedidoRepository.save(pedido);
         }
+        sseService.emitirActualizacionPedido(pedido, detallesNormalizados);
         return pedido;
+    }
+
+
+    @Transactional(readOnly = true)
+    public byte[] obtenerPdfTirillaPreFactura(Long pedidoId) {
+        Pedido pedido = pedidoRepository.findById(pedidoId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND, "Pedido no encontrado"));
+
+        return pdfService.generarPdfPreFactura(new PreFactura(pedido));
     }
 
 
     @Transactional
     public Pedido editarPedido(Long pedidoId,
-                               List<DetallePedido> detallePedidos,
+                               List<DetallePedidoRequestDTO> detallePedidos,
                                String nombre) {
         if(pedidoId == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "pedidoId invalido");
@@ -175,7 +199,9 @@ public class PedidoService {
         pedidoRepository.flush();
         pedido.actualizarPedido(nombre, detallesNormalizados);
 
-        return pedidoRepository.save(pedido);
+        Pedido pedidoActualizado = pedidoRepository.save(pedido);
+        sseService.emitirActualizacionPedido(pedidoActualizado, detallesNormalizados);
+        return pedidoActualizado;
     }
 
 
@@ -341,7 +367,9 @@ public class PedidoService {
         // Si en Pedido tienes cascade ALL hacia DocumentoFiscal, con esto basta:
         // return pedidoRepository.save(pedido);
 
-        return pedidoRepository.save(pedido);
+        Pedido pedidoCobrado = pedidoRepository.save(pedido);
+        sseService.emitirActualizacionPedido(pedidoCobrado);
+        return pedidoCobrado;
     }
 
 
@@ -384,7 +412,9 @@ public class PedidoService {
         liberarInventarioReservadoSiAplica(new ArrayList<>(pedido.getDetallePedidos()));
 
         pedido.cancelar(usuario);
-        return pedidoRepository.save(pedido);
+        Pedido pedidoCancelado = pedidoRepository.save(pedido);
+        sseService.emitirActualizacionPedido(pedidoCancelado);
+        return pedidoCancelado;
     }
 
     private void validarProductosActivos(List<DetallePedido> detallePedidos) {
@@ -453,22 +483,29 @@ public class PedidoService {
         }
     }
 
-    private List<DetallePedido> normalizarDetalles(List<DetallePedido> detallePedidos) {
+    private List<DetallePedido> normalizarDetalles(List<DetallePedidoRequestDTO> detallePedidos) {
         if (detallePedidos == null) {
             return new ArrayList<>();
         }
         List<DetallePedido> resultado = new ArrayList<>();
-        for (DetallePedido detalle : detallePedidos) {
-            if (detalle == null || detalle.getProducto() == null || detalle.getProducto().getCodigo() == null) {
+        for (DetallePedidoRequestDTO detalle : detallePedidos) {
+            if (detalle == null || detalle.getProductoId() == null || detalle.getProductoId() <= 0) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "producto invalido");
             }
             Integer cantidad = detalle.getCantidad();
             if (cantidad == null || cantidad <= 0) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "cantidad invalida");
             }
-            Producto producto = productoRepository.findById(detalle.getProducto().getCodigo())
+            Producto producto = productoRepository.findById(detalle.getProductoId())
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Producto no encontrado"));
-            resultado.add(new DetallePedido(producto, cantidad));
+            DetallePedido detallePedido = new DetallePedido(producto, cantidad);
+            detallePedido.reemplazarNotas(
+                    notasPredefinidasService.resolverNotasSeleccionadasParaProducto(
+                            producto,
+                            detalle.getNotaPredefinidaIds()
+                    )
+            );
+            resultado.add(detallePedido);
         }
         return resultado;
     }

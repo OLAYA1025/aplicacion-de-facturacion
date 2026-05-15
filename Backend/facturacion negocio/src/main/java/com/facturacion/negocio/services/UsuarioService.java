@@ -138,9 +138,9 @@ public class UsuarioService {
         Usuario usuarioObjetivo = usuarioRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario no encontrado"));
 
-        if (usuarioObjetivo.getRol() != Rol.CAJERO) {
+        if (usuarioObjetivo.getRol() == Rol.ADMINISTRADOR) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN,
-                    "Solo se puede desactivar usuarios con rol CAJERO");
+                    "Solo se puede desactivar usuarios que no sean administradores");
         }
 
         usuarioObjetivo.desactivar();

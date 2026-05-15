@@ -47,9 +47,11 @@ export interface HistorialCajaCerrada {
   cajaId: number;
   usuarioAperturaNombre: string;
   usuarioCierreNombre: string;
-  horaApertura: string;
-  horaCierre: string;
-  fecha: string;
+  fechaApertura: string;
+  fechaCierre: string;
+  horaApertura?: string;
+  horaCierre?: string;
+  fecha?: string;
   utilidad: number;
 }
 
