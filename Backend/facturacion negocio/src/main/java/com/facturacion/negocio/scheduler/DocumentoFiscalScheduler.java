@@ -4,6 +4,7 @@ import com.facturacion.negocio.domain.DocumentoFiscal;
 import com.facturacion.negocio.enumerated.EstadoDocumentoFiscal;
 import com.facturacion.negocio.repository.DocumentoFiscalRepository;
 import com.facturacion.negocio.services.DocumentoFiscalService;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
@@ -17,15 +18,21 @@ public class DocumentoFiscalScheduler {
 
     private final DocumentoFiscalRepository documentoFiscalRepository;
     private final DocumentoFiscalService documentoFiscalService;
+    private final Boolean electronicaHabilitada;
 
     public DocumentoFiscalScheduler(DocumentoFiscalRepository documentoFiscalRepository,
-                                    DocumentoFiscalService documentoFiscalService) {
+                                    DocumentoFiscalService documentoFiscalService,
+                                    @Value("${electronicaHabilitada}") Boolean electronicaHabilitada) {
         this.documentoFiscalRepository = documentoFiscalRepository;
         this.documentoFiscalService = documentoFiscalService;
+        this.electronicaHabilitada = electronicaHabilitada;
     }
 
     @Scheduled(fixedDelayString = "${fiscal.scheduler.delay-ms:60000}")
     public void enviarPendientes() {
+        if(!electronicaHabilitada){
+            return;
+        }
         List<DocumentoFiscal> pendientesEnvio =
                 documentoFiscalRepository.findTop20ByEstadoOrderByIdAsc(EstadoDocumentoFiscal.PENDIENTE_ENVIO);
 

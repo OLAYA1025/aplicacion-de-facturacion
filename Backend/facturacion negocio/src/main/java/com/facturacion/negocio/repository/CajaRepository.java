@@ -5,6 +5,7 @@ import com.facturacion.negocio.enumerated.EstadoCaja;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
@@ -19,6 +20,10 @@ import java.util.Optional;
 
 @Repository
 public interface CajaRepository extends JpaRepository<Caja, Long> {
+
+    @Override
+    @EntityGraph(attributePaths = {"usuarioApertura", "usuarioCierre"})
+    Optional<Caja> findById(Long id);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("SELECT c FROM Caja c WHERE c.id = :id")
@@ -40,10 +45,12 @@ public interface CajaRepository extends JpaRepository<Caja, Long> {
             "FROM Caja c WHERE c.estado = com.facturacion.negocio.enumerated.EstadoCaja.ABIERTA ")
     boolean existeCajaAbierta();
 
+    @EntityGraph(attributePaths = {"usuarioApertura", "usuarioCierre"})
     @Query("SELECT c FROM Caja c WHERE c.estado = com.facturacion.negocio.enumerated.EstadoCaja.ABIERTA")
     Optional<Caja> obtenerCajaAbierta();
 
 
+    @EntityGraph(attributePaths = {"usuarioApertura", "usuarioCierre"})
     @Query("""
 SELECT c FROM Caja c
 WHERE c.estado = com.facturacion.negocio.enumerated.EstadoCaja.CERRADA
@@ -55,18 +62,21 @@ AND c.fechaCierre = (
 """)
     Optional<Caja> obtenerUltimaCajaCerrada();
 
+    @EntityGraph(attributePaths = {"usuarioApertura", "usuarioCierre"})
     List<Caja> findByEstadoAndFechaCierreGreaterThanEqualAndFechaCierreLessThan(
             EstadoCaja estado,
             Instant desdeInclusive,
             Instant hastaExclusive
     );
 
+    @EntityGraph(attributePaths = {"usuarioApertura", "usuarioCierre"})
     List<Caja> findByEstadoAndFechaCierreGreaterThanEqualAndFechaCierreLessThanOrderByFechaCierreDesc(
             EstadoCaja estado,
             Instant desdeInclusive,
             Instant hastaExclusive
     );
 
+    @EntityGraph(attributePaths = {"usuarioApertura", "usuarioCierre"})
     Page<Caja> findByEstadoAndFechaCierreGreaterThanEqualAndFechaCierreLessThanOrderByFechaCierreDesc(
             EstadoCaja estado,
             Instant desdeInclusive,

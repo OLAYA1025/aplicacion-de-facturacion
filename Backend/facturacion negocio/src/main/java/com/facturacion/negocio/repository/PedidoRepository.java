@@ -1,9 +1,7 @@
 package com.facturacion.negocio.repository;
 
-import com.facturacion.negocio.domain.Caja;
 import com.facturacion.negocio.domain.DetallePedido;
 import com.facturacion.negocio.domain.Pedido;
-import com.facturacion.negocio.domain.Usuario;
 import com.facturacion.negocio.dto.response.PedidoListadoItemDTO;
 import com.facturacion.negocio.enumerated.EstadoPedido;
 import jakarta.persistence.LockModeType;
@@ -13,7 +11,6 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
@@ -43,10 +40,20 @@ public interface PedidoRepository extends JpaRepository<Pedido, Long> {
             """)
     List<DetallePedido> findDetallesByPedidoIds(@Param("pedidoIds") List<Long> pedidoIds);
 
-    @Query("SELECT p FROM Pedido p WHERE p.caja.estado = com.facturacion.negocio.enumerated.EstadoCaja.ABIERTA")
+    @Query("""
+            SELECT DISTINCT p
+            FROM Pedido p
+            LEFT JOIN FETCH p.detallePedidos d
+            WHERE p.caja.estado = com.facturacion.negocio.enumerated.EstadoCaja.ABIERTA
+            """)
     List<Pedido> findPedidosByCajaAbierta();
 
-    @Query("SELECT p FROM Pedido p WHERE p.caja.id = :cajaId")
+    @Query("""
+            SELECT DISTINCT p
+            FROM Pedido p
+            LEFT JOIN FETCH p.detallePedidos d
+            WHERE p.caja.id = :cajaId
+            """)
     List<Pedido> findPedidosByCaja(@Param("cajaId") Long cajaId);
 
     @Query("SELECT new com.facturacion.negocio.dto.response.PedidoListadoItemDTO(" +

@@ -174,7 +174,15 @@ public class PedidoController {
 
         DocumentoFiscal doc = pedido.getDocumentoFiscal();
         if (doc == null) {
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "El pedido no tiene documento fiscal asociado");
+            byte[] pdfBytes = pedidoService.obtenerPdfTirillaPreFactura(id);
+
+            String filename = "PEDIDO-"+pedido.getId()+".pdf";
+
+            return ResponseEntity.ok()
+                    .contentType(MediaType.APPLICATION_PDF)
+                    .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + filename + "\"")
+                    .body(pdfBytes);
+
         }
 
         if (doc.getEstado() != EstadoDocumentoFiscal.ACEPTADO_DIAN) {

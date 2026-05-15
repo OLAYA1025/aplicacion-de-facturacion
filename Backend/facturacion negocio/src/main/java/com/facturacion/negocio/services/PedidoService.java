@@ -36,6 +36,7 @@ public class PedidoService {
     private final SseService sseService;
     private final NotasPredefinidasService notasPredefinidasService;
     private final PdfService pdfService;
+    private final Boolean electronicaHabilitada;
 
     public PedidoService(PedidoRepository pedidoRepository,
                          MovimientoCajaRepository movimientoCajaRepository,
@@ -50,7 +51,8 @@ public class PedidoService {
                          @Value("${factus.prefijo-code}") String prefijoProveedor,
                          SseService sseService,
                          NotasPredefinidasService notasPredefinidasService,
-                         PdfService pdfService) {
+                         PdfService pdfService,
+                         @Value("${electronicaHabilitada}") Boolean electronicaHabilitada) {
         this.pedidoRepository = pedidoRepository;
         this.movimientoCajaRepository = movimientoCajaRepository;
         this.movimientoInventarioRepository = movimientoInventarioRepository;
@@ -65,6 +67,7 @@ public class PedidoService {
         this.sseService = sseService;
         this.notasPredefinidasService = notasPredefinidasService;
         this.pdfService = pdfService;
+        this.electronicaHabilitada = electronicaHabilitada;
     }
 
 
@@ -272,62 +275,65 @@ public class PedidoService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "La caja debe estar abierta para cobrar un pedido");
         }
 
-        // ===== 4) Resolver cliente SOLO si es FEV =====
-        Cliente cliente = null;
+        if(electronicaHabilitada){
+            // ===== 4) Resolver cliente SOLO si es FEV =====
+            Cliente cliente = null;
 
-        if (tipoDocumentoFiscal == TipoDocumentoFiscal.FEV) {
-            if (clienteDto == null) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                        "debes enviar un cliente para crear una factura electronica");
+            if (tipoDocumentoFiscal == TipoDocumentoFiscal.FEV) {
+                if (clienteDto == null) {
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
+                            "debes enviar un cliente para crear una factura electronica");
+                }
+
+                // Validación mínima (email opcional)
+                if (clienteDto.getTipoIdentificacion() == null
+                        || clienteDto.getNumeroIdentificacion() == null
+                        || clienteDto.getNombre() == null) {
+                    throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Envia los datos del cliente");
+                }
+
+                // Buscar por (tipo, numero); si no existe, crear
+                cliente = clienteRepository
+                        .findByTipoIdentificacionAndNumeroIdentificacion(clienteDto.getTipoIdentificacion(), clienteDto.getNumeroIdentificacion())
+                        .orElseGet(() -> clienteRepository.save(
+                                new Cliente(
+                                        clienteDto.getTipoIdentificacion(),
+                                        clienteDto.getNumeroIdentificacion(),
+                                        clienteDto.getNombre(),
+                                        clienteDto.getEmail()
+                                )
+                        ));
+
+                // Si más adelante quieres: actualizar email si está vacío, etc.
             }
 
-            // Validación mínima (email opcional)
-            if (clienteDto.getTipoIdentificacion() == null
-                    || clienteDto.getNumeroIdentificacion() == null
-                    || clienteDto.getNombre() == null) {
-                throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Envia los datos del cliente");
+            if (tipoDocumentoFiscal == TipoDocumentoFiscal.FEV_CONS_FINAL) {
+                cliente = clienteRepository
+                        .findByTipoIdentificacionAndNumeroIdentificacion(TipoDocumento.CC, "222222222222")
+                        .orElseGet(() -> clienteRepository.save(
+                                new Cliente(
+                                        TipoDocumento.CC,
+                                        "222222222222",
+                                        "consumidor final",
+                                        null
+                                )
+                        ));
+
             }
 
-            // Buscar por (tipo, numero); si no existe, crear
-            cliente = clienteRepository
-                    .findByTipoIdentificacionAndNumeroIdentificacion(clienteDto.getTipoIdentificacion(), clienteDto.getNumeroIdentificacion())
-                    .orElseGet(() -> clienteRepository.save(
-                            new Cliente(
-                                    clienteDto.getTipoIdentificacion(),
-                                    clienteDto.getNumeroIdentificacion(),
-                                    clienteDto.getNombre(),
-                                    clienteDto.getEmail()
-                            )
-                    ));
+            // ===== 5) Crear DocumentoFiscal y asociarlo al pedido =====
+            DocumentoFiscal documentoFiscal = DocumentoFiscal.crearBorrador(pedido, tipoDocumentoFiscal, prefijoProveedor);
 
-            // Si más adelante quieres: actualizar email si está vacío, etc.
+
+            if (cliente != null) {
+                documentoFiscal.setCliente(cliente);
+            }
+
+            //asociar para que se persista correctamente
+            pedido.setDocumentoFiscal(documentoFiscal);
+
+            documentoFiscal.marcarPendienteEnvio(); //si se implementan los numbering ranges, se debe primero verificar si es o no de la DIAN
         }
-
-        if(tipoDocumentoFiscal == TipoDocumentoFiscal.FEV_CONS_FINAL){
-            cliente = clienteRepository
-                    .findByTipoIdentificacionAndNumeroIdentificacion(TipoDocumento.CC,"222222222222")
-                    .orElseGet(() -> clienteRepository.save(
-                            new Cliente(
-                                    TipoDocumento.CC,
-                                    "222222222222",
-                                    "consumidor final",
-                                    null
-                            )
-                    ));
-
-        }
-
-        // ===== 5) Crear DocumentoFiscal y asociarlo al pedido =====
-        DocumentoFiscal documentoFiscal = DocumentoFiscal.crearBorrador(pedido, tipoDocumentoFiscal, prefijoProveedor);
-
-
-        if (cliente != null) {
-            documentoFiscal.setCliente(cliente);
-        }
-
-        //asociar para que se persista correctamente
-        pedido.setDocumentoFiscal(documentoFiscal);
-
         // ===== 6) Recalcular total, consumir inventario, pagar =====
         BigDecimal total = pedido.calcularTotal();
         if (total == null) total = BigDecimal.ZERO;
@@ -350,9 +356,6 @@ public class PedidoService {
         }
 
          */
-
-        documentoFiscal.marcarPendienteEnvio(); //si se implementan los numbering ranges, se debe primero verificar si es o no de la DIAN
-
         // ===== 7) Movimiento de caja =====
         MovimientoCaja movimiento = new MovimientoCaja(
                 total,
