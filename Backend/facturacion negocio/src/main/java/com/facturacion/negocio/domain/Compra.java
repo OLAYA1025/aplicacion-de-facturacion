@@ -26,10 +26,11 @@ import java.util.Objects;
 @Entity
 @Table(
         uniqueConstraints = {
-                @UniqueConstraint(columnNames = {"proveedor_id", "numero_factura"})
+                @UniqueConstraint(name = "uk_compra_negocio_proveedor_factura",
+                        columnNames = {"negocio_id", "proveedor_id", "numero_factura"})
         }
 )
-public class Compra {
+public class Compra extends BaseTenantEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -73,6 +74,7 @@ public class Compra {
 
     public Compra(Proveedor proveedor, String numeroFactura, String observacion) {
         this.proveedor = Objects.requireNonNull(proveedor, "proveedor requerido");
+        heredarNegocio(proveedor);
         this.numeroFactura = Objects.requireNonNull(numeroFactura, "numeroFactura requerido");
         this.fechaCreacion = Instant.now();
         this.estado = EstadoCompra.BORRADOR;

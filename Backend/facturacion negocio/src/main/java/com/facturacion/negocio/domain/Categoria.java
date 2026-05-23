@@ -5,15 +5,22 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 
 @Entity
-public class Categoria {
+@Table(
+        uniqueConstraints = {
+                @UniqueConstraint(name = "uk_categoria_negocio_nombre", columnNames = {"negocio_id", "nombre"})
+        }
+)
+public class Categoria extends BaseTenantEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(nullable = false, unique = true, length = 100)
+    @Column(nullable = false, length = 100)
     private String nombre;
 
     protected Categoria() {

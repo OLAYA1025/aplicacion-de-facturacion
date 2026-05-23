@@ -1,15 +1,34 @@
 package com.facturacion.negocio.domain;
 
-import com.facturacion.negocio.enumerated.TipoGestionProducto;
-import com.facturacion.negocio.enumerated.TipoImpuesto;
-import jakarta.persistence.*;
-
 import java.math.BigDecimal;
 import java.util.Objects;
 import java.util.Set;
 
+import com.facturacion.negocio.enumerated.TipoGestionProducto;
+import com.facturacion.negocio.enumerated.TipoImpuesto;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
+import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
+
 @Entity
-public class Producto {
+@Table(
+        uniqueConstraints = {
+                @UniqueConstraint(name = "uk_producto_negocio_nombre", columnNames = {"negocio_id", "nombre"})
+        }
+)
+public class Producto extends BaseTenantEntity {
 
     private static final BigDecimal IVA_CERO = BigDecimal.ZERO;
     private static final BigDecimal IVA_DIECINUEVE = BigDecimal.valueOf(19);
@@ -18,9 +37,12 @@ public class Producto {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long codigo;
+    private Long id;
 
-    @Column(nullable = false, unique = true)
+    @Column(length = 100)
+    private String codigo;
+
+    @Column(nullable = false)
     private String nombre;
 
     @Column(nullable = false, precision = 10, scale = 2)
@@ -77,6 +99,7 @@ public class Producto {
         this.activo = true;
         this.descripcion = descripcion;
         this.categoria = Objects.requireNonNull(categoria, "categoria requerida");
+        heredarNegocio(categoria);
         this.tipoGestion = tipoGestion != null ? tipoGestion : TipoGestionProducto.PREPARACION;
         aplicarReglasImpuesto(tipoImpuesto, impuestoPorcentaje);
         this.stockActual = null;
@@ -95,6 +118,14 @@ public class Producto {
 
     public void setDescripcion(String descripcion) {
         this.descripcion = descripcion;
+    }
+
+    public String getCodigo() {
+        return codigo;
+    }
+
+    public void setCodigo(String codigo) {
+        this.codigo = normalizarCodigo(codigo);
     }
 
     public Boolean isActivo() {
@@ -146,6 +177,7 @@ public class Producto {
         this.precio = precio;
         this.descripcion = descripcion;
         this.categoria = Objects.requireNonNull(categoria, "categoria requerida");
+        heredarNegocio(categoria);
         this.tipoGestion = Objects.requireNonNull(gestionNueva, "tipoGestion requerido");
         aplicarReglasImpuesto(tipoImpuesto, impuestoPorcentaje);
         if (this.tipoGestion == TipoGestionProducto.INVENTARIABLE) {
@@ -169,6 +201,10 @@ public class Producto {
         this.stockReservado = null;
     }
 
+    public void actualizarCodigo(String codigo) {
+        this.codigo = normalizarCodigo(codigo);
+    }
+
     public void cambiarNombre(String nombre) {
         this.nombre = nombre;
     }
@@ -177,13 +213,15 @@ public class Producto {
         return precio;
     }
 
-    public Long getCodigo() {
-        return codigo;
+    public Long getId() {
+        return id;
     }
 
-    public void setCodigo(Long codigo) {
-        this.codigo = codigo;
+    public void setId(Long id) {
+        this.id = id;
     }
+
+
 
     public TipoGestionProducto getTipoGestion() {
         return tipoGestion;
@@ -326,9 +364,19 @@ public class Producto {
         return valor;
     }
 
+    private String normalizarCodigo(String codigo) {
+        if (codigo == null) {
+            return null;
+        }
+
+        String codigoNormalizado = codigo.trim();
+        return codigoNormalizado.isEmpty() ? null : codigoNormalizado;
+    }
+
     @PrePersist
     @PreUpdate
     private void sincronizarDatosTributarios() {
+        this.codigo = normalizarCodigo(this.codigo);
         if (this.tipoGestion == null) {
             this.tipoGestion = TipoGestionProducto.PREPARACION;
         }

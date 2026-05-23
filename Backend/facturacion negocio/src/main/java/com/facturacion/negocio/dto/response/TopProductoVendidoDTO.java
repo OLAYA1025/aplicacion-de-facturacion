@@ -2,22 +2,22 @@ package com.facturacion.negocio.dto.response;
 
 public class TopProductoVendidoDTO {
 
-    private Long productoCodigo;
+    private Long productoId;
     private String productoNombre;
     private Long cantidadVendida;
 
-    public TopProductoVendidoDTO(Long productoCodigo, String productoNombre, Long cantidadVendida) {
-        this.productoCodigo = productoCodigo;
+    public TopProductoVendidoDTO(Long productoId, String productoNombre, Long cantidadVendida) {
+        this.productoId = productoId;
         this.productoNombre = productoNombre;
         this.cantidadVendida = cantidadVendida;
     }
 
-    public Long getProductoCodigo() {
-        return productoCodigo;
+    public Long getProductoId() {
+        return productoId;
     }
 
-    public void setProductoCodigo(Long productoCodigo) {
-        this.productoCodigo = productoCodigo;
+    public void setProductoId(Long productoId) {
+        this.productoId = productoId;
     }
 
     public String getProductoNombre() {

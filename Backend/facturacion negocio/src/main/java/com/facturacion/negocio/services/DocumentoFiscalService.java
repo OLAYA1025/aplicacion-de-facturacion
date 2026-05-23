@@ -1,6 +1,7 @@
 package com.facturacion.negocio.services;
 
 import com.facturacion.negocio.domain.DocumentoFiscal;
+import com.facturacion.negocio.domain.Negocio;
 import com.facturacion.negocio.domain.NumberingRange;
 import com.facturacion.negocio.dto.factura.Establecimiento;
 import com.facturacion.negocio.dto.factura.NumberAllocationResult;
@@ -68,6 +69,7 @@ public class DocumentoFiscalService {
     private final ZoneId zonaAplicacion;
     private final NumberingRangeService numberingRangeService;
     private final NumberingRangeRepository numberingRangeRepository;
+    private final TenantService tenantService;
 
     public DocumentoFiscalService(DocumentoFiscalRepository documentoFiscalRespository,
                                   DetallePedidoRepository detallePedidoRepository,
@@ -78,7 +80,8 @@ public class DocumentoFiscalService {
                                   DocumentoFiscalTxService documentoFiscalTxService,
                                   @Value("${app.time-zone:America/Bogota}") String zonaHoraria,
                                   NumberingRangeService numberingRangeService,
-                                  NumberingRangeRepository numberingRangeRepository) {
+                                  NumberingRangeRepository numberingRangeRepository,
+                                  TenantService tenantService) {
 
         this.documentoFiscalRepository = documentoFiscalRespository;
         this.detallePedidoRepository = detallePedidoRepository;
@@ -90,17 +93,18 @@ public class DocumentoFiscalService {
         this.zonaAplicacion = ZoneId.of(zonaHoraria);
         this.numberingRangeService = numberingRangeService;
         this.numberingRangeRepository = numberingRangeRepository;
+        this.tenantService = tenantService;
     }
 
     @Transactional
     public void enviarDocumentoDian(Long documentoFiscalId, Long numberingRangeId) {
-        DocumentoFiscal doc = documentoFiscalRepository.findById(documentoFiscalId)
-                .orElseThrow();
+        DocumentoFiscal doc = buscarDocumentoSegunContexto(documentoFiscalId);
 
         NumberAllocationResult allocation = numberingRangeService.allocateNext(numberingRangeId);
 
-        NumberingRange range = numberingRangeRepository.findById(allocation.rangeId())
-                .orElseThrow();
+        NumberingRange range = tenantService.getNegocioIdActualOptional()
+                .flatMap(negocioId -> numberingRangeRepository.findByIdAndNegocioId(allocation.rangeId(), negocioId))
+                .orElseGet(() -> numberingRangeRepository.findById(allocation.rangeId()).orElseThrow());
 
         doc.setNumberingRange(range);
         doc.setConsecutivo(allocation.consecutive());
@@ -114,7 +118,7 @@ public class DocumentoFiscalService {
 
     @Transactional(readOnly = true)
     public DocumentoFiscal buscarPorId(Long id){
-        return documentoFiscalRepository.findById(id).orElseThrow(() -> new ResponseStatusException(
+        return documentoFiscalRepository.findByIdAndNegocio(id, tenantService.getNegocioActual()).orElseThrow(() -> new ResponseStatusException(
                 HttpStatus.NOT_FOUND, "documento fiscal no encontrado"));
     }
 
@@ -210,7 +214,7 @@ public class DocumentoFiscalService {
 
     @Transactional
     public void ReenviarFactura(Long id) throws JsonProcessingException {
-        DocumentoFiscal doc = documentoFiscalRepository.findById(id).orElseThrow(() ->
+        DocumentoFiscal doc = documentoFiscalRepository.findByIdAndNegocio(id, tenantService.getNegocioActual()).orElseThrow(() ->
                 new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "Documento no encontrado")
         );
@@ -223,7 +227,7 @@ public class DocumentoFiscalService {
     }
 
     public String obtenerMensajeError(Long id){
-        DocumentoFiscal doc = documentoFiscalRepository.findById(id).orElseThrow(() ->
+        DocumentoFiscal doc = documentoFiscalRepository.findByIdAndNegocio(id, tenantService.getNegocioActual()).orElseThrow(() ->
                 new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "Documento no encontrado")
         );
@@ -240,7 +244,7 @@ public class DocumentoFiscalService {
 
     @Transactional(readOnly = true)
     public byte[] obtenerPdf(Long documentoFiscalId) {
-        DocumentoFiscal doc = documentoFiscalRepository.findById(documentoFiscalId).orElseThrow(()->
+        DocumentoFiscal doc = documentoFiscalRepository.findByIdAndNegocio(documentoFiscalId, tenantService.getNegocioActual()).orElseThrow(()->
                 new ResponseStatusException(HttpStatus.NOT_FOUND, "Documento de fiscal no encontrado"));
 
         if (doc.getEstado() != EstadoDocumentoFiscal.ACEPTADO_DIAN) {
@@ -253,7 +257,7 @@ public class DocumentoFiscalService {
 
     @Transactional(readOnly = true)
     public byte[] obtenerPdfTirilla(Long documentoFiscalId) {
-        DocumentoFiscal doc = documentoFiscalRepository.findById(documentoFiscalId)
+        DocumentoFiscal doc = documentoFiscalRepository.findByIdAndNegocio(documentoFiscalId, tenantService.getNegocioActual())
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND, "Documento fiscal no encontrado"));
 
@@ -279,9 +283,10 @@ public class DocumentoFiscalService {
 
         Pageable pageable = PageRequest.of(page, size, parseSort(sortRaw));
         Specification<DocumentoFiscal> spec = construirSpecification(q, estados, from, to);
+        Negocio negocio = tenantService.getNegocioActual();
 
         Page<DocumentoFiscal> documentosPage = documentoFiscalRepository.findAll(spec, pageable);
-        Map<Long, BigDecimal> totalesPorPedidoId = calcularTotalesPorPedido(documentosPage.getContent());
+        Map<Long, BigDecimal> totalesPorPedidoId = calcularTotalesPorPedido(documentosPage.getContent(), negocio);
 
         return documentosPage.map(documentoFiscal -> {
             Long pedidoId = documentoFiscal.getPedido() != null ? documentoFiscal.getPedido().getId() : null;
@@ -292,7 +297,7 @@ public class DocumentoFiscalService {
         });
     }
 
-    private Map<Long, BigDecimal> calcularTotalesPorPedido(List<DocumentoFiscal> documentosFiscales) {
+    private Map<Long, BigDecimal> calcularTotalesPorPedido(List<DocumentoFiscal> documentosFiscales, Negocio negocio) {
         List<Long> pedidoIds = documentosFiscales.stream()
                 .map(DocumentoFiscal::getPedido)
                 .filter(Objects::nonNull)
@@ -306,7 +311,7 @@ public class DocumentoFiscalService {
         }
 
         Map<Long, BigDecimal> totalesPorPedido = new HashMap<>();
-        for (PedidoTotalProjection totalProjection : detallePedidoRepository.findTotalesPorPedidoIds(pedidoIds)) {
+        for (PedidoTotalProjection totalProjection : detallePedidoRepository.findTotalesPorPedidoIds(pedidoIds, negocio)) {
             BigDecimal total = totalProjection.getTotal() != null ? totalProjection.getTotal() : BigDecimal.ZERO;
             totalesPorPedido.put(totalProjection.getPedidoId(), total);
         }
@@ -405,7 +410,8 @@ public class DocumentoFiscalService {
                                                                   List<EstadoDocumentoFiscal> estados,
                                                                   Instant from,
                                                                   Instant to) {
-        Specification<DocumentoFiscal> spec = (root, query, cb) -> cb.conjunction();
+        Specification<DocumentoFiscal> spec = (root, query, cb) ->
+                cb.equal(root.get("negocio"), tenantService.getNegocioActual());
 
         String busqueda = q != null ? q.trim() : "";
         if (!busqueda.isEmpty()) {
@@ -454,6 +460,19 @@ public class DocumentoFiscalService {
             }
         }
         return !value.isEmpty();
+    }
+
+    private DocumentoFiscal buscarDocumentoSegunContexto(Long documentoFiscalId) {
+        return tenantService.getNegocioIdActualOptional()
+                .flatMap(negocioId -> documentoFiscalRepository.findByIdAndNegocio(
+                        documentoFiscalId,
+                        tenantService.getNegocioActual()
+                ))
+                .orElseGet(() -> documentoFiscalRepository.findById(documentoFiscalId)
+                        .orElseThrow(() -> new ResponseStatusException(
+                                HttpStatus.NOT_FOUND,
+                                "Documento fiscal no encontrado"
+                        )));
     }
 
 }

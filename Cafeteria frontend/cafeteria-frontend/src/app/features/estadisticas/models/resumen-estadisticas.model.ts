@@ -28,7 +28,7 @@ export interface UtilidadAnioQuery {
 export type UtilidadQuery = UtilidadSemanaQuery | UtilidadMesQuery | UtilidadAnioQuery;
 
 export interface TopProductoVendido {
-  productoCodigo: number;
+  productoId: number;
   productoNombre: string;
   cantidadVendida: number;
 }

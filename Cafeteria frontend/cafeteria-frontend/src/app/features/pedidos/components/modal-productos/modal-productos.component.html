@@ -64,9 +64,11 @@
           </svg>
         </div>
         <input
+          #busquedaInput
           type="text"
           [ngModel]="busquedaProducto"
           (ngModelChange)="onBusquedaChange($event)"
+          (keydown.enter)="onBusquedaEnter($event)"
           placeholder="Buscar producto por nombre o código..."
           class="w-full pl-12 pr-4 py-3 border-2 border-gray-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all"
         />

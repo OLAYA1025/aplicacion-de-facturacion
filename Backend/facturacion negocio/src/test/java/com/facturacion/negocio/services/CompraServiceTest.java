@@ -3,6 +3,7 @@ package com.facturacion.negocio.services;
 import com.facturacion.negocio.domain.Categoria;
 import com.facturacion.negocio.domain.Compra;
 import com.facturacion.negocio.domain.CompraDetalle;
+import com.facturacion.negocio.domain.Negocio;
 import com.facturacion.negocio.domain.Producto;
 import com.facturacion.negocio.domain.Proveedor;
 import com.facturacion.negocio.dto.request.DetalleCompraRequestDTO;
@@ -41,16 +42,22 @@ class CompraServiceTest {
     private ProductoRepository productoRepository;
     @Mock
     private MovimientoInventarioRepository movimientoInventarioRepository;
+    @Mock
+    private TenantService tenantService;
 
     private CompraService compraService;
+    private Negocio negocio;
 
     @BeforeEach
     void setUp() {
+        negocio = new Negocio("Negocio Test", null, null, null, true);
+        when(tenantService.getNegocioActual()).thenReturn(negocio);
         compraService = new CompraService(
                 compraRepository,
                 proveedorRepository,
                 productoRepository,
                 movimientoInventarioRepository,
+                tenantService,
                 "America/Bogota"
         );
     }
@@ -125,20 +132,23 @@ class CompraServiceTest {
     }
 
     private void prepararStubsBase(Producto producto, boolean incluirSave) {
-        when(proveedorRepository.findById(1L)).thenReturn(Optional.of(proveedorValido()));
-        when(compraRepository.existsByProveedorIdAndNumeroFactura(1L, "FAC-001")).thenReturn(false);
-        when(productoRepository.findById(10L)).thenReturn(Optional.of(producto));
+        when(proveedorRepository.findByIdAndNegocio(1L, negocio)).thenReturn(Optional.of(proveedorValido()));
+        when(compraRepository.existsByProveedorIdAndNumeroFacturaAndNegocio(1L, "FAC-001", negocio)).thenReturn(false);
+        when(productoRepository.findByIdAndNegocio(10L, negocio)).thenReturn(Optional.of(producto));
         if (incluirSave) {
             when(compraRepository.save(any(Compra.class))).thenAnswer(invocation -> invocation.getArgument(0));
         }
     }
 
     private Proveedor proveedorValido() {
-        return new Proveedor(1L, "Proveedor Test", "3001234567", "proveedor@test.com", TipoDocumento.NIT);
+        Proveedor proveedor = new Proveedor(1L, "Proveedor Test", "3001234567", "proveedor@test.com", TipoDocumento.NIT);
+        proveedor.setNegocio(negocio);
+        return proveedor;
     }
 
     private Producto productoInventariable(Long id) {
         Categoria categoria = new Categoria("Categoria Test");
+        categoria.setNegocio(negocio);
         Producto producto = new Producto(
                 "Producto Test",
                 new BigDecimal("5000.00"),
@@ -150,7 +160,7 @@ class CompraServiceTest {
                 0,
                 0
         );
-        producto.setCodigo(id);
+        producto.setId(id);
         return producto;
     }
 }

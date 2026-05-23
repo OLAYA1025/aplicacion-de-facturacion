@@ -15,7 +15,7 @@ import java.util.Objects;
                 @UniqueConstraint(name = "uk_grupo_nota_categoria_nombre", columnNames = {"categoria_id", "nombre"})
         }
 )
-public class GrupoNotaCategoria {
+public class GrupoNotaCategoria extends BaseTenantEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -101,6 +101,7 @@ public class GrupoNotaCategoria {
 
     public void setCategoria(Categoria categoria) {
         this.categoria = Objects.requireNonNull(categoria, "categoria requerida");
+        heredarNegocio(categoria);
     }
 
     public void agregarNota(NotaPredefinida nota) {

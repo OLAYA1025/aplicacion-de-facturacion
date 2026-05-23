@@ -157,7 +157,8 @@ export class ProductosComponent implements OnInit, OnDestroy {
       resultado = resultado.filter(
         (producto) =>
           producto.nombre.toLowerCase().includes(termino) ||
-          producto.codigo.toString().includes(termino)
+          (producto.codigo ?? '').toLowerCase().includes(termino) ||
+          producto.id.toString().includes(termino)
       );
     }
 
@@ -180,7 +181,7 @@ export class ProductosComponent implements OnInit, OnDestroy {
   }
 
   async cambiarEstadoProducto(producto: Producto): Promise<void> {
-    if (this.guardandoEstadoIds.has(producto.codigo)) {
+    if (this.guardandoEstadoIds.has(producto.id)) {
       return;
     }
 
@@ -193,19 +194,19 @@ export class ProductosComponent implements OnInit, OnDestroy {
       textoConfirmar: producto.activo ? 'Desactivar' : 'Activar',
     });
 
-    if (!confirmado || this.guardandoEstadoIds.has(producto.codigo)) {
+    if (!confirmado || this.guardandoEstadoIds.has(producto.id)) {
       return;
     }
 
-    this.guardandoEstadoIds.add(producto.codigo);
+    this.guardandoEstadoIds.add(producto.id);
     const request$ = producto.activo
-      ? this.productoService.desactivarProducto(producto.codigo)
-      : this.productoService.activarProducto(producto.codigo);
+      ? this.productoService.desactivarProducto(producto.id)
+      : this.productoService.activarProducto(producto.id);
 
     request$
       .pipe(
         finalize(() => {
-          this.guardandoEstadoIds.delete(producto.codigo);
+          this.guardandoEstadoIds.delete(producto.id);
           this.cdr.detectChanges();
         })
       )
@@ -233,6 +234,7 @@ export class ProductosComponent implements OnInit, OnDestroy {
     this.modalEdicionAbierto = true;
     this.errorEditarProducto = null;
     this.edicionProducto = {
+      codigo: producto.codigo ?? '',
       nombre: producto.nombre,
       precio: producto.precio,
       tipoGestion: producto.tipoGestion,
@@ -290,6 +292,7 @@ export class ProductosComponent implements OnInit, OnDestroy {
     }
 
     const payload: actualizarProducto = {
+      codigo: this.normalizarCodigo(this.edicionProducto.codigo),
       nombre: this.edicionProducto.nombre.trim(),
       precio: Number(this.edicionProducto.precio),
       tipoGestion: this.edicionProducto.tipoGestion,
@@ -308,7 +311,7 @@ export class ProductosComponent implements OnInit, OnDestroy {
 
     this.guardandoEdicion = true;
     this.productoService
-      .actualizarProducto(this.productoEditando.codigo, payload)
+      .actualizarProducto(this.productoEditando.id, payload)
       .pipe(
         finalize(() => {
           this.guardandoEdicion = false;
@@ -327,7 +330,10 @@ export class ProductosComponent implements OnInit, OnDestroy {
             'Verifica los datos e intenta de nuevo.',
             error
           );
-          this.errorEditarProducto = 'No se pudo guardar la edición. Verifica los datos e intenta de nuevo.';
+          this.errorEditarProducto = obtenerMensajeError(
+            error,
+            'No se pudo guardar la edición. Verifica los datos e intenta de nuevo.'
+          );
           this.cdr.detectChanges();
         },
       });
@@ -454,6 +460,7 @@ export class ProductosComponent implements OnInit, OnDestroy {
     }
 
     const payload: CrearProducto = {
+      codigo: this.normalizarCodigo(this.nuevoProducto.codigo),
       nombre: this.nuevoProducto.nombre.trim(),
       precio: Number(this.nuevoProducto.precio),
       tipoGestion: this.nuevoProducto.tipoGestion,
@@ -503,7 +510,10 @@ export class ProductosComponent implements OnInit, OnDestroy {
             'Verifica los datos e intenta de nuevo.',
             error
           );
-          this.errorCrearProducto = 'No fue posible crear el producto. Verifica los datos e intenta de nuevo.';
+          this.errorCrearProducto = obtenerMensajeError(
+            error,
+            'No fue posible crear el producto. Verifica los datos e intenta de nuevo.'
+          );
           this.cdr.detectChanges();
         },
       });
@@ -560,7 +570,7 @@ export class ProductosComponent implements OnInit, OnDestroy {
 
   private reemplazarProductoEnLista(productoActualizado: Producto): void {
     this.productos = this.productos.map((producto) =>
-      producto.codigo === productoActualizado.codigo ? productoActualizado : producto
+      producto.id === productoActualizado.id ? productoActualizado : producto
     );
     this.sincronizarCategoriasDesdeProductos([productoActualizado]);
     this.aplicarFiltrosYOrden();
@@ -614,6 +624,7 @@ export class ProductosComponent implements OnInit, OnDestroy {
 
   private crearEstadoInicialFormulario(): ProductoCrearFormState {
     return {
+      codigo: '',
       nombre: '',
       precio: null,
       tipoGestion: 'INVENTARIABLE',
@@ -627,6 +638,7 @@ export class ProductosComponent implements OnInit, OnDestroy {
 
   private crearEstadoInicialEdicion(): ProductoEditarFormState {
     return {
+      codigo: '',
       nombre: '',
       precio: null,
       tipoGestion: 'INVENTARIABLE',
@@ -763,6 +775,11 @@ export class ProductosComponent implements OnInit, OnDestroy {
       return ProductosComponent.INC_PORCENTAJE;
     }
     return this.esIvaPermitido(impuestoPorcentaje) ? Number(impuestoPorcentaje) : 19;
+  }
+
+  private normalizarCodigo(codigo: string | null | undefined): string | null {
+    const codigoNormalizado = (codigo ?? '').trim();
+    return codigoNormalizado.length > 0 ? codigoNormalizado : null;
   }
 
   private esCombinacionImpuestoValida(

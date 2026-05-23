@@ -3,7 +3,6 @@ package com.facturacion.negocio.controllers;
 import com.facturacion.negocio.domain.DocumentoFiscal;
 import com.facturacion.negocio.dto.response.DocumentoFiscalListDTO;
 import com.facturacion.negocio.enumerated.TipoDocumentoFiscal;
-import com.facturacion.negocio.repository.DocumentoFiscalRepository;
 import com.facturacion.negocio.services.DocumentoFiscalService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import org.springframework.data.domain.Page;
@@ -26,12 +25,9 @@ import java.util.List;
 public class DocumentoFiscalController {
 
     private final DocumentoFiscalService documentoFiscalService;
-    private final DocumentoFiscalRepository documentoFiscalRepository;
 
-    public DocumentoFiscalController(DocumentoFiscalService documentoFiscalService,
-                                     DocumentoFiscalRepository documentoFiscalRepository) {
+    public DocumentoFiscalController(DocumentoFiscalService documentoFiscalService) {
         this.documentoFiscalService = documentoFiscalService;
-        this.documentoFiscalRepository = documentoFiscalRepository;
     }
 
     @GetMapping
@@ -57,11 +53,7 @@ public class DocumentoFiscalController {
 
     @GetMapping("/{id}/pdf")
     public ResponseEntity<byte[]> pdf(@PathVariable Long id) {
-        DocumentoFiscal doc = documentoFiscalRepository.findById(id).orElseThrow(() ->
-                new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Documento de fiscal no encontrado"))
-                ;
+        DocumentoFiscal doc = documentoFiscalService.buscarPorId(id);
 
         byte[] pdfBytes = documentoFiscalService.obtenerPdf(id);
 
@@ -75,11 +67,7 @@ public class DocumentoFiscalController {
 
     @GetMapping("/{id}/tirilla/pdf")
     public ResponseEntity<byte[]> pdfTirilla(@PathVariable Long id) {
-        DocumentoFiscal doc = documentoFiscalRepository.findById(id).orElseThrow(() ->
-                new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Documento de fiscal no encontrado"))
-                ;
+        DocumentoFiscal doc = documentoFiscalService.buscarPorId(id);
 
         byte[] pdfBytes = documentoFiscalService.obtenerPdfTirilla(id);
 

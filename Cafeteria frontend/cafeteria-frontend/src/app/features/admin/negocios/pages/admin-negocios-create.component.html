@@ -1,0 +1,171 @@
+<div class="min-h-screen space-y-6">
+  <section class="rounded-2xl border border-gray-200 bg-white shadow-sm">
+    <div class="p-4 sm:p-6">
+      <h1 class="text-2xl font-bold text-gray-900">Crear negocio</h1>
+      <p class="mt-1 text-sm text-gray-600">
+        Registra un negocio nuevo y crea su administrador inicial.
+      </p>
+    </div>
+  </section>
+
+  <section class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm sm:p-6">
+    <form [formGroup]="form" (ngSubmit)="crearNegocio()" class="space-y-8">
+      <div class="space-y-4">
+        <h2 class="text-lg font-semibold text-gray-900">Datos del negocio</h2>
+
+        <div class="grid gap-4 md:grid-cols-2">
+          <div class="md:col-span-2">
+            <label for="nombre" class="mb-2 block text-sm font-semibold text-gray-700">Nombre</label>
+            <input
+              id="nombre"
+              type="text"
+              formControlName="nombre"
+              class="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+              placeholder="Ej. Cafetería Central"
+            />
+            @if (hasError('nombre')) {
+              <p class="mt-1 text-xs text-red-600">El nombre es obligatorio.</p>
+            }
+          </div>
+
+          <div>
+            <label for="nit" class="mb-2 block text-sm font-semibold text-gray-700">NIT</label>
+            <input
+              id="nit"
+              type="text"
+              formControlName="nit"
+              class="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+              placeholder="Ej. 900123456"
+            />
+            @if (hasError('nit')) {
+              <p class="mt-1 text-xs text-red-600">El NIT es obligatorio.</p>
+            }
+          </div>
+
+          <div>
+            <label for="telefono" class="mb-2 block text-sm font-semibold text-gray-700">Teléfono</label>
+            <input
+              id="telefono"
+              type="text"
+              formControlName="telefono"
+              class="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+              placeholder="Ej. 3001234567"
+            />
+            @if (hasError('telefono')) {
+              <p class="mt-1 text-xs text-red-600">El teléfono es obligatorio.</p>
+            }
+          </div>
+
+          <div class="md:col-span-2">
+            <label for="direccion" class="mb-2 block text-sm font-semibold text-gray-700">Dirección</label>
+            <input
+              id="direccion"
+              type="text"
+              formControlName="direccion"
+              class="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+              placeholder="Ej. Calle 10 # 20-30"
+            />
+            @if (hasError('direccion')) {
+              <p class="mt-1 text-xs text-red-600">La dirección es obligatoria.</p>
+            }
+          </div>
+        </div>
+      </div>
+
+      <div class="space-y-4">
+        <h2 class="text-lg font-semibold text-gray-900">Datos del administrador inicial</h2>
+
+        <div class="grid gap-4 md:grid-cols-2">
+          <div class="md:col-span-2">
+            <label for="adminNombre" class="mb-2 block text-sm font-semibold text-gray-700">Nombre</label>
+            <input
+              id="adminNombre"
+              type="text"
+              formControlName="adminNombre"
+              class="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+              placeholder="Ej. Juan Pérez"
+            />
+            @if (hasError('adminNombre')) {
+              <p class="mt-1 text-xs text-red-600">El nombre del administrador es obligatorio.</p>
+            }
+          </div>
+
+          <div>
+            <label for="adminUsername" class="mb-2 block text-sm font-semibold text-gray-700">Username</label>
+            <input
+              id="adminUsername"
+              type="text"
+              formControlName="adminUsername"
+              class="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+              placeholder="Ej. juan"
+            />
+            @if (hasError('adminUsername')) {
+              <p class="mt-1 text-xs text-red-600">El username es obligatorio.</p>
+            }
+          </div>
+
+          <div>
+            <label for="adminEmail" class="mb-2 block text-sm font-semibold text-gray-700">Email</label>
+            <input
+              id="adminEmail"
+              type="email"
+              formControlName="adminEmail"
+              class="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+              placeholder="Ej. juan@example.com"
+            />
+            @if (hasError('adminEmail')) {
+              <p class="mt-1 text-xs text-red-600">Ingresa un email válido.</p>
+            }
+          </div>
+
+          <div class="md:col-span-2">
+            <label for="adminPassword" class="mb-2 block text-sm font-semibold text-gray-700">Contraseña</label>
+            <input
+              id="adminPassword"
+              type="password"
+              formControlName="adminPassword"
+              class="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+              placeholder="••••••••"
+            />
+            @if (hasError('adminPassword')) {
+              <p class="mt-1 text-xs text-red-600">La contraseña es obligatoria (mínimo 6 caracteres).</p>
+            }
+          </div>
+        </div>
+      </div>
+
+      @if (backendError) {
+        <p class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+          {{ backendError }}
+        </p>
+      }
+
+      <div class="flex flex-wrap items-center gap-3">
+        <button
+          type="submit"
+          [disabled]="creating"
+          class="inline-flex items-center justify-center rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-70"
+        >
+          @if (!creating) {
+            Crear negocio
+          } @else {
+            <span class="flex items-center gap-2">
+              <svg class="h-4 w-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 0 1 8-8v3a5 5 0 0 0-5 5H4Z"></path>
+              </svg>
+              Creando...
+            </span>
+          }
+        </button>
+
+        <a
+          routerLink="/admin/negocios"
+          class="inline-flex items-center justify-center rounded-xl border border-gray-300 px-5 py-2.5 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-100"
+        >
+          Volver al listado
+        </a>
+      </div>
+    </form>
+  </section>
+</div>

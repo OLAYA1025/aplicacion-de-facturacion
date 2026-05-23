@@ -1,6 +1,7 @@
 package com.facturacion.negocio.services;
 
 import com.facturacion.negocio.domain.Cliente;
+import com.facturacion.negocio.domain.Negocio;
 import com.facturacion.negocio.enumerated.TipoDocumento;
 import com.facturacion.negocio.repository.ClienteRepository;
 import org.springframework.http.HttpStatus;
@@ -14,17 +15,20 @@ import java.util.Locale;
 public class ClienteService {
 
     private final ClienteRepository clienteRepository;
+    private final TenantService tenantService;
 
-    public ClienteService(ClienteRepository clienteRepository) {
+    public ClienteService(ClienteRepository clienteRepository, TenantService tenantService) {
         this.clienteRepository = clienteRepository;
+        this.tenantService = tenantService;
     }
 
     @Transactional(readOnly = true)
     public Cliente obtenerPorTipoYNumero(String tipoIdentificacion, String numeroIdentificacion) {
         TipoDocumento tipo = normalizarTipoIdentificacion(tipoIdentificacion);
         String numero = normalizarNumeroIdentificacion(numeroIdentificacion);
+        Negocio negocio = tenantService.getNegocioActual();
 
-        return clienteRepository.findByTipoIdentificacionAndNumeroIdentificacion(tipo, numero)
+        return clienteRepository.findByTipoIdentificacionAndNumeroIdentificacionAndNegocio(tipo, numero, negocio)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Cliente no encontrado"));
     }
 

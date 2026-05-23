@@ -1,14 +1,19 @@
 package com.facturacion.negocio.services;
 
-import com.facturacion.negocio.domain.Usuario;
-import com.facturacion.negocio.dto.response.LoginResponseDTO;
-import com.facturacion.negocio.dto.response.UsuarioResponseDTO;
-import com.facturacion.negocio.repository.UsuarioRepository;
-import com.facturacion.negocio.security.JwtService;
+import java.util.ArrayList;
+import java.util.List;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
+
+import com.facturacion.negocio.domain.Usuario;
+import com.facturacion.negocio.dto.response.LoginResponseDTO;
+import com.facturacion.negocio.dto.response.UsuarioResponseDTO;
+import com.facturacion.negocio.enumerated.Rol;
+import com.facturacion.negocio.repository.UsuarioRepository;
+import com.facturacion.negocio.security.JwtService;
 
 @Service
 public class AuthService {
@@ -35,39 +40,8 @@ public class AuthService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "credenciales invalidas");
         }
 
-        Usuario usuario = usuarioRepository.findByUsername(username).orElse(null);
-
-        // Siempre hacemos una verificación BCrypt (real o dummy)
-        String stored = (usuario != null) ? usuario.getPassword() : null;
-
-        boolean isBcrypt = stored != null && isBcryptHash(stored);
-        String hashToCheck = isBcrypt ? stored : DUMMY_BCRYPT_HASH;
-
-        // Esto “igualará” el costo en ambos casos (exista o no exista)
-        boolean bcryptMatches = passwordEncoder.matches(password, hashToCheck);
-
-        // Manejo de legado en texto plano (si todavía tienes)
-        boolean passwordOk = false;
-        if (usuario != null && stored != null) {
-            if (isBcrypt) {
-                passwordOk = bcryptMatches;
-            } else {
-                // Comparación texto plano (legado) + migración
-                if (stored.equals(password)) {
-                    usuario.setPassword(passwordEncoder.encode(password));
-                    usuarioRepository.save(usuario);
-                    passwordOk = true;
-                } else {
-                    passwordOk = false;
-                }
-            }
-        } else {
-            // Usuario no existe: solo usamos el bcrypt dummy y fallamos
-            passwordOk = false;
-        }
-
-        // No filtres estado (evita enumeración). Respuesta genérica.
-        if (usuario == null || !passwordOk || !usuario.isActivo()) {
+        Usuario usuario = resolverUsuarioParaLogin(username.trim(), password);
+        if (usuario == null) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "credenciales invalidas");
         }
 
@@ -78,5 +52,83 @@ public class AuthService {
 
     private boolean isBcryptHash(String value) {
         return value.startsWith("$2a$") || value.startsWith("$2b$") || value.startsWith("$2y$");
+    }
+
+    private Usuario resolverUsuarioParaLogin(String username, String password) {
+        List<Usuario> usuarios = usuarioRepository.findAllWithNegocioByUsername(username);
+        if (usuarios.isEmpty()) {
+            passwordEncoder.matches(password, DUMMY_BCRYPT_HASH);
+            return null;
+        }
+
+        List<Usuario> coincidenciasActivas = new ArrayList<>();
+        Usuario coincidenciaParaMigracion = null;
+
+        for (Usuario usuario : usuarios) {
+            String stored = usuario.getPassword();
+            if (stored == null) {
+                continue;
+            }
+
+            boolean passwordOk = false;
+            boolean passwordEnTextoPlano = false;
+            if (isBcryptHash(stored)) {
+                passwordOk = passwordEncoder.matches(password, stored);
+            } else if (stored.equals(password)) {
+                passwordOk = true;
+                passwordEnTextoPlano = true;
+            }
+
+            if (!passwordOk) {
+                continue;
+            }
+
+            if (passwordEnTextoPlano) {
+                coincidenciaParaMigracion = usuario;
+            }
+
+            if (!usuario.isActivo()) {
+                continue;
+            }
+            if (usuario.getRol() == Rol.SUPER_ADMIN) {
+                if (usuario.getNegocio() == null) {
+                    coincidenciasActivas.add(usuario);
+                }
+                continue;
+            }
+            if (usuario.getNegocio() != null && usuario.getNegocio().isActivo()) {
+                coincidenciasActivas.add(usuario);
+            }
+        }
+
+        if (coincidenciasActivas.isEmpty()) {
+            return null;
+        }
+        if (coincidenciasActivas.size() > 1) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "username ambiguo; debes diferenciar el acceso por negocio"
+            );
+        }
+
+        Usuario usuario = coincidenciasActivas.get(0);
+        if (coincidenciaParaMigracion != null && esMismoUsuario(coincidenciaParaMigracion, usuario)) {
+            usuario.setPassword(passwordEncoder.encode(password));
+            usuarioRepository.save(usuario);
+        }
+        return usuario;
+    }
+
+    private boolean esMismoUsuario(Usuario esperado, Usuario actual) {
+        if (esperado == actual) {
+            return true;
+        }
+        if (esperado == null || actual == null) {
+            return false;
+        }
+        if (esperado.getId() != null && actual.getId() != null) {
+            return esperado.getId().equals(actual.getId());
+        }
+        return false;
     }
 }

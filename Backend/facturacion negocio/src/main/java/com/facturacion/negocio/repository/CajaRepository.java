@@ -1,6 +1,7 @@
 package com.facturacion.negocio.repository;
 
 import com.facturacion.negocio.domain.Caja;
+import com.facturacion.negocio.domain.Negocio;
 import com.facturacion.negocio.enumerated.EstadoCaja;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Page;
@@ -25,9 +26,12 @@ public interface CajaRepository extends JpaRepository<Caja, Long> {
     @EntityGraph(attributePaths = {"usuarioApertura", "usuarioCierre"})
     Optional<Caja> findById(Long id);
 
+    @EntityGraph(attributePaths = {"usuarioApertura", "usuarioCierre"})
+    Optional<Caja> findByIdAndNegocio(Long id, Negocio negocio);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("SELECT c FROM Caja c WHERE c.id = :id")
-    Optional<Caja> findByIdForUpdate(@Param("id") Long id);
+    @Query("SELECT c FROM Caja c WHERE c.id = :id AND c.negocio = :negocio")
+    Optional<Caja> findByIdForUpdate(@Param("id") Long id, @Param("negocio") Negocio negocio);
 
     /*Los retiros se restan al final, luego, que el usuario escoge cuanto retira, caundo va a cerrar caja*/
     @Query(" SELECT " +
@@ -35,59 +39,70 @@ public interface CajaRepository extends JpaRepository<Caja, Long> {
             "SUM(CASE WHEN m.tipo = com.facturacion.negocio.enumerated.TipoMovimiento.INGRESO THEN m.monto ELSE 0 END)" +
             "-" +
             "SUM(CASE WHEN m.tipo <> com.facturacion.negocio.enumerated.TipoMovimiento.INGRESO THEN m.monto ELSE 0 END), 0) " +
-            "FROM MovimientoCaja m WHERE m.caja.id = :cajaId")
-    BigDecimal calcularSaldoPorCaja(@Param("cajaId") Long cajaId);
+            "FROM MovimientoCaja m WHERE m.caja.id = :cajaId AND m.negocio = :negocio")
+    BigDecimal calcularSaldoPorCaja(@Param("cajaId") Long cajaId, @Param("negocio") Negocio negocio);
 
     @Query("SELECT CASE " +
             "WHEN COUNT(c) > 0 " +
             "THEN true " +
             "ELSE false END " +
-            "FROM Caja c WHERE c.estado = com.facturacion.negocio.enumerated.EstadoCaja.ABIERTA ")
-    boolean existeCajaAbierta();
+            "FROM Caja c WHERE c.estado = com.facturacion.negocio.enumerated.EstadoCaja.ABIERTA AND c.negocio = :negocio")
+    boolean existeCajaAbierta(@Param("negocio") Negocio negocio);
 
     @EntityGraph(attributePaths = {"usuarioApertura", "usuarioCierre"})
-    @Query("SELECT c FROM Caja c WHERE c.estado = com.facturacion.negocio.enumerated.EstadoCaja.ABIERTA")
-    Optional<Caja> obtenerCajaAbierta();
+    @Query("""
+            SELECT c
+            FROM Caja c
+            WHERE c.estado = com.facturacion.negocio.enumerated.EstadoCaja.ABIERTA
+              AND c.negocio = :negocio
+            """)
+    Optional<Caja> obtenerCajaAbierta(@Param("negocio") Negocio negocio);
 
 
     @EntityGraph(attributePaths = {"usuarioApertura", "usuarioCierre"})
     @Query("""
 SELECT c FROM Caja c
 WHERE c.estado = com.facturacion.negocio.enumerated.EstadoCaja.CERRADA
+AND c.negocio = :negocio
 AND c.fechaCierre = (
     SELECT MAX(c2.fechaCierre)
     FROM Caja c2
     WHERE c2.estado = com.facturacion.negocio.enumerated.EstadoCaja.CERRADA
+      AND c2.negocio = :negocio
 )
 """)
-    Optional<Caja> obtenerUltimaCajaCerrada();
+    Optional<Caja> obtenerUltimaCajaCerrada(@Param("negocio") Negocio negocio);
 
     @EntityGraph(attributePaths = {"usuarioApertura", "usuarioCierre"})
-    List<Caja> findByEstadoAndFechaCierreGreaterThanEqualAndFechaCierreLessThan(
-            EstadoCaja estado,
-            Instant desdeInclusive,
-            Instant hastaExclusive
-    );
-
-    @EntityGraph(attributePaths = {"usuarioApertura", "usuarioCierre"})
-    List<Caja> findByEstadoAndFechaCierreGreaterThanEqualAndFechaCierreLessThanOrderByFechaCierreDesc(
-            EstadoCaja estado,
-            Instant desdeInclusive,
-            Instant hastaExclusive
-    );
-
-    @EntityGraph(attributePaths = {"usuarioApertura", "usuarioCierre"})
-    Page<Caja> findByEstadoAndFechaCierreGreaterThanEqualAndFechaCierreLessThanOrderByFechaCierreDesc(
+    List<Caja> findByEstadoAndFechaCierreGreaterThanEqualAndFechaCierreLessThanAndNegocio(
             EstadoCaja estado,
             Instant desdeInclusive,
             Instant hastaExclusive,
+            Negocio negocio
+    );
+
+    @EntityGraph(attributePaths = {"usuarioApertura", "usuarioCierre"})
+    List<Caja> findByEstadoAndFechaCierreGreaterThanEqualAndFechaCierreLessThanAndNegocioOrderByFechaCierreDesc(
+            EstadoCaja estado,
+            Instant desdeInclusive,
+            Instant hastaExclusive,
+            Negocio negocio
+    );
+
+    @EntityGraph(attributePaths = {"usuarioApertura", "usuarioCierre"})
+    Page<Caja> findByEstadoAndFechaCierreGreaterThanEqualAndFechaCierreLessThanAndNegocioOrderByFechaCierreDesc(
+            EstadoCaja estado,
+            Instant desdeInclusive,
+            Instant hastaExclusive,
+            Negocio negocio,
             Pageable pageable
     );
 
-    long countByEstadoAndFechaCierreGreaterThanEqualAndFechaCierreLessThan(
+    long countByEstadoAndFechaCierreGreaterThanEqualAndFechaCierreLessThanAndNegocio(
             EstadoCaja estado,
             Instant desdeInclusive,
-            Instant hastaExclusive
+            Instant hastaExclusive,
+            Negocio negocio
     );
 
 

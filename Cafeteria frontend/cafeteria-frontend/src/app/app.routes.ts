@@ -1,5 +1,5 @@
 import { Routes } from '@angular/router';
-import { authChildGuard, authGuard } from './core/guards/auth-guard';
+import { authChildGuard, authGuard, businessAreaGuard, superAdminGuard } from './core/guards/auth-guard';
 //import { ConfiguracionComponent } from './features/configuracion/pages/configuracion.component';
 
 export const routes: Routes = [
@@ -8,11 +8,44 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./features/auth/pages/login/login.component').then((m) => m.LoginComponent),
   },
+  {
+    path: 'admin',
+    canActivate: [authGuard, superAdminGuard],
+    loadComponent: () =>
+      import('./features/admin/layout/admin-layout.component').then((m) => m.AdminLayoutComponent),
+    children: [
+      {
+        path: '',
+        pathMatch: 'full',
+        redirectTo: 'negocios',
+      },
+      {
+        path: 'negocios',
+        loadComponent: () =>
+          import('./features/admin/negocios/pages/admin-negocios-list.component').then(
+            (m) => m.AdminNegociosListComponent
+          ),
+        data: { title: 'Negocios' },
+      },
+      {
+        path: 'negocios/nuevo',
+        loadComponent: () =>
+          import('./features/admin/negocios/pages/admin-negocios-create.component').then(
+            (m) => m.AdminNegociosCreateComponent
+          ),
+        data: { title: 'Crear negocio' },
+      },
+      {
+        path: '**',
+        redirectTo: 'negocios',
+      },
+    ],
+  },
 
   {
     path: '',
     loadComponent: () => import('./layout/layout.component').then((m) => m.LayoutComponent),
-    canActivate:[authGuard],
+    canActivate:[authGuard, businessAreaGuard],
     canActivateChild:[authChildGuard],
     children: [
       { path: 'caja',

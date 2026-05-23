@@ -9,7 +9,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import java.math.BigDecimal;
 
 public record ProductoResponseDTO(
-        Long codigo,
+        Long id,
+        String codigo,
         String nombre,
         BigDecimal precio,
         boolean activo,
@@ -28,6 +29,7 @@ public record ProductoResponseDTO(
 
     public static ProductoResponseDTO fromEntity(Producto producto) {
         return new ProductoResponseDTO(
+                producto.getId(),
                 producto.getCodigo(),
                 producto.getNombre(),
                 producto.getPrecio(),

@@ -1,11 +1,11 @@
-import { Component, OnInit, inject, signal } from '@angular/core';
-import { LoginRequest } from '../../models/login-request.model';
-import { AuthService } from '../../../../core/services/auth.service';
-import { ActivatedRoute, Router } from '@angular/router';
-import { FormsModule } from '@angular/forms';
 import { CommonModule } from '@angular/common';
+import { Component, inject, OnInit, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
+import { ActivatedRoute, Router } from '@angular/router';
 import { finalize, TimeoutError } from 'rxjs';
+import { AuthService } from '../../../../core/services/auth.service';
 import { ThemeService } from '../../../../core/services/theme.service';
+import { LoginRequest } from '../../models/login-request.model';
 
 @Component({
   selector: 'app-login',
@@ -64,7 +64,13 @@ export class LoginComponent implements OnInit {
       .pipe(finalize(() => this.loading.set(false)))
       .subscribe({
         next: () => {
-          this.router.navigate(['/caja']);
+          const rolUsuario = this.authService.getUsuario()?.rol?.toUpperCase();
+          if (rolUsuario === 'SUPER_ADMIN') {
+            void this.router.navigate(['/admin']);
+            return;
+          }
+
+          void this.router.navigate(['/caja']);
         },
         error: (err) => {
           if (err instanceof TimeoutError || err?.name === 'TimeoutError') {

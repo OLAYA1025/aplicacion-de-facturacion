@@ -9,6 +9,7 @@ import java.math.BigDecimal;
 public class ProductoUpdateRequestDTO {
 
     private String nombre;
+    private String codigo;
     private BigDecimal precio;
     private String descripcion;
     private TipoGestionProducto tipoProducto;
@@ -26,6 +27,14 @@ public class ProductoUpdateRequestDTO {
 
     public void setNombre(String nombre) {
         this.nombre = nombre;
+    }
+
+    public String getCodigo() {
+        return codigo;
+    }
+
+    public void setCodigo(String codigo) {
+        this.codigo = codigo;
     }
 
     public BigDecimal getPrecio() {

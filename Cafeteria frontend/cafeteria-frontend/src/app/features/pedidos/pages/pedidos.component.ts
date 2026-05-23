@@ -223,7 +223,7 @@ export class PedidosComponent implements OnInit, OnDestroy {
   }
 
   filtrarProductos(): void {
-    const busqueda = this.busquedaProducto.toLowerCase();
+    const busqueda = this.busquedaProducto.trim().toLowerCase();
     let productosFiltrados = this.productos;
 
     if (this.categoriaSeleccionada !== null) {
@@ -236,6 +236,7 @@ export class PedidosComponent implements OnInit, OnDestroy {
       productosFiltrados = productosFiltrados.filter(
         (p) =>
           p.nombre.toLowerCase().includes(busqueda) ||
+          (p.codigo ?? '').toLowerCase().includes(busqueda) ||
           this.obtenerIdProducto(p).toString().includes(busqueda),
       );
     }
@@ -251,6 +252,19 @@ export class PedidosComponent implements OnInit, OnDestroy {
   actualizarBusquedaProducto(busqueda: string): void {
     this.busquedaProducto = busqueda;
     this.filtrarProductos();
+  }
+
+  agregarProductoPorCodigoEscaneado(codigo: string): void {
+    const producto = this.buscarProductoPorCodigo(codigo);
+    if (!producto) {
+      return;
+    }
+
+    if (this.agregarProducto(producto)) {
+      this.busquedaProducto = '';
+      this.filtrarProductos();
+      this.refrescarVista();
+    }
   }
 
   cerrarModalNotasProducto(): void {
@@ -404,34 +418,34 @@ export class PedidosComponent implements OnInit, OnDestroy {
     return notas;
   }
 
-  agregarProducto(producto: Producto): void {
+  agregarProducto(producto: Producto): boolean {
     const productoId = this.obtenerIdProducto(producto);
     if (productoId <= 0) {
       this.mostrarError(
         'No se pudo identificar el producto seleccionado',
         'Recarga el catálogo e intenta de nuevo.',
       );
-      return;
+      return false;
     }
 
     if (this.esInventariable(producto)) {
       const disponibleNuevaLinea = this.cantidadMaximaNuevaLinea(producto);
       if (disponibleNuevaLinea <= 0) {
         this.mostrarError(`"${producto.nombre}" no tiene stock disponible.`);
-        return;
+        return false;
       }
     }
 
     const categoriaId = producto.categoria?.id;
     if (!categoriaId) {
       this.procesarSeleccionProductoConGrupos(producto, []);
-      return;
+      return true;
     }
 
     const gruposEnCache = this.gruposNotasPorCategoria.get(categoriaId);
     if (gruposEnCache) {
       this.procesarSeleccionProductoConGrupos(producto, gruposEnCache);
-      return;
+      return true;
     }
 
     this.categoriaService.obtenerGruposNotasPorCategoria(categoriaId).subscribe({
@@ -447,6 +461,14 @@ export class PedidosComponent implements OnInit, OnDestroy {
           error,
         );
       },
+    });
+    return true;
+  }
+
+  private buscarProductoPorCodigo(codigo: string): Producto | undefined {
+    return this.productos.find((producto) => {
+      const codigoProducto = producto.codigo?.trim();
+      return !!codigoProducto && codigoProducto === codigo;
     });
   }
 

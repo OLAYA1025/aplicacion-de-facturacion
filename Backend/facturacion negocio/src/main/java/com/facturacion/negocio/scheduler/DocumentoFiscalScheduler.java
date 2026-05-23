@@ -30,8 +30,10 @@ public class DocumentoFiscalScheduler {
 
     @Scheduled(fixedDelayString = "${fiscal.scheduler.delay-ms:60000}")
     public void enviarPendientes() {
+        //no se hace nada, si el modo con factura electronica no esta activado
         if(!electronicaHabilitada){
             return;
+
         }
         List<DocumentoFiscal> pendientesEnvio =
                 documentoFiscalRepository.findTop20ByEstadoOrderByIdAsc(EstadoDocumentoFiscal.PENDIENTE_ENVIO);

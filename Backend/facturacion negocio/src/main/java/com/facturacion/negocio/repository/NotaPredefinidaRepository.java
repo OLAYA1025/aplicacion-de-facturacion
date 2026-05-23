@@ -1,5 +1,6 @@
 package com.facturacion.negocio.repository;
 
+import com.facturacion.negocio.domain.Negocio;
 import com.facturacion.negocio.domain.NotaPredefinida;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -13,13 +14,16 @@ import java.util.Optional;
 @Repository
 public interface NotaPredefinidaRepository extends JpaRepository<NotaPredefinida, Long> {
 
-    List<NotaPredefinida> findByGrupoIdOrderByDescripcionAsc(Long grupoId);
+    List<NotaPredefinida> findByGrupoIdAndNegocioOrderByDescripcionAsc(Long grupoId, Negocio negocio);
 
-    Optional<NotaPredefinida> findByIdAndGrupoId(Long notaId, Long grupoId);
+    Optional<NotaPredefinida> findByIdAndGrupoIdAndNegocio(Long notaId, Long grupoId, Negocio negocio);
 
-    boolean existsByGrupoIdAndDescripcionIgnoreCase(Long grupoId, String descripcion);
+    boolean existsByGrupoIdAndDescripcionIgnoreCaseAndNegocio(Long grupoId, String descripcion, Negocio negocio);
 
-    boolean existsByGrupoIdAndDescripcionIgnoreCaseAndIdNot(Long grupoId, String descripcion, Long id);
+    boolean existsByGrupoIdAndDescripcionIgnoreCaseAndIdNotAndNegocio(Long grupoId,
+                                                                      String descripcion,
+                                                                      Long id,
+                                                                      Negocio negocio);
 
     @Query("""
             SELECT n
@@ -27,6 +31,8 @@ public interface NotaPredefinidaRepository extends JpaRepository<NotaPredefinida
             JOIN FETCH n.grupo g
             JOIN FETCH g.categoria c
             WHERE n.id IN :ids
+              AND n.negocio = :negocio
             """)
-    List<NotaPredefinida> findByIdsWithGrupoYCategoria(@Param("ids") Collection<Long> ids);
+    List<NotaPredefinida> findByIdsWithGrupoYCategoria(@Param("ids") Collection<Long> ids,
+                                                       @Param("negocio") Negocio negocio);
 }

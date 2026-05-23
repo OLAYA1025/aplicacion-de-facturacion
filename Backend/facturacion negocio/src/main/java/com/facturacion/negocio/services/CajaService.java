@@ -2,6 +2,7 @@ package com.facturacion.negocio.services;
 
 import com.facturacion.negocio.domain.Caja;
 import com.facturacion.negocio.domain.MovimientoCaja;
+import com.facturacion.negocio.domain.Negocio;
 import com.facturacion.negocio.domain.Pedido;
 import com.facturacion.negocio.domain.Usuario;
 import com.facturacion.negocio.dto.response.CajaResumenResponseDTO;
@@ -25,19 +26,22 @@ public class CajaService {
     private final MovimientoCajaRepository movimientoCajaRepository;
     private final UsuarioRepository usuarioRepository;
     private final PedidoRepository pedidoRepository;
+    private final TenantService tenantService;
 
     public CajaService(CajaRepository cajaRepository,
                        MovimientoCajaRepository movimientoCajaRepository,
                        UsuarioRepository usuarioRepository,
-                       PedidoRepository pedidoRepository) {
+                       PedidoRepository pedidoRepository,
+                       TenantService tenantService) {
         this.cajaRepository = cajaRepository;
         this.movimientoCajaRepository = movimientoCajaRepository;
         this.usuarioRepository = usuarioRepository;
         this.pedidoRepository = pedidoRepository;
+        this.tenantService = tenantService;
     }
 
     public Caja obtenerCaja(Long id) {
-        return cajaRepository.findById(id)
+        return cajaRepository.findByIdAndNegocio(id, tenantService.getNegocioActual())
                 .orElseThrow(() -> new
                         ResponseStatusException(
                                 HttpStatus.NOT_FOUND,
@@ -48,8 +52,9 @@ public class CajaService {
     @Transactional(readOnly = true)
     public CajaResumenResponseDTO  obtenerCajaResumen() {
         Caja cajaAbierta = obtenerCajaAbierta();
+        Negocio negocio = cajaAbierta.getNegocio();
         BigDecimal montoInicial = valorSeguro(cajaAbierta.getMontoInicial());
-        List<Pedido> pedidosCaja = pedidoRepository.findPedidosByCaja(cajaAbierta.getId());
+        List<Pedido> pedidosCaja = pedidoRepository.findPedidosByCaja(cajaAbierta.getId(), negocio);
 
         BigDecimal ingresosEfectivo = calcularIngresosPorMetodo(pedidosCaja, MetodoPago.EFECTIVO);
         BigDecimal ingresosTransferencia = calcularIngresosPorMetodo(pedidosCaja, MetodoPago.TRANSFERENCIA);
@@ -58,8 +63,12 @@ public class CajaService {
         BigDecimal ingresosTarjeta = ingresosTarjetaCredito.add(ingresosTarjetaDebito);
         BigDecimal ingresos = ingresosEfectivo.add(ingresosTransferencia).add(ingresosTarjeta);
 
-        BigDecimal egresos = valorSeguro(movimientoCajaRepository.calcularTotalesByTipoAndCaja(TipoMovimiento.EGRESO,cajaAbierta));
-        BigDecimal retiros = valorSeguro(movimientoCajaRepository.calcularTotalesByTipoAndCaja(TipoMovimiento.RETIRO,cajaAbierta));
+        BigDecimal egresos = valorSeguro(
+                movimientoCajaRepository.calcularTotalesByTipoAndCaja(TipoMovimiento.EGRESO, cajaAbierta, negocio)
+        );
+        BigDecimal retiros = valorSeguro(
+                movimientoCajaRepository.calcularTotalesByTipoAndCaja(TipoMovimiento.RETIRO, cajaAbierta, negocio)
+        );
 
         return new CajaResumenResponseDTO(
                 montoInicial,
@@ -74,7 +83,7 @@ public class CajaService {
     }
 
     public Caja obtenerCajaAbierta(){
-        return cajaRepository.obtenerCajaAbierta()
+        return cajaRepository.obtenerCajaAbierta(tenantService.getNegocioActual())
                 .orElseThrow(() ->
                         new ResponseStatusException(
                                 HttpStatus.NOT_FOUND, "no hay cajas abiertas")
@@ -91,7 +100,8 @@ public class CajaService {
                     "idUsuario invalido"
             );
         }
-        Usuario usuario = usuarioRepository.findById(idUsuario)
+        Negocio negocio = tenantService.getNegocioActual();
+        Usuario usuario = usuarioRepository.findByIdAndNegocio(idUsuario, negocio)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND,
                         "Usuario no encontrado")
@@ -104,14 +114,14 @@ public class CajaService {
             );
         }
 
-        if (cajaRepository.existeCajaAbierta()) {
+        if (cajaRepository.existeCajaAbierta(negocio)) {
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT,
                     "Ya hay una caja abierta"
             );
         }
 
-        Optional<Caja> ultimaCajaOpt = cajaRepository.obtenerUltimaCajaCerrada();
+        Optional<Caja> ultimaCajaOpt = cajaRepository.obtenerUltimaCajaCerrada(negocio);
 
         BigDecimal montoInicial;
 
@@ -123,6 +133,7 @@ public class CajaService {
         }
 
         Caja nuevaCaja = new Caja(montoInicial, usuario);
+        nuevaCaja.setNegocio(negocio);
 
         return cajaRepository.save(nuevaCaja);
     }
@@ -145,14 +156,15 @@ public class CajaService {
         }
 
         Caja caja = obtenerCajaAbierta();
+        Negocio negocio = caja.getNegocio();
 
-        Usuario usuarioCierre = usuarioRepository.findById(idUsuarioCierre)
+        Usuario usuarioCierre = usuarioRepository.findByIdAndNegocio(idUsuarioCierre, negocio)
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND,
                         "Usuario de cierre no encontrado")
                 );
 
-        List<Pedido> pedidos = pedidoRepository.findPedidosByCaja(caja.getId());
+        List<Pedido> pedidos = pedidoRepository.findPedidosByCaja(caja.getId(), negocio);
         for(Pedido pedido : pedidos) {
             if(pedido.isPendiente()){
                 throw new ResponseStatusException(
@@ -175,7 +187,7 @@ public class CajaService {
         }
 
         // saldo de movimientos (sin monto inicial)
-        BigDecimal saldoMovimientos = cajaRepository.calcularSaldoPorCaja(caja.getId());
+        BigDecimal saldoMovimientos = cajaRepository.calcularSaldoPorCaja(caja.getId(), negocio);
         if (saldoMovimientos == null) {
             saldoMovimientos = BigDecimal.ZERO;
         }

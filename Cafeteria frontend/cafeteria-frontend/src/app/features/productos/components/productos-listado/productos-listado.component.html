@@ -40,7 +40,7 @@
         <tr *ngFor="let producto of productosFiltrados" class="hover:bg-gray-50">
           <td class="px-5 py-4">
             <p class="font-semibold text-gray-900">{{ producto.nombre }}</p>
-            <p class="mt-1 text-xs font-mono text-gray-500">#{{ producto.codigo }}</p>
+            <!-- <p class="mt-1 text-xs font-mono text-gray-500">#{{ producto.id }}</p> -->
           </td>
 
           <td class="px-5 py-4 text-sm text-gray-700">{{ producto.categoria.nombre }}</td>
@@ -106,7 +106,7 @@
               <button
                 type="button"
                 (click)="onCambiarEstado(producto)"
-                [disabled]="estaProcesandoEstado(producto.codigo)"
+                [disabled]="estaProcesandoEstado(producto.id)"
                 class="inline-flex items-center rounded-lg px-3 py-1.5 text-xs font-semibold transition-colors disabled:cursor-not-allowed disabled:opacity-60"
                 [class.bg-red-100]="producto.activo"
                 [class.text-red-700]="producto.activo"
@@ -116,7 +116,7 @@
                 [class.hover:bg-emerald-200]="!producto.activo"
               >
                 {{
-                  estaProcesandoEstado(producto.codigo)
+                  estaProcesandoEstado(producto.id)
                     ? 'Procesando...'
                     : producto.activo
                       ? 'Desactivar'

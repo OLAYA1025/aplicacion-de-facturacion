@@ -2,6 +2,7 @@ package com.facturacion.negocio.services;
 
 import com.facturacion.negocio.domain.Categoria;
 import com.facturacion.negocio.domain.GrupoNotaCategoria;
+import com.facturacion.negocio.domain.Negocio;
 import com.facturacion.negocio.domain.NotaPredefinida;
 import com.facturacion.negocio.domain.Producto;
 import com.facturacion.negocio.dto.response.GrupoNotaCategoriaResponseDTO;
@@ -22,19 +23,23 @@ public class NotasPredefinidasService {
     private final CategoriaRepository categoriaRepository;
     private final GrupoNotaCategoriaRepository grupoNotaCategoriaRepository;
     private final NotaPredefinidaRepository notaPredefinidaRepository;
+    private final TenantService tenantService;
 
     public NotasPredefinidasService(CategoriaRepository categoriaRepository,
                                     GrupoNotaCategoriaRepository grupoNotaCategoriaRepository,
-                                    NotaPredefinidaRepository notaPredefinidaRepository) {
+                                    NotaPredefinidaRepository notaPredefinidaRepository,
+                                    TenantService tenantService) {
         this.categoriaRepository = categoriaRepository;
         this.grupoNotaCategoriaRepository = grupoNotaCategoriaRepository;
         this.notaPredefinidaRepository = notaPredefinidaRepository;
+        this.tenantService = tenantService;
     }
 
     @Transactional(readOnly = true)
     public List<GrupoNotaCategoriaResponseDTO> obtenerGruposConNotasPorCategoria(Long categoriaId) {
         validarId(categoriaId, "categoriaId invalido");
-        List<GrupoNotaCategoria> grupos = grupoNotaCategoriaRepository.findByCategoriaIdWithNotas(categoriaId);
+        Negocio negocio = tenantService.getNegocioActual();
+        List<GrupoNotaCategoria> grupos = grupoNotaCategoriaRepository.findByCategoriaIdWithNotas(categoriaId, negocio);
         grupos.sort(Comparator.comparing(GrupoNotaCategoria::getNombre, String.CASE_INSENSITIVE_ORDER));
         List<GrupoNotaCategoriaResponseDTO> response = new ArrayList<>(grupos.size());
         for (GrupoNotaCategoria grupo : grupos) {
@@ -46,12 +51,18 @@ public class NotasPredefinidasService {
     @Transactional
     public GrupoNotaCategoria crearGrupo(Long categoriaId, String nombre, Boolean obligatorio, TipoSeleccionNota tipoSeleccion) {
         Categoria categoria = obtenerCategoria(categoriaId);
+        Negocio negocio = tenantService.getNegocioActual();
         String nombreNormalizado = normalizarNombreGrupo(nombre);
-        if (grupoNotaCategoriaRepository.existsByCategoriaIdAndNombreIgnoreCase(categoria.getId(), nombreNormalizado)) {
+        if (grupoNotaCategoriaRepository.existsByCategoriaIdAndNombreIgnoreCaseAndNegocio(
+                categoria.getId(),
+                nombreNormalizado,
+                negocio
+        )) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "el grupo de notas ya existe para esta categoria");
         }
 
         GrupoNotaCategoria grupo = new GrupoNotaCategoria(nombreNormalizado, obligatorio, tipoSeleccion, categoria);
+        grupo.setNegocio(negocio);
         return grupoNotaCategoriaRepository.save(grupo);
     }
 
@@ -63,14 +74,16 @@ public class NotasPredefinidasService {
                                               TipoSeleccionNota tipoSeleccion) {
         validarId(categoriaId, "categoriaId invalido");
         validarId(grupoId, "grupoId invalido");
-        GrupoNotaCategoria grupo = grupoNotaCategoriaRepository.findByIdAndCategoriaId(grupoId, categoriaId)
+        Negocio negocio = tenantService.getNegocioActual();
+        GrupoNotaCategoria grupo = grupoNotaCategoriaRepository.findByIdAndCategoriaIdAndNegocio(grupoId, categoriaId, negocio)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "grupo de notas no encontrado"));
 
         String nombreNormalizado = normalizarNombreGrupo(nombre);
         if (grupoNotaCategoriaRepository.existsByCategoriaIdAndNombreIgnoreCaseAndIdNot(
                 categoriaId,
                 nombreNormalizado,
-                grupoId
+                grupoId,
+                negocio
         )) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "ya existe un grupo de notas con ese nombre");
         }
@@ -83,7 +96,11 @@ public class NotasPredefinidasService {
     public void eliminarGrupo(Long categoriaId, Long grupoId) {
         validarId(categoriaId, "categoriaId invalido");
         validarId(grupoId, "grupoId invalido");
-        GrupoNotaCategoria grupo = grupoNotaCategoriaRepository.findByIdAndCategoriaId(grupoId, categoriaId)
+        GrupoNotaCategoria grupo = grupoNotaCategoriaRepository.findByIdAndCategoriaIdAndNegocio(
+                grupoId,
+                categoriaId,
+                tenantService.getNegocioActual()
+        )
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "grupo de notas no encontrado"));
         grupoNotaCategoriaRepository.delete(grupo);
     }
@@ -91,12 +108,18 @@ public class NotasPredefinidasService {
     @Transactional
     public NotaPredefinida crearNota(Long categoriaId, Long grupoId, String descripcion) {
         GrupoNotaCategoria grupo = obtenerGrupo(categoriaId, grupoId);
+        Negocio negocio = tenantService.getNegocioActual();
         String descripcionNormalizada = normalizarDescripcionNota(descripcion);
-        if (notaPredefinidaRepository.existsByGrupoIdAndDescripcionIgnoreCase(grupoId, descripcionNormalizada)) {
+        if (notaPredefinidaRepository.existsByGrupoIdAndDescripcionIgnoreCaseAndNegocio(
+                grupoId,
+                descripcionNormalizada,
+                negocio
+        )) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "la nota ya existe en el grupo");
         }
 
         NotaPredefinida nota = new NotaPredefinida(descripcionNormalizada, grupo);
+        nota.setNegocio(negocio);
         return notaPredefinidaRepository.save(nota);
     }
 
@@ -104,14 +127,16 @@ public class NotasPredefinidasService {
     public NotaPredefinida actualizarNota(Long categoriaId, Long grupoId, Long notaId, String descripcion) {
         validarId(notaId, "notaId invalido");
         obtenerGrupo(categoriaId, grupoId);
-        NotaPredefinida nota = notaPredefinidaRepository.findByIdAndGrupoId(notaId, grupoId)
+        Negocio negocio = tenantService.getNegocioActual();
+        NotaPredefinida nota = notaPredefinidaRepository.findByIdAndGrupoIdAndNegocio(notaId, grupoId, negocio)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "nota no encontrada"));
 
         String descripcionNormalizada = normalizarDescripcionNota(descripcion);
-        if (notaPredefinidaRepository.existsByGrupoIdAndDescripcionIgnoreCaseAndIdNot(
+        if (notaPredefinidaRepository.existsByGrupoIdAndDescripcionIgnoreCaseAndIdNotAndNegocio(
                 grupoId,
                 descripcionNormalizada,
-                notaId
+                notaId,
+                negocio
         )) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "ya existe una nota con esa descripcion");
         }
@@ -124,7 +149,11 @@ public class NotasPredefinidasService {
     public void eliminarNota(Long categoriaId, Long grupoId, Long notaId) {
         validarId(notaId, "notaId invalido");
         obtenerGrupo(categoriaId, grupoId);
-        NotaPredefinida nota = notaPredefinidaRepository.findByIdAndGrupoId(notaId, grupoId)
+        NotaPredefinida nota = notaPredefinidaRepository.findByIdAndGrupoIdAndNegocio(
+                notaId,
+                grupoId,
+                tenantService.getNegocioActual()
+        )
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "nota no encontrada"));
         notaPredefinidaRepository.delete(nota);
     }
@@ -136,7 +165,9 @@ public class NotasPredefinidasService {
         }
 
         Long categoriaId = producto.getCategoria().getId();
-        List<GrupoNotaCategoria> gruposCategoria = grupoNotaCategoriaRepository.findByCategoriaIdOrderByNombreAsc(categoriaId);
+        Negocio negocio = tenantService.getNegocioActual();
+        List<GrupoNotaCategoria> gruposCategoria = grupoNotaCategoriaRepository
+                .findByCategoriaIdAndNegocioOrderByNombreAsc(categoriaId, negocio);
 
         List<Long> idsRecibidos = notaPredefinidaIds == null ? List.of() : notaPredefinidaIds;
         Set<Long> idsUnicos = new LinkedHashSet<>();
@@ -151,7 +182,7 @@ public class NotasPredefinidasService {
 
         List<NotaPredefinida> notasSeleccionadas = idsUnicos.isEmpty()
                 ? new ArrayList<>()
-                : notaPredefinidaRepository.findByIdsWithGrupoYCategoria(idsUnicos);
+                : notaPredefinidaRepository.findByIdsWithGrupoYCategoria(idsUnicos, negocio);
         if (notasSeleccionadas.size() != idsUnicos.size()) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "una o varias notas predefinidas no existen");
         }
@@ -192,14 +223,18 @@ public class NotasPredefinidasService {
 
     private Categoria obtenerCategoria(Long categoriaId) {
         validarId(categoriaId, "categoriaId invalido");
-        return categoriaRepository.findById(categoriaId)
+        return categoriaRepository.findByIdAndNegocio(categoriaId, tenantService.getNegocioActual())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "categoria no encontrada"));
     }
 
     private GrupoNotaCategoria obtenerGrupo(Long categoriaId, Long grupoId) {
         validarId(categoriaId, "categoriaId invalido");
         validarId(grupoId, "grupoId invalido");
-        return grupoNotaCategoriaRepository.findByIdAndCategoriaId(grupoId, categoriaId)
+        return grupoNotaCategoriaRepository.findByIdAndCategoriaIdAndNegocio(
+                grupoId,
+                categoriaId,
+                tenantService.getNegocioActual()
+        )
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "grupo de notas no encontrado"));
     }
 

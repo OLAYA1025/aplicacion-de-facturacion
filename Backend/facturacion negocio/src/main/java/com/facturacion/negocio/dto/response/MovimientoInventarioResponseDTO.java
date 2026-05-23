@@ -20,7 +20,7 @@ public class MovimientoInventarioResponseDTO {
     public static MovimientoInventarioResponseDTO from(MovimientoInventario movimiento) {
         MovimientoInventarioResponseDTO dto = new MovimientoInventarioResponseDTO();
         dto.movimientoId = movimiento.getId();
-        dto.productoId = movimiento.getProducto().getCodigo();
+        dto.productoId = movimiento.getProducto().getId();
         dto.productoNombre = movimiento.getProducto().getNombre();
         dto.tipo = movimiento.getTipo();
         dto.cantidad = movimiento.getCantidad();

@@ -14,7 +14,7 @@ import java.util.Objects;
                 )
         }
 )
-public class DetallePedidoNota {
+public class DetallePedidoNota extends BaseTenantEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -34,6 +34,8 @@ public class DetallePedidoNota {
     public DetallePedidoNota(DetallePedido detallePedido, NotaPredefinida notaPredefinida) {
         this.detallePedido = Objects.requireNonNull(detallePedido, "detallePedido requerido");
         this.notaPredefinida = Objects.requireNonNull(notaPredefinida, "notaPredefinida requerida");
+        heredarNegocio(detallePedido);
+        heredarNegocio(notaPredefinida);
     }
 
     public Long getId() {
@@ -50,5 +52,6 @@ public class DetallePedidoNota {
 
     public void asignarDetallePedido(DetallePedido detallePedido) {
         this.detallePedido = detallePedido;
+        heredarNegocio(detallePedido);
     }
 }

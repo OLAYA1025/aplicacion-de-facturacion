@@ -16,7 +16,7 @@ import java.time.Instant;
 import java.util.Objects;
 
 @Entity
-public class MovimientoInventario {
+public class MovimientoInventario extends BaseTenantEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -55,6 +55,7 @@ public class MovimientoInventario {
                                 Long referenciaId,
                                 String motivo) {
         this.producto = Objects.requireNonNull(producto, "producto requerido");
+        heredarNegocio(producto);
         this.tipo = Objects.requireNonNull(tipo, "tipo requerido");
         this.referenciaTipo = Objects.requireNonNull(referenciaTipo, "referenciaTipo requerido");
         this.referenciaId = Objects.requireNonNull(referenciaId, "referenciaId requerido");

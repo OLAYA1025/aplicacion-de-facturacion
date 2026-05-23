@@ -6,6 +6,7 @@ import com.facturacion.negocio.dto.factura.NumberAllocationResult;
 import com.facturacion.negocio.repository.DocumentoFiscalRepository;
 import com.facturacion.negocio.repository.NumberingRangeRepository;
 import com.facturacion.negocio.services.NumberingRangeService;
+import com.facturacion.negocio.services.TenantService;
 import com.facturacion.negocio.services.dian.dto.DianInvoiceData;
 import com.facturacion.negocio.services.dian.mapper.DianCufeGenerator;
 import com.facturacion.negocio.services.dian.mapper.DianInvoiceMapper;
@@ -27,6 +28,7 @@ public class DianInvoiceService {
     private final NumberingRangeRepository numberingRangeRepository;
     private final DianInvoiceXmlBuilder dianInvoiceXmlBuilder;
     private final DocumentoFiscalDianTxService documentoFiscalDianTxService;
+    private final TenantService tenantService;
 
     public DianInvoiceService(DianInvoiceMapper dianInvoiceMapper,
                               DianCufeGenerator dianCufeGenerator,
@@ -34,7 +36,8 @@ public class DianInvoiceService {
                               NumberingRangeService numberingRangeService,
                               NumberingRangeRepository numberingRangeRepository,
                               DianInvoiceXmlBuilder dianInvoiceXmlBuilder,
-                              DocumentoFiscalDianTxService documentoFiscalDianTxService) {
+                              DocumentoFiscalDianTxService documentoFiscalDianTxService,
+                              TenantService tenantService) {
 
         this.dianInvoiceMapper = dianInvoiceMapper;
         this.dianCufeGenerator = dianCufeGenerator;
@@ -43,20 +46,32 @@ public class DianInvoiceService {
         this.numberingRangeRepository = numberingRangeRepository;
         this.dianInvoiceXmlBuilder = dianInvoiceXmlBuilder;
         this.documentoFiscalDianTxService = documentoFiscalDianTxService;
+        this.tenantService = tenantService;
     }
 
     //cambiar a void despues
     @Transactional
     public String enviarDocumentoDian(Long documentoFiscalId, Long numberingRangeId) throws Exception {
-        DocumentoFiscal doc = documentoFiscalRepository.findById(documentoFiscalId)
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND, "Documento fiscal no encontrado"));
+        DocumentoFiscal doc = tenantService.getNegocioIdActualOptional()
+                .flatMap(negocioId -> documentoFiscalRepository.findByIdAndNegocio(
+                        documentoFiscalId,
+                        tenantService.getNegocioActual()
+                ))
+                .orElseGet(() -> documentoFiscalRepository.findById(documentoFiscalId)
+                        .orElseThrow(() -> new ResponseStatusException(
+                                HttpStatus.NOT_FOUND,
+                                "Documento fiscal no encontrado"
+                        )));
 
         NumberAllocationResult allocation = numberingRangeService.allocateNext(numberingRangeId);
 
-        NumberingRange range = numberingRangeRepository.findById(allocation.rangeId())
-                .orElseThrow(() -> new ResponseStatusException(
-                        HttpStatus.NOT_FOUND, "Rango de numeracion no encontrado"));
+        NumberingRange range = tenantService.getNegocioIdActualOptional()
+                .flatMap(negocioId -> numberingRangeRepository.findByIdAndNegocioId(allocation.rangeId(), negocioId))
+                .orElseGet(() -> numberingRangeRepository.findById(allocation.rangeId())
+                        .orElseThrow(() -> new ResponseStatusException(
+                                HttpStatus.NOT_FOUND,
+                                "Rango de numeracion no encontrado"
+                        )));
 
         doc.setNumberingRange(range);
         doc.setConsecutivo(allocation.consecutive());

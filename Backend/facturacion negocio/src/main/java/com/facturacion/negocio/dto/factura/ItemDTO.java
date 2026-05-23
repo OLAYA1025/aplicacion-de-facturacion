@@ -33,7 +33,7 @@ public class ItemDTO {
             throw new IllegalArgumentException("cantidad invalida");
         }
         ItemDTO itemDTO = new ItemDTO();
-        itemDTO.setCode_reference(producto.getCodigo().toString());
+        itemDTO.setCode_reference(producto.getId().toString());
         itemDTO.setName(producto.getNombre());
         itemDTO.setQuantity(cantidad);
         itemDTO.setPrice(precioUnitario);

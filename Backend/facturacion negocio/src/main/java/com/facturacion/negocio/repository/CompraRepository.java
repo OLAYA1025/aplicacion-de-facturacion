@@ -1,6 +1,7 @@
 package com.facturacion.negocio.repository;
 
 import com.facturacion.negocio.domain.Compra;
+import com.facturacion.negocio.domain.Negocio;
 import com.facturacion.negocio.enumerated.EstadoCompra;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Page;
@@ -16,41 +17,45 @@ import java.util.Optional;
 
 public interface CompraRepository extends JpaRepository<Compra, Long> {
 
-    boolean existsByProveedorIdAndNumeroFactura(Long proveedorId, String numeroFactura);
+    boolean existsByProveedorIdAndNumeroFacturaAndNegocio(Long proveedorId, String numeroFactura, Negocio negocio);
 
     @Override
     @EntityGraph(attributePaths = {"proveedor"})
     Page<Compra> findAll(Pageable pageable);
 
     @EntityGraph(attributePaths = {"proveedor"})
-    Page<Compra> findByFechaCreacionGreaterThanEqual(Instant desde, Pageable pageable);
+    Page<Compra> findByFechaCreacionGreaterThanEqualAndNegocio(Instant desde, Negocio negocio, Pageable pageable);
 
     @EntityGraph(attributePaths = {"proveedor"})
-    Page<Compra> findByFechaCreacionLessThan(Instant hastaExclusiva, Pageable pageable);
+    Page<Compra> findByFechaCreacionLessThanAndNegocio(Instant hastaExclusiva, Negocio negocio, Pageable pageable);
 
     @EntityGraph(attributePaths = {"proveedor"})
-    Page<Compra> findByFechaCreacionGreaterThanEqualAndFechaCreacionLessThan(Instant desde,
-                                                                              Instant hastaExclusiva,
-                                                                              Pageable pageable);
-
-    @EntityGraph(attributePaths = {"proveedor"})
-    Page<Compra> findByEstado(EstadoCompra estado, Pageable pageable);
-
-    @EntityGraph(attributePaths = {"proveedor"})
-    Page<Compra> findByEstadoAndFechaCreacionGreaterThanEqual(EstadoCompra estado,
-                                                               Instant desde,
-                                                               Pageable pageable);
-
-    @EntityGraph(attributePaths = {"proveedor"})
-    Page<Compra> findByEstadoAndFechaCreacionLessThan(EstadoCompra estado,
-                                                       Instant hastaExclusiva,
-                                                       Pageable pageable);
-
-    @EntityGraph(attributePaths = {"proveedor"})
-    Page<Compra> findByEstadoAndFechaCreacionGreaterThanEqualAndFechaCreacionLessThan(EstadoCompra estado,
-                                                                                        Instant desde,
+    Page<Compra> findByFechaCreacionGreaterThanEqualAndFechaCreacionLessThanAndNegocio(Instant desde,
                                                                                         Instant hastaExclusiva,
+                                                                                        Negocio negocio,
                                                                                         Pageable pageable);
+
+    @EntityGraph(attributePaths = {"proveedor"})
+    Page<Compra> findByEstadoAndNegocio(EstadoCompra estado, Negocio negocio, Pageable pageable);
+
+    @EntityGraph(attributePaths = {"proveedor"})
+    Page<Compra> findByEstadoAndFechaCreacionGreaterThanEqualAndNegocio(EstadoCompra estado,
+                                                                        Instant desde,
+                                                                        Negocio negocio,
+                                                                        Pageable pageable);
+
+    @EntityGraph(attributePaths = {"proveedor"})
+    Page<Compra> findByEstadoAndFechaCreacionLessThanAndNegocio(EstadoCompra estado,
+                                                                Instant hastaExclusiva,
+                                                                Negocio negocio,
+                                                                Pageable pageable);
+
+    @EntityGraph(attributePaths = {"proveedor"})
+    Page<Compra> findByEstadoAndFechaCreacionGreaterThanEqualAndFechaCreacionLessThanAndNegocio(EstadoCompra estado,
+                                                                                                 Instant desde,
+                                                                                                 Instant hastaExclusiva,
+                                                                                                 Negocio negocio,
+                                                                                                 Pageable pageable);
 
     @Query("""
             SELECT DISTINCT c FROM Compra c
@@ -58,10 +63,11 @@ public interface CompraRepository extends JpaRepository<Compra, Long> {
             LEFT JOIN FETCH c.detalles d
             LEFT JOIN FETCH d.producto
             WHERE c.id = :id
+              AND c.negocio = :negocio
             """)
-    Optional<Compra> findByIdConDetalles(@Param("id") Long id);
+    Optional<Compra> findByIdConDetalles(@Param("id") Long id, @Param("negocio") Negocio negocio);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
-    @Query("SELECT c FROM Compra c WHERE c.id = :id")
-    Optional<Compra> findByIdForUpdate(@Param("id") Long id);
+    @Query("SELECT c FROM Compra c WHERE c.id = :id AND c.negocio = :negocio")
+    Optional<Compra> findByIdForUpdate(@Param("id") Long id, @Param("negocio") Negocio negocio);
 }

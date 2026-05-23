@@ -1,8 +1,7 @@
 package com.facturacion.negocio.services;
 
-import com.facturacion.negocio.domain.Usuario;
-import com.facturacion.negocio.enumerated.Rol;
-import com.facturacion.negocio.repository.UsuarioRepository;
+import java.util.List;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -10,31 +9,39 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.util.List;
+import com.facturacion.negocio.domain.Negocio;
+import com.facturacion.negocio.domain.Usuario;
+import com.facturacion.negocio.enumerated.Rol;
+import com.facturacion.negocio.repository.UsuarioRepository;
 
 @Service
 public class UsuarioService {
 
     private final UsuarioRepository usuarioRepository;
     private final PasswordEncoder passwordEncoder;
+    private final TenantService tenantService;
 
-    public UsuarioService(UsuarioRepository usuarioRepository, PasswordEncoder passwordEncoder) {
+    public UsuarioService(UsuarioRepository usuarioRepository,
+                          PasswordEncoder passwordEncoder,
+                          TenantService tenantService) {
         this.usuarioRepository = usuarioRepository;
         this.passwordEncoder = passwordEncoder;
+        this.tenantService = tenantService;
     }
 
     public Usuario obtenerUsuario(Long usuarioId) {
         if (usuarioId == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Envia un ID valido");
         }
-        return usuarioRepository.findById(usuarioId)
+        Negocio negocio = tenantService.getNegocioActual();
+        return usuarioRepository.findByIdAndNegocio(usuarioId, negocio)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario no encontrado"));
     }
 
     public List<Usuario> listarUsuarios() {
         Usuario usuarioAutenticado = obtenerUsuarioAutenticado();
         validarAdministrador(usuarioAutenticado);
-        return usuarioRepository.findAll();
+        return usuarioRepository.findAllByNegocioOrderByNombreAsc(usuarioAutenticado.getNegocio());
     }
 
     public Usuario crearUsuario(String nombre, String username, String password, String email, Rol rol) {
@@ -44,8 +51,10 @@ public class UsuarioService {
         if (rol == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "rol invalido");
         }
+        validarRolOperativo(rol);
 
-        if (usuarioRepository.existsByUsername(usernameNormalizado)) {
+        Negocio negocio = tenantService.getNegocioActual();
+        if (usuarioRepository.existsByUsernameAndNegocio(usernameNormalizado, negocio)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "usuario existente");
         }
 
@@ -57,6 +66,53 @@ public class UsuarioService {
                 normalizarOpcional(email),
                 rol
         );
+        usuario.setNegocio(negocio);
+        return usuarioRepository.save(usuario);
+    }
+
+    public Usuario crearSuperAdmin(String nombre, String username, String password, String email) {
+        String nombreNormalizado = normalizarRequerido(nombre, "nombre invalido");
+        String usernameNormalizado = normalizarRequerido(username, "username invalido");
+        String passwordNormalizada = normalizarRequerido(password, "password invalido");
+
+        if (usuarioRepository.existsByUsername(usernameNormalizado)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "usuario existente");
+        }
+
+        Usuario usuario = new Usuario(
+                nombreNormalizado,
+                usernameNormalizado,
+                passwordEncoder.encode(passwordNormalizada),
+                normalizarOpcional(email),
+                Rol.SUPER_ADMIN
+        );
+        usuario.setNegocio(null);
+        return usuarioRepository.save(usuario);
+    }
+
+    public Usuario crearAdministradorInicialNegocio(Negocio negocio,
+                                                    String nombre,
+                                                    String username,
+                                                    String password,
+                                                    String email) {
+        if (negocio == null || negocio.getId() == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "negocio invalido");
+        }
+        String nombreNormalizado = normalizarRequerido(nombre, "nombre invalido");
+        String usernameNormalizado = normalizarRequerido(username, "username invalido");
+        String passwordNormalizada = normalizarRequerido(password, "password invalido");
+        if (usuarioRepository.existsByUsernameAndNegocio(usernameNormalizado, negocio)) {
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "usuario existente");
+        }
+
+        Usuario usuario = new Usuario(
+                nombreNormalizado,
+                usernameNormalizado,
+                passwordEncoder.encode(passwordNormalizada),
+                normalizarOpcional(email),
+                Rol.ADMINISTRADOR
+        );
+        usuario.setNegocio(negocio);
         return usuarioRepository.save(usuario);
     }
 
@@ -68,7 +124,7 @@ public class UsuarioService {
         Usuario usuarioAutenticado = obtenerUsuarioAutenticado();
         validarAdministrador(usuarioAutenticado);
 
-        Usuario usuarioObjetivo = usuarioRepository.findById(id)
+        Usuario usuarioObjetivo = usuarioRepository.findByIdAndNegocio(id, usuarioAutenticado.getNegocio())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario no encontrado"));
 
         String nombreNormalizado = normalizarRequerido(nombre, "nombre invalido");
@@ -76,8 +132,13 @@ public class UsuarioService {
         if (rol == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "rol invalido");
         }
+        validarRolOperativo(rol);
 
-        if (usuarioRepository.existsByUsernameAndIdNot(usernameNormalizado, id)) {
+        if (usuarioRepository.existsByUsernameAndIdNotAndNegocio(
+                usernameNormalizado,
+                id,
+                usuarioAutenticado.getNegocio()
+        )) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "usuario existente");
         }
 
@@ -97,7 +158,7 @@ public class UsuarioService {
         Usuario usuarioAutenticado = obtenerUsuarioAutenticado();
         validarAdministrador(usuarioAutenticado);
 
-        Usuario usuarioObjetivo = usuarioRepository.findById(id)
+        Usuario usuarioObjetivo = usuarioRepository.findByIdAndNegocio(id, usuarioAutenticado.getNegocio())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario no encontrado"));
 
         boolean objetivoEsAdmin = usuarioObjetivo.getRol() == Rol.ADMINISTRADOR;
@@ -120,7 +181,7 @@ public class UsuarioService {
         Usuario usuarioAutenticado = obtenerUsuarioAutenticado();
         validarAdministrador(usuarioAutenticado);
 
-        Usuario usuarioObjetivo = usuarioRepository.findById(id)
+        Usuario usuarioObjetivo = usuarioRepository.findByIdAndNegocio(id, usuarioAutenticado.getNegocio())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario no encontrado"));
 
         usuarioObjetivo.activar();
@@ -135,7 +196,7 @@ public class UsuarioService {
         Usuario usuarioAutenticado = obtenerUsuarioAutenticado();
         validarAdministrador(usuarioAutenticado);
 
-        Usuario usuarioObjetivo = usuarioRepository.findById(id)
+        Usuario usuarioObjetivo = usuarioRepository.findByIdAndNegocio(id, usuarioAutenticado.getNegocio())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario no encontrado"));
 
         if (usuarioObjetivo.getRol() == Rol.ADMINISTRADOR) {
@@ -172,7 +233,8 @@ public class UsuarioService {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "No autenticado");
         }
 
-        return usuarioRepository.findByUsername(username.trim())
+        Long negocioId = tenantService.getNegocioIdActual();
+        return usuarioRepository.findByUsernameAndNegocioId(username.trim(), negocioId)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.UNAUTHORIZED, "No autenticado"));
     }
 
@@ -180,6 +242,12 @@ public class UsuarioService {
         if (usuarioAutenticado.getRol() != Rol.ADMINISTRADOR) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN,
                     "Solo un administrador puede editar usuarios");
+        }
+    }
+
+    private void validarRolOperativo(Rol rol) {
+        if (rol == Rol.SUPER_ADMIN) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "rol invalido");
         }
     }
 }

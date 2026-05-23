@@ -6,11 +6,18 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
+import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 
 import java.util.Objects;
 
 @Entity
-public class Proveedor {
+@Table(
+        uniqueConstraints = {
+                @UniqueConstraint(name = "uk_proveedor_negocio_correo", columnNames = {"negocio_id", "correo"})
+        }
+)
+public class Proveedor extends BaseTenantEntity {
 
     @Id
     @Column(nullable = false)

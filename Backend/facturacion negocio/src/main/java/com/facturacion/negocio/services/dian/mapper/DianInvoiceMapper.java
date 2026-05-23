@@ -144,7 +144,7 @@ public class DianInvoiceMapper {
 
         DianInvoiceLineData line = new DianInvoiceLineData();
 
-        line.setCode(producto.getCodigo().toString());
+        line.setCode(producto.getId().toString());
         line.setDescription(producto.getNombre());
         line.setQuantity(cantidad);
 

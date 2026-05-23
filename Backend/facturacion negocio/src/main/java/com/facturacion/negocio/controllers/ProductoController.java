@@ -59,6 +59,7 @@ public class ProductoController {
     @PostMapping
     public ResponseEntity<ProductoResponseDTO> crearProducto(@RequestBody CrearProductoRequestDTO request) {
         Producto producto = productoService.crearProducto(request.getNombre(),
+                request.getCodigo(),
                 request.getPrecio(),
                 request.getDescripcion(),
                 request.getCategoriaId(),
@@ -69,7 +70,7 @@ public class ProductoController {
                 request.getStockMinimo()
         );
 
-        URI location = URI.create("/producto/"+ producto.getCodigo());
+        URI location = URI.create("/producto/"+ producto.getId());
 
         return ResponseEntity.created(location).body(ProductoResponseDTO.fromEntity(producto));
     }
@@ -80,6 +81,7 @@ public class ProductoController {
                                                         @RequestBody ProductoUpdateRequestDTO request) {
         Producto producto = productoService.editarProducto(id,
                 request.getNombre(),
+                request.getCodigo(),
                 request.getPrecio(),
                 request.getDescripcion(),
                 request.getCategoriaId(),

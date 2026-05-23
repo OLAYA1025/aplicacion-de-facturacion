@@ -8,7 +8,7 @@ import java.time.Instant;
 
 @Entity
 @Table(name = "numbering_ranges")
-public class NumberingRange {
+public class NumberingRange extends BaseTenantEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

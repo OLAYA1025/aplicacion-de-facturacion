@@ -1,5 +1,14 @@
 import { CommonModule } from '@angular/common';
-import { Component, EventEmitter, Input, Output } from '@angular/core';
+import {
+  Component,
+  ElementRef,
+  EventEmitter,
+  Input,
+  OnChanges,
+  Output,
+  SimpleChanges,
+  ViewChild,
+} from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Producto } from '../../../../core/models/producto.model';
 import { DetalleTemp } from '../../models/detalleTemp.model';
@@ -15,7 +24,9 @@ interface CategoriaProducto {
   imports: [CommonModule, FormsModule],
   templateUrl: './modal-productos.component.html',
 })
-export class ModalProductosComponent {
+export class ModalProductosComponent implements OnChanges {
+  @ViewChild('busquedaInput') busquedaInput?: ElementRef<HTMLInputElement>;
+
   @Input() visible: boolean = false;
   @Input() busquedaProducto: string = '';
   @Input() categorias: CategoriaProducto[] = [];
@@ -29,9 +40,27 @@ export class ModalProductosComponent {
   @Output() busquedaChange = new EventEmitter<string>();
   @Output() categoriaChange = new EventEmitter<number | null>();
   @Output() agregarProducto = new EventEmitter<Producto>();
+  @Output() codigoEscaneado = new EventEmitter<string>();
+
+  ngOnChanges(changes: SimpleChanges): void {
+    if (changes['visible']?.currentValue === true) {
+      this.enfocarBusqueda();
+    }
+  }
 
   onBusquedaChange(value: string): void {
     this.busquedaChange.emit(value);
+  }
+
+  onBusquedaEnter(event: Event): void {
+    const codigo = this.busquedaProducto.trim();
+    if (!codigo) {
+      return;
+    }
+
+    event.preventDefault();
+    this.codigoEscaneado.emit(codigo);
+    this.enfocarBusqueda();
   }
 
   onSeleccionarCategoria(categoriaId: number | null): void {
@@ -43,14 +72,14 @@ export class ModalProductosComponent {
   }
 
   obtenerIdProducto(producto: Producto): number {
-    const codigo = (producto as { codigo?: unknown }).codigo;
-    if (typeof codigo === 'number' && Number.isFinite(codigo)) {
-      return codigo;
-    }
-
     const id = (producto as { id?: unknown }).id;
     if (typeof id === 'number' && Number.isFinite(id)) {
       return id;
+    }
+
+    const codigo = (producto as { codigo?: unknown }).codigo;
+    if (typeof codigo === 'number' && Number.isFinite(codigo)) {
+      return codigo;
     }
 
     return 0;
@@ -107,5 +136,11 @@ export class ModalProductosComponent {
       currency: 'COP',
       minimumFractionDigits: 0,
     }).format(monto);
+  }
+
+  private enfocarBusqueda(): void {
+    setTimeout(() => {
+      this.busquedaInput?.nativeElement.focus();
+    });
   }
 }

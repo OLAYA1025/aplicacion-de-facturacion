@@ -2,7 +2,7 @@ package com.facturacion.negocio.repository;
 
 public interface TopProductoVendidoProjection {
 
-    Long getProductoCodigo();
+    Long getProductoId();
 
     String getProductoNombre();
 

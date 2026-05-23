@@ -22,7 +22,7 @@ public class DetallePedidoResponseDTO {
         DetallePedidoResponseDTO dto = new DetallePedidoResponseDTO();
         Producto producto = detalle.getProducto();
         if (producto != null) {
-            dto.setProductoId(producto.getCodigo());
+            dto.setProductoId(producto.getId());
             dto.setProductoNombre(producto.getNombre());
         }
         dto.setId(detalle.getId());

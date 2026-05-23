@@ -18,10 +18,11 @@ import java.util.Objects;
 @Entity
 @Table(
         uniqueConstraints = {
-                @UniqueConstraint(columnNames = {"compra_id", "producto_codigo"})
+                @UniqueConstraint(name = "uk_compra_detalle_negocio_compra_producto",
+                        columnNames = {"negocio_id", "compra_id", "producto_id"})
         }
 )
-public class CompraDetalle {
+public class CompraDetalle extends BaseTenantEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -32,7 +33,7 @@ public class CompraDetalle {
     private Compra compra;
 
     @ManyToOne(optional = false, fetch = FetchType.LAZY)
-    @JoinColumn(name = "producto_codigo", nullable = false)
+    @JoinColumn(name = "producto_id", nullable = false)
     private Producto producto;
 
     @Column(nullable = false)
@@ -46,6 +47,7 @@ public class CompraDetalle {
 
     public CompraDetalle(Producto producto, Integer cantidad, BigDecimal costoUnitario) {
         this.producto = Objects.requireNonNull(producto, "producto requerido");
+        heredarNegocio(producto);
         if (cantidad == null || cantidad <= 0) {
             throw new IllegalArgumentException("cantidad invalida");
         }
@@ -78,5 +80,6 @@ public class CompraDetalle {
 
     public void asignarCompra(Compra compra) {
         this.compra = compra;
+        heredarNegocio(compra);
     }
 }

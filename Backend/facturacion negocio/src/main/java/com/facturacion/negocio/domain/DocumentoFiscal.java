@@ -23,7 +23,7 @@ import java.time.Instant;
                 @UniqueConstraint(name = "uk_docfiscal_ref", columnNames = {"reference_code"})
         }
 )
-public class DocumentoFiscal {
+public class DocumentoFiscal extends BaseTenantEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -123,6 +123,7 @@ public class DocumentoFiscal {
 
     private DocumentoFiscal(Pedido pedido, TipoDocumentoFiscal tipo, String referenceCode) {
         this.pedido = pedido;
+        heredarNegocio(pedido);
         this.tipo = tipo;
         this.referenceCode = referenceCode;
         this.estado = EstadoDocumentoFiscal.BORRADOR;
@@ -202,7 +203,10 @@ public class DocumentoFiscal {
 
     public Pedido getPedido() { return pedido; }
 
-    public void setPedido(Pedido pedido) { this.pedido = pedido; }
+    public void setPedido(Pedido pedido) {
+        this.pedido = pedido;
+        heredarNegocio(pedido);
+    }
 
     public TipoDocumentoFiscal getTipo() { return tipo; }
 
@@ -248,6 +252,7 @@ public class DocumentoFiscal {
 
     public void setCliente(Cliente cliente) {
         this.cliente = cliente;
+        heredarNegocio(cliente);
     }
 
     public Instant getCreatedAt() {

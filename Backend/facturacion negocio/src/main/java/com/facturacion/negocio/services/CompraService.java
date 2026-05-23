@@ -3,6 +3,7 @@ package com.facturacion.negocio.services;
 import com.facturacion.negocio.domain.Compra;
 import com.facturacion.negocio.domain.CompraDetalle;
 import com.facturacion.negocio.domain.MovimientoInventario;
+import com.facturacion.negocio.domain.Negocio;
 import com.facturacion.negocio.domain.Producto;
 import com.facturacion.negocio.domain.Proveedor;
 import com.facturacion.negocio.dto.request.DetalleCompraRequestDTO;
@@ -45,16 +46,19 @@ public class CompraService {
     private final ProductoRepository productoRepository;
     private final MovimientoInventarioRepository movimientoInventarioRepository;
     private final ZoneId zonaAplicacion;
+    private final TenantService tenantService;
 
     public CompraService(CompraRepository compraRepository,
                         ProveedorRepository proveedorRepository,
                         ProductoRepository productoRepository,
                         MovimientoInventarioRepository movimientoInventarioRepository,
+                        TenantService tenantService,
                         @Value("${app.time-zone:America/Bogota}") String zonaHoraria) {
         this.compraRepository = compraRepository;
         this.proveedorRepository = proveedorRepository;
         this.productoRepository = productoRepository;
         this.movimientoInventarioRepository = movimientoInventarioRepository;
+        this.tenantService = tenantService;
         this.zonaAplicacion = ZoneId.of(zonaHoraria);
     }
 
@@ -66,11 +70,12 @@ public class CompraService {
         if (proveedorId == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "proveedorId invalido");
         }
+        Negocio negocio = tenantService.getNegocioActual();
         String facturaNormalizada = normalizarFactura(numeroFactura);
-        Proveedor proveedor = proveedorRepository.findById(proveedorId)
+        Proveedor proveedor = proveedorRepository.findByIdAndNegocio(proveedorId, negocio)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Proveedor no encontrado"));
 
-        if (compraRepository.existsByProveedorIdAndNumeroFactura(proveedorId, facturaNormalizada)) {
+        if (compraRepository.existsByProveedorIdAndNumeroFacturaAndNegocio(proveedorId, facturaNormalizada, negocio)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "numero de factura duplicado para el proveedor");
         }
         if (detallesRequest == null || detallesRequest.isEmpty()) {
@@ -78,6 +83,7 @@ public class CompraService {
         }
 
         Compra compra = new Compra(proveedor, facturaNormalizada, observacion);
+        compra.setNegocio(negocio);
         Set<Long> productoIds = new HashSet<>();
         for (DetalleCompraRequestDTO detalleRequest : detallesRequest) {
             if (detalleRequest == null) {
@@ -90,7 +96,7 @@ public class CompraService {
             if (!productoIds.add(productoId)) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "productoId repetido en la compra");
             }
-            Producto producto = productoRepository.findById(productoId)
+            Producto producto = productoRepository.findByIdAndNegocio(productoId, negocio)
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Producto no encontrado"));
             if (!Boolean.TRUE.equals(producto.isActivo())) {
                 throw new ResponseStatusException(HttpStatus.CONFLICT, "Producto inactivo");
@@ -115,7 +121,7 @@ public class CompraService {
         if (id == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "id compra invalido");
         }
-        return compraRepository.findByIdConDetalles(id)
+        return compraRepository.findByIdConDetalles(id, tenantService.getNegocioActual())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Compra no encontrada"));
     }
 
@@ -143,6 +149,7 @@ public class CompraService {
         Sort.Direction sortDirection = Sort.Direction.fromOptionalString(direccionNormalizada)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_REQUEST, "direccion invalida"));
         Pageable pageable = PageRequest.of(page, size, Sort.by(sortDirection, ordenarPor));
+        Negocio negocio = tenantService.getNegocioActual();
 
         if (desde != null && hasta != null && desde.isAfter(hasta)) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "rango de fechas invalido");
@@ -152,39 +159,46 @@ public class CompraService {
 
         if (estado != null && desdeInclusive != null && hastaExclusiva != null) {
             return compraRepository
-                    .findByEstadoAndFechaCreacionGreaterThanEqualAndFechaCreacionLessThan(
-                            estado, desdeInclusive, hastaExclusiva, pageable)
+                    .findByEstadoAndFechaCreacionGreaterThanEqualAndFechaCreacionLessThanAndNegocio(
+                            estado, desdeInclusive, hastaExclusiva, negocio, pageable)
                     .map(CompraResumenResponseDTO::from);
         }
         if (estado != null && desdeInclusive != null) {
             return compraRepository
-                    .findByEstadoAndFechaCreacionGreaterThanEqual(estado, desdeInclusive, pageable)
+                    .findByEstadoAndFechaCreacionGreaterThanEqualAndNegocio(estado, desdeInclusive, negocio, pageable)
                     .map(CompraResumenResponseDTO::from);
         }
         if (estado != null && hastaExclusiva != null) {
             return compraRepository
-                    .findByEstadoAndFechaCreacionLessThan(estado, hastaExclusiva, pageable)
+                    .findByEstadoAndFechaCreacionLessThanAndNegocio(estado, hastaExclusiva, negocio, pageable)
                     .map(CompraResumenResponseDTO::from);
         }
         if (estado != null) {
-            return compraRepository.findByEstado(estado, pageable).map(CompraResumenResponseDTO::from);
+            return compraRepository.findByEstadoAndNegocio(estado, negocio, pageable).map(CompraResumenResponseDTO::from);
         }
         if (desdeInclusive != null && hastaExclusiva != null) {
             return compraRepository
-                    .findByFechaCreacionGreaterThanEqualAndFechaCreacionLessThan(desdeInclusive, hastaExclusiva, pageable)
+                    .findByFechaCreacionGreaterThanEqualAndFechaCreacionLessThanAndNegocio(
+                            desdeInclusive,
+                            hastaExclusiva,
+                            negocio,
+                            pageable
+                    )
                     .map(CompraResumenResponseDTO::from);
         }
         if (desdeInclusive != null) {
             return compraRepository
-                    .findByFechaCreacionGreaterThanEqual(desdeInclusive, pageable)
+                    .findByFechaCreacionGreaterThanEqualAndNegocio(desdeInclusive, negocio, pageable)
                     .map(CompraResumenResponseDTO::from);
         }
         if (hastaExclusiva != null) {
             return compraRepository
-                    .findByFechaCreacionLessThan(hastaExclusiva, pageable)
+                    .findByFechaCreacionLessThanAndNegocio(hastaExclusiva, negocio, pageable)
                     .map(CompraResumenResponseDTO::from);
         }
-        return compraRepository.findAll(pageable).map(CompraResumenResponseDTO::from);
+        return compraRepository
+                .findByFechaCreacionGreaterThanEqualAndNegocio(Instant.EPOCH, negocio, pageable)
+                .map(CompraResumenResponseDTO::from);
     }
 
     @Transactional
@@ -192,14 +206,15 @@ public class CompraService {
         if (compraId == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "compraId invalido");
         }
-        Compra compra = compraRepository.findByIdForUpdate(compraId)
+        Negocio negocio = tenantService.getNegocioActual();
+        Compra compra = compraRepository.findByIdForUpdate(compraId, negocio)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Compra no encontrada"));
         if (!compra.isBorrador()) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "La compra debe estar en BORRADOR");
         }
 
         // Carga detalles/productos dentro de la transaccion para actualizar stock.
-        Compra compraConDetalles = compraRepository.findByIdConDetalles(compra.getId())
+        Compra compraConDetalles = compraRepository.findByIdConDetalles(compra.getId(), negocio)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Compra no encontrada"));
 
         for (CompraDetalle detalle : compraConDetalles.getDetalles()) {
@@ -223,7 +238,7 @@ public class CompraService {
         if (compraId == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "compraId invalido");
         }
-        Compra compra = compraRepository.findByIdForUpdate(compraId)
+        Compra compra = compraRepository.findByIdForUpdate(compraId, tenantService.getNegocioActual())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Compra no encontrada"));
         if (compra.isAnulada()) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "La compra ya esta anulada");

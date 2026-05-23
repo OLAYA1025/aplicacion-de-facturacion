@@ -14,7 +14,7 @@ import java.util.Objects;
 import java.util.Set;
 
 @Entity
-public class DetallePedido {
+public class DetallePedido extends BaseTenantEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -25,7 +25,7 @@ public class DetallePedido {
     private Pedido pedido;
 
     @ManyToOne(optional = false, fetch = FetchType.LAZY)
-    @JoinColumn(name="producto_codigo", nullable = false)
+    @JoinColumn(name="producto_id", nullable = false)
     private Producto producto;
 
     @Column(nullable = false)
@@ -47,6 +47,7 @@ public class DetallePedido {
             throw new IllegalArgumentException("La cantidad debe ser mayor a cero");
         }
         this.producto = Objects.requireNonNull(producto, "producto no puede ser null");
+        heredarNegocio(producto);
         this.cantidad = cantidad;
         this.precioUnitario = producto.getPrecio().setScale(2, RoundingMode.HALF_UP);
     }
@@ -77,6 +78,7 @@ public class DetallePedido {
 
     public void asignarPedido(Pedido pedido) {
         this.pedido = pedido;
+        heredarNegocio(pedido);
     }
 
     public void reemplazarNotas(List<NotaPredefinida> notasPredefinidas) {

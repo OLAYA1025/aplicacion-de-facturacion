@@ -1,0 +1,117 @@
+<header
+  class="flex h-[calc(4rem+env(safe-area-inset-top))] w-full min-w-0 items-center justify-between gap-2 border-b-2 border-gray-100 bg-white px-3 pt-[env(safe-area-inset-top)] shadow-sm sm:px-6"
+>
+  <div class="flex min-w-0 items-center gap-2 sm:gap-4">
+    <button class="rounded p-2 hover:bg-gray-100 lg:hidden" (click)="menuClick.emit()" type="button">
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke-width="1.5"
+        stroke="currentColor"
+        class="size-6"
+      >
+        <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+      </svg>
+    </button>
+
+    <button
+      class="hidden rounded p-2 transition-colors hover:bg-gray-100 lg:block"
+      (click)="collapseClick.emit()"
+      aria-label="Contraer sidebar"
+      type="button"
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke-width="1.5"
+        stroke="currentColor"
+        class="h-6 w-6 text-gray-600 hover:text-indigo-600"
+      >
+        <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5M12 17.25h8.25" />
+      </svg>
+    </button>
+
+    <span class="max-w-[8.5rem] truncate text-sm font-semibold text-gray-700 sm:max-w-none sm:text-base">
+      {{ pageTitle }}
+    </span>
+  </div>
+
+  <div class="flex items-center gap-2 sm:gap-3">
+    <button
+      type="button"
+      (click)="toggleTheme()"
+      [class.animate-theme-pulse]="themeAnimating"
+      class="relative inline-flex h-10 w-10 items-center justify-center overflow-hidden rounded-full border border-gray-200 bg-white shadow-sm transition hover:shadow-md active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500/60 focus-visible:ring-offset-2 dark:border-white/10 dark:bg-slate-900 sm:w-[76px]"
+      aria-label="Alternar tema"
+    >
+      <span class="relative inline-flex h-6 w-6 items-center justify-center sm:hidden">
+        <span
+          class="absolute inset-0 flex scale-75 items-center justify-center text-amber-500 opacity-0 transition-all duration-300 dark:scale-100 dark:opacity-100"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2.25m6.364.386-1.591 1.591M21 12h-2.25m-.386 6.364-1.591-1.591M12 18.75V21m-4.773-4.227-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0Z" />
+          </svg>
+        </span>
+        <span
+          class="absolute inset-0 flex items-center justify-center text-slate-700 transition-all duration-300 dark:scale-75 dark:opacity-0 dark:text-slate-200"
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002A9.72 9.72 0 0 1 18 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 0 0 3 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 0 0 9.002-5.998Z" />
+          </svg>
+        </span>
+      </span>
+
+      <span class="absolute inset-0 hidden rounded-full bg-gray-100 dark:bg-slate-800 sm:block"></span>
+      <span class="absolute left-2 z-10 hidden text-amber-500 transition-all duration-300 dark:opacity-35 sm:block">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v2.25m6.364.386-1.591 1.591M21 12h-2.25m-.386 6.364-1.591-1.591M12 18.75V21m-4.773-4.227-1.591 1.591M5.25 12H3m4.227-4.773L5.636 5.636M15.75 12a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0Z" />
+        </svg>
+      </span>
+      <span class="absolute right-2 z-10 hidden text-slate-700 opacity-30 transition-all duration-300 dark:text-slate-200 dark:opacity-100 sm:block">
+        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M21.752 15.002A9.72 9.72 0 0 1 18 15.75c-5.385 0-9.75-4.365-9.75-9.75 0-1.33.266-2.597.748-3.752A9.753 9.753 0 0 0 3 11.25C3 16.635 7.365 21 12.75 21a9.753 9.753 0 0 0 9.002-5.998Z" />
+        </svg>
+      </span>
+      <span class="absolute top-1 left-1 z-10 hidden h-8 w-8 rounded-full bg-white shadow ring-1 ring-black/5 transition-transform duration-300 dark:translate-x-[36px] dark:bg-slate-800 dark:ring-white/10 sm:inline-flex"></span>
+    </button>
+
+    <div class="relative" (keydown.escape)="closeDropdown()" tabindex="0">
+      <div
+        (click)="toggleDropdown()"
+        class="flex cursor-pointer select-none items-center gap-2 rounded-full px-2 py-1 transition hover:bg-black/5 active:bg-black/10"
+      >
+        <div class="flex h-8 w-8 items-center justify-center rounded-full bg-indigo-600/90 ring-1 ring-black/5 shadow-sm">
+          <span class="text-[11px] font-semibold tracking-wide text-white">{{ iniciales }}</span>
+        </div>
+        <span class="hidden max-w-[8rem] truncate text-sm font-medium text-gray-800 sm:inline">{{ username }}</span>
+      </div>
+
+      @if (isOpen) {
+        <div (click)="closeDropdown()" class="fixed inset-0 z-40"></div>
+      }
+
+      @if (isOpen) {
+        <div
+          class="absolute right-0 z-50 mt-2 w-56 origin-top-right rounded-2xl border border-black/5 bg-white/80 backdrop-blur-md shadow-[0_20px_50px_-20px_rgba(0,0,0,0.35)]"
+        >
+          <div class="px-4 py-3">
+            <p class="text-[13px] font-semibold text-gray-900">Cuenta</p>
+            <p class="truncate text-[12px] text-gray-600">{{ email }}</p>
+          </div>
+          <div class="h-px bg-black/5"></div>
+          <div class="p-1">
+            <button
+              (click)="logout(); closeDropdown()"
+              type="button"
+              class="w-full rounded-xl px-3 py-2 text-left text-[13px] text-red-600 transition hover:bg-red-500/10 active:bg-red-500/15"
+            >
+              Cerrar sesión
+            </button>
+          </div>
+        </div>
+      }
+    </div>
+  </div>
+</header>

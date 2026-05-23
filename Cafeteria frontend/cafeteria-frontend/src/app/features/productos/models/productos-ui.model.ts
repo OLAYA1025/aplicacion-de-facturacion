@@ -12,6 +12,7 @@ export type DireccionOrden = 'asc' | 'desc';
 export type SelectorCategoriaCrear = number | 'crear' | null;
 
 export interface ProductoCrearFormState {
+  codigo: string;
   nombre: string;
   precio: number | null;
   tipoGestion: TipoGestion;
@@ -23,6 +24,7 @@ export interface ProductoCrearFormState {
 }
 
 export interface ProductoEditarFormState {
+  codigo: string;
   nombre: string;
   precio: number | null;
   tipoGestion: TipoGestion;

@@ -37,6 +37,7 @@ public class PedidoService {
     private final NotasPredefinidasService notasPredefinidasService;
     private final PdfService pdfService;
     private final Boolean electronicaHabilitada;
+    private final TenantService tenantService;
 
     public PedidoService(PedidoRepository pedidoRepository,
                          MovimientoCajaRepository movimientoCajaRepository,
@@ -52,6 +53,7 @@ public class PedidoService {
                          SseService sseService,
                          NotasPredefinidasService notasPredefinidasService,
                          PdfService pdfService,
+                         TenantService tenantService,
                          @Value("${electronicaHabilitada}") Boolean electronicaHabilitada) {
         this.pedidoRepository = pedidoRepository;
         this.movimientoCajaRepository = movimientoCajaRepository;
@@ -67,6 +69,7 @@ public class PedidoService {
         this.sseService = sseService;
         this.notasPredefinidasService = notasPredefinidasService;
         this.pdfService = pdfService;
+        this.tenantService = tenantService;
         this.electronicaHabilitada = electronicaHabilitada;
     }
 
@@ -75,7 +78,7 @@ public class PedidoService {
         if(id == null){
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Envia un ID valido");
         }
-         return pedidoRepository.findById(id)
+         return pedidoRepository.findByIdAndNegocio(id, tenantService.getNegocioActual())
                 .orElseThrow(()->
                 new ResponseStatusException(
                         HttpStatus.NOT_FOUND,
@@ -87,7 +90,7 @@ public class PedidoService {
 
     @Transactional(readOnly = true)
     public BigDecimal calcularTotal(Long pedidoId) {
-        Pedido pedido = pedidoRepository.findById(pedidoId)
+        Pedido pedido = pedidoRepository.findByIdAndNegocio(pedidoId, tenantService.getNegocioActual())
                 .orElseThrow(() ->
                         new ResponseStatusException(
                                 HttpStatus.NOT_FOUND,
@@ -98,20 +101,22 @@ public class PedidoService {
     }
 
     public List<PedidoListadoItemDTO> obtenerPedidosPorCajaAbierta() {
-        if(!cajaRepository.existeCajaAbierta()){
+        Negocio negocio = tenantService.getNegocioActual();
+        if(!cajaRepository.existeCajaAbierta(negocio)){
             throw new ResponseStatusException(HttpStatus.NOT_FOUND, "No hay ninguna caja abierta");
         }
-        return pedidoRepository.findResumenPedidosByCajaAbierta();
+        return pedidoRepository.findResumenPedidosByCajaAbierta(negocio);
     }
 
     public List<PedidoListadoItemDTO> obtenerPedidosPorCaja(Long idCaja) {
-        Caja caja = cajaRepository.findById(idCaja)
+        Negocio negocio = tenantService.getNegocioActual();
+        Caja caja = cajaRepository.findByIdAndNegocio(idCaja, negocio)
                 .orElseThrow(() ->
                 new ResponseStatusException(
                         HttpStatus.NOT_FOUND,
                         "la caja solicitada no existe")
                 );
-        return pedidoRepository.findResumenPedidosByCaja(caja.getId());
+        return pedidoRepository.findResumenPedidosByCaja(caja.getId(), negocio);
     }
 
     public List<DetallePedido> obtenerDetalles(Long pedidoId) {
@@ -119,7 +124,7 @@ public class PedidoService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "pedidoId invalido");
         }
 
-        return pedidoRepository.findDetallesPedidoByPedido(pedidoId);
+        return pedidoRepository.findDetallesPedidoByPedido(pedidoId, tenantService.getNegocioActual());
     }
 
     public List<DetallePedido> obtenerDetallesPorPedidos(List<Long> pedidoIds) {
@@ -127,13 +132,14 @@ public class PedidoService {
             return new ArrayList<>();
         }
 
-        return pedidoRepository.findDetallesByPedidoIds(pedidoIds);
+        return pedidoRepository.findDetallesByPedidoIds(pedidoIds, tenantService.getNegocioActual());
     }
 
     @Transactional
     public Pedido crearPedido(List<DetallePedidoRequestDTO> detallePedidos,
                               String nombre) {
-        Caja caja = cajaRepository.obtenerCajaAbierta()
+        Negocio negocio = tenantService.getNegocioActual();
+        Caja caja = cajaRepository.obtenerCajaAbierta(negocio)
                 .orElseThrow(() ->
                         new ResponseStatusException(
                                 HttpStatus.CONFLICT,
@@ -151,6 +157,7 @@ public class PedidoService {
 
         boolean nombreVacio = nombre == null || nombre.trim().isEmpty();
         Pedido pedido = new Pedido(nombre, detallesNormalizados, caja);
+        pedido.setNegocio(negocio);
         pedido = pedidoRepository.save(pedido);
         if (nombreVacio) {
             pedido.actualizarNombre(nombre);
@@ -163,7 +170,7 @@ public class PedidoService {
 
     @Transactional(readOnly = true)
     public byte[] obtenerPdfTirillaPreFactura(Long pedidoId) {
-        Pedido pedido = pedidoRepository.findById(pedidoId)
+        Pedido pedido = pedidoRepository.findByIdAndNegocio(pedidoId, tenantService.getNegocioActual())
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND, "Pedido no encontrado"));
 
@@ -181,7 +188,7 @@ public class PedidoService {
         List<DetallePedido> detallesNormalizados = normalizarDetalles(detallePedidos);
         validarProductosActivos(detallesNormalizados);
 
-        Pedido pedido = pedidoRepository.findByIdForUpdate(pedidoId)
+        Pedido pedido = pedidoRepository.findByIdForUpdate(pedidoId, tenantService.getNegocioActual())
                 .orElseThrow(() ->
                         new ResponseStatusException(
                                 HttpStatus.NOT_FOUND,
@@ -211,7 +218,7 @@ public class PedidoService {
 
     @Transactional(readOnly = true)
     public Pedido buscarPorId(Long pedidoId) {
-        return pedidoRepository.findById(pedidoId)
+        return pedidoRepository.findByIdAndNegocio(pedidoId, tenantService.getNegocioActual())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Pedido no encontrado"));
     }
 
@@ -240,9 +247,10 @@ public class PedidoService {
         if (tipoDocumentoFiscal == null) {
             tipoDocumentoFiscal = TipoDocumentoFiscal.FEV_CONS_FINAL;
         }
+        Negocio negocio = tenantService.getNegocioActual();
 
         // ===== 1) Bloquear y validar PEDIDO primero =====
-        Pedido pedido = pedidoRepository.findByIdForUpdate(pedidoId)
+        Pedido pedido = pedidoRepository.findByIdForUpdate(pedidoId, negocio)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Pedido no encontrado"));
 
         if (!pedido.isPendiente()) {
@@ -256,7 +264,7 @@ public class PedidoService {
         }
 
         // ===== 2) Validar usuario =====
-        Usuario usuario = usuarioRepository.findById(usuarioId)
+        Usuario usuario = usuarioRepository.findByIdAndNegocio(usuarioId, negocio)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario no encontrado"));
 
         if (!usuario.isActivo()) {
@@ -268,7 +276,7 @@ public class PedidoService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "El pedido no esta asociado a ninguna caja");
         }
 
-        Caja caja = cajaRepository.findByIdForUpdate(pedido.getCaja().getId())
+        Caja caja = cajaRepository.findByIdForUpdate(pedido.getCaja().getId(), negocio)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Caja no encontrada"));
 
         if (!caja.isAbierta()) {
@@ -294,14 +302,18 @@ public class PedidoService {
 
                 // Buscar por (tipo, numero); si no existe, crear
                 cliente = clienteRepository
-                        .findByTipoIdentificacionAndNumeroIdentificacion(clienteDto.getTipoIdentificacion(), clienteDto.getNumeroIdentificacion())
+                        .findByTipoIdentificacionAndNumeroIdentificacionAndNegocio(
+                                clienteDto.getTipoIdentificacion(),
+                                clienteDto.getNumeroIdentificacion(),
+                                negocio
+                        )
                         .orElseGet(() -> clienteRepository.save(
-                                new Cliente(
+                                tenantService.asignarNegocioActual(new Cliente(
                                         clienteDto.getTipoIdentificacion(),
                                         clienteDto.getNumeroIdentificacion(),
                                         clienteDto.getNombre(),
                                         clienteDto.getEmail()
-                                )
+                                ))
                         ));
 
                 // Si más adelante quieres: actualizar email si está vacío, etc.
@@ -309,14 +321,18 @@ public class PedidoService {
 
             if (tipoDocumentoFiscal == TipoDocumentoFiscal.FEV_CONS_FINAL) {
                 cliente = clienteRepository
-                        .findByTipoIdentificacionAndNumeroIdentificacion(TipoDocumento.CC, "222222222222")
+                        .findByTipoIdentificacionAndNumeroIdentificacionAndNegocio(
+                                TipoDocumento.CC,
+                                "222222222222",
+                                negocio
+                        )
                         .orElseGet(() -> clienteRepository.save(
-                                new Cliente(
+                                tenantService.asignarNegocioActual(new Cliente(
                                         TipoDocumento.CC,
                                         "222222222222",
                                         "consumidor final",
                                         null
-                                )
+                                ))
                         ));
 
             }
@@ -385,8 +401,9 @@ public class PedidoService {
         if(usuarioId == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "usuarioId invalido");
         }
+        Negocio negocio = tenantService.getNegocioActual();
 
-        Pedido pedido = pedidoRepository.findByIdForUpdate(pedidoId)
+        Pedido pedido = pedidoRepository.findByIdForUpdate(pedidoId, negocio)
                 .orElseThrow(() ->
                         new ResponseStatusException(
                                 HttpStatus.NOT_FOUND,
@@ -400,7 +417,7 @@ public class PedidoService {
             );
         }
 
-        Usuario usuario = usuarioRepository.findById(usuarioId)
+        Usuario usuario = usuarioRepository.findByIdAndNegocio(usuarioId, negocio)
                 .orElseThrow(() ->
                         new ResponseStatusException(
                                 HttpStatus.NOT_FOUND,
@@ -499,7 +516,10 @@ public class PedidoService {
             if (cantidad == null || cantidad <= 0) {
                 throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "cantidad invalida");
             }
-            Producto producto = productoRepository.findById(detalle.getProductoId())
+            Producto producto = productoRepository.findByIdAndNegocio(
+                            detalle.getProductoId(),
+                            tenantService.getNegocioActual()
+                    )
                     .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Producto no encontrado"));
             DetallePedido detallePedido = new DetallePedido(producto, cantidad);
             detallePedido.reemplazarNotas(

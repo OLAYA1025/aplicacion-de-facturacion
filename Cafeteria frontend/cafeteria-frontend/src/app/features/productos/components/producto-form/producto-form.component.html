@@ -1,6 +1,6 @@
 <form #crearForm="ngForm" (ngSubmit)="onSubmit(crearForm)" class="space-y-6 p-6">
   <div class="grid gap-5 md:grid-cols-2">
-    <div class="md:col-span-2">
+    <div>
       <label [for]="'nombre-crear-' + formIdPrefix" class="mb-2 block text-sm font-semibold text-gray-700">
         Nombre del producto
       </label>
@@ -11,6 +11,19 @@
         required
         minlength="2"
         placeholder="Ej. Capuchino grande"
+        class="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+      />
+    </div>
+
+    <div>
+      <label [for]="'codigo-crear-' + formIdPrefix" class="mb-2 block text-sm font-semibold text-gray-700">
+        Código de barras
+      </label>
+      <input
+        [id]="'codigo-crear-' + formIdPrefix"
+        [name]="'codigoCrear' + formIdPrefix"
+        [(ngModel)]="nuevoProducto.codigo"
+        placeholder="Opcional"
         class="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
       />
     </div>

@@ -37,7 +37,7 @@ public class DetallePedidoSchemaRepairService {
                     JOIN pg_attribute a
                       ON a.attrelid = t.oid
                      AND a.attnum = cols.attnum
-                  ) = ARRAY['pedido_id', 'producto_codigo']::text[]
+                  ) = ARRAY['pedido_id', 'producto_id']::text[]
                 """,
                 (rs, rowNum) -> rs.getString("conname")
         );
@@ -65,7 +65,7 @@ public class DetallePedidoSchemaRepairService {
                     JOIN pg_attribute a
                       ON a.attrelid = t.oid
                      AND a.attnum = cols.attnum
-                  ) = ARRAY['pedido_id', 'producto_codigo']::text[]
+                  ) = ARRAY['pedido_id', 'producto_Id']::text[]
                 """,
                 (rs, rowNum) -> rs.getString("index_name")
         );

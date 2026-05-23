@@ -11,12 +11,12 @@ import jakarta.persistence.*;
         },
         uniqueConstraints = {
                 @UniqueConstraint(
-                        name = "uk_cliente_tipo_numero",
-                        columnNames = {"tipo_identificacion", "numero_identificacion"}
+                        name = "uk_cliente_negocio_tipo_numero",
+                        columnNames = {"negocio_id", "tipo_identificacion", "numero_identificacion"}
                 )
         }
 )
-public class Cliente {
+public class Cliente extends BaseTenantEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

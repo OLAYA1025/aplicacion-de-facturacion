@@ -11,7 +11,6 @@ import com.facturacion.negocio.dto.response.PedidoResponseDTO;
 import com.facturacion.negocio.dto.response.PedidoTotalResponseDTO;
 import com.facturacion.negocio.enumerated.EstadoDocumentoFiscal;
 import com.facturacion.negocio.enumerated.TipoDocumentoFiscal;
-import com.facturacion.negocio.repository.PedidoRepository;
 import com.facturacion.negocio.services.DocumentoFiscalService;
 import com.facturacion.negocio.services.PedidoService;
 import org.springframework.http.HttpHeaders;
@@ -35,12 +34,10 @@ public class PedidoController {
 
     private final PedidoService pedidoService;
     private final DocumentoFiscalService documentoFiscalService;
-    private final PedidoRepository pedidoRepository;
 
-    public PedidoController(PedidoService pedidoService, DocumentoFiscalService documentoFiscalService, PedidoRepository pedidoRepository) {
+    public PedidoController(PedidoService pedidoService, DocumentoFiscalService documentoFiscalService) {
         this.pedidoService = pedidoService;
         this.documentoFiscalService = documentoFiscalService;
-        this.pedidoRepository = pedidoRepository;
     }
 
     @GetMapping("/{id}")
@@ -229,11 +226,7 @@ public class PedidoController {
 
     @GetMapping("/{id}/tirilla/pdf")
     public ResponseEntity<byte[]> pdfTirilla(@PathVariable Long id) {
-        Pedido pedido = pedidoRepository.findById(id).orElseThrow(() ->
-                new ResponseStatusException(
-                        HttpStatus.NOT_FOUND,
-                        "Pedido no encontrado"))
-                ;
+        Pedido pedido = pedidoService.buscarPorId(id);
 
         byte[] pdfBytes = pedidoService.obtenerPdfTirillaPreFactura(id);
 

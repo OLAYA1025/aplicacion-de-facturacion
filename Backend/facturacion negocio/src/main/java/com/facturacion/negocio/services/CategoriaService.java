@@ -1,6 +1,7 @@
 package com.facturacion.negocio.services;
 
 import com.facturacion.negocio.domain.Categoria;
+import com.facturacion.negocio.domain.Negocio;
 import com.facturacion.negocio.repository.CategoriaRepository;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -12,26 +13,30 @@ import java.util.List;
 public class CategoriaService {
 
     private final CategoriaRepository categoriaRepository;
+    private final TenantService tenantService;
 
-    public CategoriaService(CategoriaRepository categoriaRepository) {
+    public CategoriaService(CategoriaRepository categoriaRepository, TenantService tenantService) {
         this.categoriaRepository = categoriaRepository;
+        this.tenantService = tenantService;
     }
 
     public Categoria crearCategoria(String nombre) {
+        Negocio negocio = tenantService.getNegocioActual();
         String nombreNormalizado = validarNombre(nombre);
-        if (categoriaRepository.existsByNombreIgnoreCase(nombreNormalizado)) {
+        if (categoriaRepository.existsByNombreIgnoreCaseAndNegocio(nombreNormalizado, negocio)) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "la categoria ya existe");
         }
         Categoria categoria = new Categoria(nombreNormalizado);
+        categoria.setNegocio(negocio);
         return categoriaRepository.save(categoria);
     }
 
     public List<Categoria> obtenerCategorias() {
-        return categoriaRepository.findAll();
+        return categoriaRepository.findAllByNegocioOrderByNombreAsc(tenantService.getNegocioActual());
     }
 
     public Categoria obtenerCategoria(Long id) {
-        return categoriaRepository.findById(id)
+        return categoriaRepository.findByIdAndNegocio(id, tenantService.getNegocioActual())
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "categoria no encontrada"));
     }
 
@@ -42,7 +47,11 @@ public class CategoriaService {
         Categoria categoria = obtenerCategoria(id);
         String nombreNormalizado = validarNombre(nombre);
 
-        if (categoriaRepository.existsByNombreIgnoreCaseAndIdNot(nombreNormalizado, id)) {
+        if (categoriaRepository.existsByNombreIgnoreCaseAndIdNotAndNegocio(
+                nombreNormalizado,
+                id,
+                categoria.getNegocio()
+        )) {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "la categoria ya existe");
         }
 

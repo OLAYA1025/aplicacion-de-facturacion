@@ -1,5 +1,6 @@
 package com.facturacion.negocio.repository;
 
+import com.facturacion.negocio.domain.Negocio;
 import com.facturacion.negocio.domain.NumberingRange;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -11,6 +12,8 @@ import java.util.Optional;
 
 public interface NumberingRangeRepository extends JpaRepository<NumberingRange, Long> {
 
+    Optional<NumberingRange> findByIdAndNegocioId(Long id, Long negocioId);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("""
         select nr
@@ -18,4 +21,13 @@ public interface NumberingRangeRepository extends JpaRepository<NumberingRange, 
         where nr.id = :id
         """)
     Optional<NumberingRange> findByIdForUpdate(@Param("id") Long id);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("""
+        select nr
+        from NumberingRange nr
+        where nr.id = :id
+          and nr.negocio.id = :negocioId
+        """)
+    Optional<NumberingRange> findByIdForUpdateAndNegocioId(@Param("id") Long id, @Param("negocioId") Long negocioId);
 }

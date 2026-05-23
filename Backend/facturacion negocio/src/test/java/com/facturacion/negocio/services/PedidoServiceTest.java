@@ -1,12 +1,14 @@
 package com.facturacion.negocio.services;
 
 import com.facturacion.negocio.domain.Caja;
+import com.facturacion.negocio.domain.BaseTenantEntity;
 import com.facturacion.negocio.domain.Categoria;
 import com.facturacion.negocio.domain.Cliente;
 import com.facturacion.negocio.domain.DetallePedido;
 import com.facturacion.negocio.domain.DocumentoFiscal;
 import com.facturacion.negocio.domain.MovimientoCaja;
 import com.facturacion.negocio.domain.MovimientoInventario;
+import com.facturacion.negocio.domain.Negocio;
 import com.facturacion.negocio.domain.Pedido;
 import com.facturacion.negocio.domain.Producto;
 import com.facturacion.negocio.domain.Usuario;
@@ -51,6 +53,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -85,11 +88,22 @@ class PedidoServiceTest {
     private NotasPredefinidasService notasPredefinidasService;
     @Mock
     private PdfService pdfService;
+    @Mock
+    private TenantService tenantService;
 
     private PedidoService pedidoService;
+    private Negocio negocio;
 
     @BeforeEach
     void setUp() {
+        negocio = new Negocio("Negocio Test", null, null, null, true);
+        ReflectionTestUtils.setField(negocio, "id", 1L);
+        when(tenantService.getNegocioActual()).thenReturn(negocio);
+        lenient().when(tenantService.asignarNegocioActual(any())).thenAnswer(invocation -> {
+            BaseTenantEntity entity = invocation.getArgument(0);
+            entity.setNegocio(negocio);
+            return entity;
+        });
         pedidoService = new PedidoService(
                 pedidoRepository,
                 movimientoCajaRepository,
@@ -105,6 +119,9 @@ class PedidoServiceTest {
                 sseService,
                 notasPredefinidasService,
                 pdfService
+                ,
+                tenantService,
+                true
         );
     }
 
@@ -113,7 +130,7 @@ class PedidoServiceTest {
 
         @Test
         void debeRetornarConflictCuandoNoHayCajaAbierta() {
-            when(cajaRepository.obtenerCajaAbierta()).thenReturn(Optional.empty());
+            when(cajaRepository.obtenerCajaAbierta(negocio)).thenReturn(Optional.empty());
 
             assertThatThrownBy(() -> pedidoService.crearPedido(List.of(), "Mesa 1"))
                     .isInstanceOf(ResponseStatusException.class)
@@ -129,8 +146,8 @@ class PedidoServiceTest {
             Caja caja = cajaAbierta(10L);
             Producto producto = productoInventariable(100L, 15, new BigDecimal("12000.00"));
 
-            when(cajaRepository.obtenerCajaAbierta()).thenReturn(Optional.of(caja));
-            when(productoRepository.findById(100L)).thenReturn(Optional.of(producto));
+            when(cajaRepository.obtenerCajaAbierta(negocio)).thenReturn(Optional.of(caja));
+            when(productoRepository.findByIdAndNegocio(100L, negocio)).thenReturn(Optional.of(producto));
             when(notasPredefinidasService.resolverNotasSeleccionadasParaProducto(eq(producto), any()))
                     .thenReturn(List.of());
             when(pedidoRepository.save(any(Pedido.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -149,8 +166,8 @@ class PedidoServiceTest {
             Caja caja = cajaAbierta(11L);
             Producto producto = productoInventariable(101L, 10, new BigDecimal("10000.00"));
 
-            when(cajaRepository.obtenerCajaAbierta()).thenReturn(Optional.of(caja));
-            when(productoRepository.findById(101L)).thenReturn(Optional.of(producto));
+            when(cajaRepository.obtenerCajaAbierta(negocio)).thenReturn(Optional.of(caja));
+            when(productoRepository.findByIdAndNegocio(101L, negocio)).thenReturn(Optional.of(producto));
             when(notasPredefinidasService.resolverNotasSeleccionadasParaProducto(eq(producto), any()))
                     .thenReturn(List.of());
             when(pedidoRepository.save(any(Pedido.class))).thenAnswer(invocation -> {
@@ -178,10 +195,10 @@ class PedidoServiceTest {
             Pedido pedido = pedidoPendiente(99L, caja, productoInventariable(200L, 10, new BigDecimal("5000.00")), 3);
             pedido.getDetallePedidos().forEach(detalle -> detalle.getProducto().reservarStock(detalle.getCantidad()));
 
-            when(pedidoRepository.findByIdForUpdate(99L)).thenReturn(Optional.of(pedido));
-            when(usuarioRepository.findById(2L)).thenReturn(Optional.of(cajero));
-            when(cajaRepository.findByIdForUpdate(20L)).thenReturn(Optional.of(caja));
-            when(clienteRepository.findByTipoIdentificacionAndNumeroIdentificacion(TipoDocumento.CC, "222222222222"))
+            when(pedidoRepository.findByIdForUpdate(99L, negocio)).thenReturn(Optional.of(pedido));
+            when(usuarioRepository.findByIdAndNegocio(2L, negocio)).thenReturn(Optional.of(cajero));
+            when(cajaRepository.findByIdForUpdate(20L, negocio)).thenReturn(Optional.of(caja));
+            when(clienteRepository.findByTipoIdentificacionAndNumeroIdentificacionAndNegocio(TipoDocumento.CC, "222222222222", negocio))
                     .thenReturn(Optional.empty());
             when(clienteRepository.save(any(Cliente.class))).thenAnswer(invocation -> invocation.getArgument(0));
             when(pedidoRepository.save(any(Pedido.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -227,9 +244,9 @@ class PedidoServiceTest {
             Usuario cajero = usuarioActivo(2L, "cajero");
             Pedido pedido = pedidoPendiente(100L, caja, productoInventariable(201L, 5, new BigDecimal("7000.00")), 1);
 
-            when(pedidoRepository.findByIdForUpdate(100L)).thenReturn(Optional.of(pedido));
-            when(usuarioRepository.findById(2L)).thenReturn(Optional.of(cajero));
-            when(cajaRepository.findByIdForUpdate(21L)).thenReturn(Optional.of(caja));
+            when(pedidoRepository.findByIdForUpdate(100L, negocio)).thenReturn(Optional.of(pedido));
+            when(usuarioRepository.findByIdAndNegocio(2L, negocio)).thenReturn(Optional.of(cajero));
+            when(cajaRepository.findByIdForUpdate(21L, negocio)).thenReturn(Optional.of(caja));
 
             assertThatThrownBy(() -> pedidoService.cobrarPedido(
                     100L,
@@ -257,7 +274,7 @@ class PedidoServiceTest {
             Pedido pedido = pedidoPendiente(101L, caja, productoInventariable(202L, 5, new BigDecimal("6000.00")), 1);
             pedido.setDocumentoFiscal(DocumentoFiscal.crearBorrador(pedido, TipoDocumentoFiscal.FEV_CONS_FINAL, "PED"));
 
-            when(pedidoRepository.findByIdForUpdate(101L)).thenReturn(Optional.of(pedido));
+            when(pedidoRepository.findByIdForUpdate(101L, negocio)).thenReturn(Optional.of(pedido));
 
             assertThatThrownBy(() -> pedidoService.cobrarPedido(
                     101L,
@@ -287,8 +304,8 @@ class PedidoServiceTest {
             producto.reservarStock(2);
             Usuario usuario = usuarioActivo(5L, "admin");
 
-            when(pedidoRepository.findByIdForUpdate(200L)).thenReturn(Optional.of(pedido));
-            when(usuarioRepository.findById(5L)).thenReturn(Optional.of(usuario));
+            when(pedidoRepository.findByIdForUpdate(200L, negocio)).thenReturn(Optional.of(pedido));
+            when(usuarioRepository.findByIdAndNegocio(5L, negocio)).thenReturn(Optional.of(usuario));
             when(pedidoRepository.save(any(Pedido.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
             Pedido pedidoCancelado = pedidoService.cancelarPedido(200L, 5L);
@@ -317,14 +334,14 @@ class PedidoServiceTest {
                 "Producto " + id,
                 precio,
                 "Producto para test",
-                new Categoria("Categoria " + id),
+                categoria(id),
                 TipoGestionProducto.INVENTARIABLE,
                 TipoImpuesto.IVA,
                 BigDecimal.valueOf(19),
                 stockInicial,
                 1
         );
-        producto.setCodigo(id);
+        producto.setId(id);
         return producto;
     }
 
@@ -337,7 +354,14 @@ class PedidoServiceTest {
 
     private Usuario usuarioActivo(Long id, String username) {
         Usuario usuario = new Usuario("Usuario " + username, username, "hash", username + "@mail.test", Rol.CAJERO);
+        usuario.setNegocio(negocio);
         ReflectionTestUtils.setField(usuario, "id", id);
         return usuario;
+    }
+
+    private Categoria categoria(Long id) {
+        Categoria categoria = new Categoria("Categoria " + id);
+        categoria.setNegocio(negocio);
+        return categoria;
     }
 }

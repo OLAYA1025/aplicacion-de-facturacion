@@ -3,7 +3,6 @@ package com.facturacion.negocio.controllers;
 import com.facturacion.negocio.domain.DocumentoFiscal;
 import com.facturacion.negocio.dto.factura.dian.EnviarDocumentoDianDTO;
 import com.facturacion.negocio.dto.factura.dian.PruebaDianResponseDTO;
-import com.facturacion.negocio.repository.DocumentoFiscalRepository;
 import com.facturacion.negocio.services.dian.certificate.DianCertificateData;
 import com.facturacion.negocio.services.dian.certificate.DianCertificateLoader;
 import com.facturacion.negocio.services.dian.client.DianCxfClient;
@@ -12,6 +11,7 @@ import com.facturacion.negocio.services.dian.client.DianSoapSmokeTest;
 import com.facturacion.negocio.services.dian.service.DianInvoiceService;
 import com.facturacion.negocio.services.dian.service.DianXmlService;
 import com.facturacion.negocio.services.dian.xml.DianXmlSigner;
+import com.facturacion.negocio.services.DocumentoFiscalService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -28,7 +28,7 @@ public class DianInvoiceController {
     private final DianSoapClient dianSoapClient;
     private final DianSoapSmokeTest dianSoapSmokeTest;
     private final DianCxfClient  dianCxfClient;
-    private final DocumentoFiscalRepository documentoFiscalRepository;
+    private final DocumentoFiscalService documentoFiscalService;
 
 
     public DianInvoiceController(DianCertificateLoader dianCertificateLoader,
@@ -36,7 +36,8 @@ public class DianInvoiceController {
                                  DianInvoiceService dianInvoiceService,
                                  DianSoapClient dianSoapClient,
                                  DianSoapSmokeTest dianSoapSmokeTest,
-                                 DianCxfClient dianCxfClient, DocumentoFiscalRepository documentoFiscalRepository) {
+                                 DianCxfClient dianCxfClient,
+                                 DocumentoFiscalService documentoFiscalService) {
 
         this.dianCertificateLoader = dianCertificateLoader;
         this.dianXmlSigner = dianXmlSigner;
@@ -44,7 +45,7 @@ public class DianInvoiceController {
         this.dianSoapClient = dianSoapClient;
         this.dianSoapSmokeTest = dianSoapSmokeTest;
         this.dianCxfClient = dianCxfClient;
-        this.documentoFiscalRepository = documentoFiscalRepository;
+        this.documentoFiscalService = documentoFiscalService;
     }
 
     @GetMapping("/prueba")
@@ -67,12 +68,7 @@ public class DianInvoiceController {
         String signedXml = dianXmlSigner.sign(xml);
         Boolean valid = dianXmlSigner.verify(signedXml);
 
-        DocumentoFiscal doc = documentoFiscalRepository.findById(dto.getDocumentoFiscalId())
-                .orElseThrow(() ->
-                        new ResponseStatusException(
-                                HttpStatus.NOT_FOUND,
-                                "no se encontro el documeto fiscal")
-                );
+        DocumentoFiscal doc = documentoFiscalService.buscarPorId(dto.getDocumentoFiscalId());
         String invoiceNumber =doc.getNumeroDocumento(); // o desde data/doc
         byte[] zipBytes = dianSoapClient.zipXml(signedXml, invoiceNumber + ".xml");
 

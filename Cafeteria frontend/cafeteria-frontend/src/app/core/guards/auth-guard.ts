@@ -1,9 +1,10 @@
+import { inject } from '@angular/core';
 import { CanActivateChildFn, CanActivateFn, Router, UrlTree } from '@angular/router';
 import { AuthService } from '../services/auth.service';
-import { inject } from '@angular/core';
 
 const CAJERO_ALLOWED_EXACT_PATHS = ['/caja', '/pedidos', '/facturas', '/clientes', '/perfil'] as const;
 const CAJERO_ALLOWED_PREFIX_PATHS = ['/productos/inventariables', '/productos/preparaciones'] as const;
+const SUPER_ADMIN_ROLE = 'SUPER_ADMIN';
 
 function resolveAuthGuard(authService: AuthService, router: Router): boolean | UrlTree {
   if (authService.isAuthenticated()) {
@@ -46,6 +47,10 @@ function resolveCajeroRouteGuard(
   return router.createUrlTree(['/caja']);
 }
 
+function isSuperAdmin(authService: AuthService): boolean {
+  return authService.getUsuario()?.rol?.toUpperCase() === SUPER_ADMIN_ROLE;
+}
+
 export const authGuard: CanActivateFn = () => {
 
   const authService = inject(AuthService);
@@ -63,4 +68,34 @@ export const authChildGuard: CanActivateChildFn = (_childRoute, state) => {
   }
 
   return resolveCajeroRouteGuard(authService, router, state.url);
+};
+
+export const superAdminGuard: CanActivateFn = () => {
+  const authService = inject(AuthService);
+  const router = inject(Router);
+  const authResult = resolveAuthGuard(authService, router);
+  if (authResult !== true) {
+    return authResult;
+  }
+
+  if (isSuperAdmin(authService)) {
+    return true;
+  }
+
+  return router.createUrlTree(['/caja']);
+};
+
+export const businessAreaGuard: CanActivateFn = () => {
+  const authService = inject(AuthService);
+  const router = inject(Router);
+  const authResult = resolveAuthGuard(authService, router);
+  if (authResult !== true) {
+    return authResult;
+  }
+
+  if (isSuperAdmin(authService)) {
+    return router.createUrlTree(['/admin']);
+  }
+
+  return true;
 };

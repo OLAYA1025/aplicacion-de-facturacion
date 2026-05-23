@@ -11,7 +11,7 @@ import java.time.Instant;
 import java.util.*;
 
 @Entity
-public class Pedido {
+public class Pedido extends BaseTenantEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -50,6 +50,7 @@ public class Pedido {
         this.nombre = resolverNombre(nombre, null);
         this.estado = EstadoPedido.PENDIENTE;
         this.caja = caja;
+        heredarNegocio(caja);
         this.fecha = Instant.now();
         if (detallePedidos != null) {
             for (DetallePedido detalle : detallePedidos) {
@@ -147,6 +148,7 @@ public class Pedido {
 
     public void setCaja(Caja caja) {
         this.caja = caja;
+        heredarNegocio(caja);
     }
 
     private String resolverNombre(String nombre, Long pedidoId) {
@@ -164,6 +166,7 @@ public class Pedido {
     public void setDocumentoFiscal(DocumentoFiscal documentoFiscal) {
         this.documentoFiscal = documentoFiscal;
         if (documentoFiscal != null) {
+            documentoFiscal.heredarNegocio(this);
             documentoFiscal.setPedido(this);
         }
     }

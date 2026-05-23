@@ -8,7 +8,7 @@ import java.math.BigDecimal;
 
 public class FacturaItem {
     private Integer cantidad;
-    private String codigo;
+    private String id;
     private String nombre;
     private BigDecimal valorUnitario;
     private BigDecimal impuesto;
@@ -28,7 +28,7 @@ public class FacturaItem {
             throw new IllegalArgumentException("cantidad invalida");
         }
         FacturaItem facturaItem = new FacturaItem();
-        facturaItem.setCodigo(producto.getCodigo().toString());
+        facturaItem.setId(producto.getId().toString());
         facturaItem.setNombre(producto.getNombre());
         facturaItem.setCantidad(cantidad);
         facturaItem.setValorUnitario(precioUnitario);
@@ -50,12 +50,12 @@ public class FacturaItem {
         this.cantidad = cantidad;
     }
 
-    public String getCodigo() {
-        return codigo;
+    public String getId() {
+        return id;
     }
 
-    public void setCodigo(String codigo) {
-        this.codigo = codigo;
+    public void setId(String id) {
+        this.id = id;
     }
 
     public String getNombre() {

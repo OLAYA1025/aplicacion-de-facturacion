@@ -2,6 +2,7 @@ package com.facturacion.negocio.services;
 
 import com.facturacion.negocio.domain.Caja;
 import com.facturacion.negocio.domain.MovimientoCaja;
+import com.facturacion.negocio.domain.Negocio;
 import com.facturacion.negocio.domain.Usuario;
 import com.facturacion.negocio.dto.response.MovimientoCajaResponseDTO;
 import com.facturacion.negocio.enumerated.TipoMovimiento;
@@ -22,12 +23,16 @@ public class MovimientoCajaService{
     private final MovimientoCajaRepository movimientoCajaRepository;
     private final CajaRepository cajaRepository;
     private final UsuarioRepository usuarioRepository;
+    private final TenantService tenantService;
 
     public MovimientoCajaService(MovimientoCajaRepository movimientoCajaRepository,
-                                 CajaRepository cajaRepository, UsuarioRepository usuarioRepository) {
+                                 CajaRepository cajaRepository,
+                                 UsuarioRepository usuarioRepository,
+                                 TenantService tenantService) {
         this.movimientoCajaRepository = movimientoCajaRepository;
         this.cajaRepository = cajaRepository;
         this.usuarioRepository = usuarioRepository;
+        this.tenantService = tenantService;
     }
 
 
@@ -35,7 +40,7 @@ public class MovimientoCajaService{
         if(id == null){
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "id invalido");
         }
-        MovimientoCaja movimientoCaja = this.movimientoCajaRepository.findById(id)
+        MovimientoCaja movimientoCaja = this.movimientoCajaRepository.findByIdAndNegocio(id, tenantService.getNegocioActual())
                 .orElseThrow(() ->
                         new ResponseStatusException(
                                 HttpStatus.NOT_FOUND,
@@ -57,28 +62,31 @@ public class MovimientoCajaService{
 
 
     public List<MovimientoCajaResponseDTO> obtenerMovimientosByCajaAbierta(){
-        Caja caja = cajaRepository.obtenerCajaAbierta().orElseThrow(() ->
+        Negocio negocio = tenantService.getNegocioActual();
+        Caja caja = cajaRepository.obtenerCajaAbierta(negocio).orElseThrow(() ->
                 new ResponseStatusException(
                         HttpStatus.NOT_FOUND,
                         "No hay cajas abiertas")
         );
-        return movimientoCajaRepository.findResumenByCaja(caja);
+        return movimientoCajaRepository.findResumenByCaja(caja, negocio);
     }
 
     public List<MovimientoCaja> obtenerMovimientosByCaja(Long cajaId) {
-        Caja caja = cajaRepository.findById(cajaId).orElseThrow(() ->
+        Negocio negocio = tenantService.getNegocioActual();
+        Caja caja = cajaRepository.findByIdAndNegocio(cajaId, negocio).orElseThrow(() ->
                 new ResponseStatusException(
                         HttpStatus.NOT_FOUND,
                         "caja no encontrada")
         );
-        return movimientoCajaRepository.findByCaja(caja);
+        return movimientoCajaRepository.findByCaja(caja, negocio);
 
     }
 
     public BigDecimal calcularTotalIngresos(){
         BigDecimal totalIngresos = BigDecimal.ZERO;
+        Negocio negocio = tenantService.getNegocioActual();
         List<MovimientoCaja> movimientoCajas = movimientoCajaRepository
-                .findByTipoMovimiento(TipoMovimiento.INGRESO);
+                .findByTipoMovimiento(TipoMovimiento.INGRESO, negocio);
         for (MovimientoCaja movimientoCaja : movimientoCajas) {
             totalIngresos = totalIngresos.add(movimientoCaja.getMonto());
         }
@@ -99,18 +107,19 @@ public class MovimientoCajaService{
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "usuarioId invalido");
         }
 
-        Usuario usuario = usuarioRepository.findById(usuarioId)
+        Negocio negocio = tenantService.getNegocioActual();
+        Usuario usuario = usuarioRepository.findByIdAndNegocio(usuarioId, negocio)
                 .orElseThrow(() ->
                         new ResponseStatusException(
                                 HttpStatus.NOT_FOUND,
                                 "Usuario no encontrado")
                 );
 
-        Caja caja = cajaRepository.obtenerCajaAbierta().orElseThrow(()-> new ResponseStatusException(
+        Caja caja = cajaRepository.obtenerCajaAbierta(negocio).orElseThrow(()-> new ResponseStatusException(
                 HttpStatus.CONFLICT,
                 "La caja debe estar abierta para realizar un egreso"));
 
-        BigDecimal saldo = cajaRepository.calcularSaldoPorCaja(caja.getId()).add(caja.getMontoInicial());
+        BigDecimal saldo = cajaRepository.calcularSaldoPorCaja(caja.getId(), negocio).add(caja.getMontoInicial());
         if (saldo == null) {
             saldo = BigDecimal.ZERO;
         }

@@ -2,6 +2,7 @@ package com.facturacion.negocio.repository;
 
 import com.facturacion.negocio.domain.Caja;
 import com.facturacion.negocio.domain.MovimientoCaja;
+import com.facturacion.negocio.domain.Negocio;
 import com.facturacion.negocio.domain.Usuario;
 import com.facturacion.negocio.dto.response.MovimientoCajaResponseDTO;
 import com.facturacion.negocio.enumerated.TipoMovimiento;
@@ -26,54 +27,82 @@ public interface MovimientoCajaRepository extends JpaRepository<MovimientoCaja, 
     Optional<MovimientoCaja> findById(Long id);
 
     @EntityGraph(attributePaths = {"usuario", "caja"})
-    @Query("SELECT m FROM MovimientoCaja m WHERE m.tipo = :tipoMovimiento")
-    List<MovimientoCaja> findByTipoMovimiento(TipoMovimiento tipoMovimiento);
+    Optional<MovimientoCaja> findByIdAndNegocio(Long id, Negocio negocio);
 
-    @Query("SELECT COALESCE(SUM(m.monto), 0) FROM MovimientoCaja m WHERE m.caja =:caja AND m.tipo = :tipoMovimiento")
-    BigDecimal calcularTotalesByTipoAndCaja(TipoMovimiento tipoMovimiento, Caja caja);
+    @EntityGraph(attributePaths = {"usuario", "caja"})
+    @Query("SELECT m FROM MovimientoCaja m WHERE m.tipo = :tipoMovimiento AND m.negocio = :negocio")
+    List<MovimientoCaja> findByTipoMovimiento(@Param("tipoMovimiento") TipoMovimiento tipoMovimiento,
+                                              @Param("negocio") Negocio negocio);
 
-    @Query("SELECT COALESCE(SUM(m.monto),0) FROM MovimientoCaja m WHERE m.tipo = :tipoMovimiento")
-    BigDecimal calcularTotalByMovimiento(@Param("tipoMovimiento") TipoMovimiento tipoMovimiento);
+    @Query("""
+            SELECT COALESCE(SUM(m.monto), 0)
+            FROM MovimientoCaja m
+            WHERE m.caja = :caja
+              AND m.tipo = :tipoMovimiento
+              AND m.negocio = :negocio
+            """)
+    BigDecimal calcularTotalesByTipoAndCaja(@Param("tipoMovimiento") TipoMovimiento tipoMovimiento,
+                                            @Param("caja") Caja caja,
+                                            @Param("negocio") Negocio negocio);
+
+    @Query("""
+            SELECT COALESCE(SUM(m.monto),0)
+            FROM MovimientoCaja m
+            WHERE m.tipo = :tipoMovimiento
+              AND m.negocio = :negocio
+            """)
+    BigDecimal calcularTotalByMovimiento(@Param("tipoMovimiento") TipoMovimiento tipoMovimiento,
+                                         @Param("negocio") Negocio negocio);
 
     @Query("SELECT COALESCE(SUM(m.monto),0) FROM MovimientoCaja m " +
-            "WHERE m.tipo = :tipoMovimiento AND m.fecha >= :desde AND m.fecha < :hasta")
+            "WHERE m.tipo = :tipoMovimiento AND m.negocio = :negocio AND m.fecha >= :desde AND m.fecha < :hasta")
     BigDecimal calcularTotalByMovimientoAndFechaRango(@Param("tipoMovimiento") TipoMovimiento tipoMovimiento,
+                                                       @Param("negocio") Negocio negocio,
                                                        @Param("desde") Instant desde,
                                                        @Param("hasta") Instant hasta);
 
     @EntityGraph(attributePaths = {"usuario", "caja"})
-    @Query("SELECT m FROM MovimientoCaja m where m.tipo = :tipoMovimiento AND m.fecha BETWEEN :desde AND :hasta")
+    @Query("""
+            SELECT m
+            FROM MovimientoCaja m
+            WHERE m.tipo = :tipoMovimiento
+              AND m.negocio = :negocio
+              AND m.fecha BETWEEN :desde AND :hasta
+            """)
     List<MovimientoCaja> findByTipoMovimientoAndDateBetween(
             @Param("tipoMovimiento") TipoMovimiento tipoMovimiento,
+            @Param("negocio") Negocio negocio,
             @Param("desde") Instant desde,
             @Param("hasta") Instant hasta);
 
     @EntityGraph(attributePaths = {"usuario", "caja"})
-    Page<MovimientoCaja> findByTipoAndFechaGreaterThanEqualAndFechaLessThanOrderByFechaDesc(
+    Page<MovimientoCaja> findByTipoAndFechaGreaterThanEqualAndFechaLessThanAndNegocioOrderByFechaDesc(
             TipoMovimiento tipo,
             Instant desdeInclusive,
             Instant hastaExclusive,
+            Negocio negocio,
             Pageable pageable
     );
 
     @EntityGraph(attributePaths = {"usuario", "caja"})
-    @Query("SELECT m FROM MovimientoCaja m WHERE m.fecha BETWEEN :desde AND :hasta")
+    @Query("SELECT m FROM MovimientoCaja m WHERE m.negocio = :negocio AND m.fecha BETWEEN :desde AND :hasta")
     List<MovimientoCaja> findByDateBetween(
+            @Param("negocio") Negocio negocio,
             @Param("desde") Instant desde,
             @Param("hasta") Instant hasta);
 
     @EntityGraph(attributePaths = {"usuario", "caja"})
-    @Query("SELECT m FROM MovimientoCaja m where m.usuario = :usuario")
-    List<MovimientoCaja> findByUsuario(@Param("usuario") Usuario usuario);
+    @Query("SELECT m FROM MovimientoCaja m WHERE m.usuario = :usuario AND m.negocio = :negocio")
+    List<MovimientoCaja> findByUsuario(@Param("usuario") Usuario usuario, @Param("negocio") Negocio negocio);
 
     @EntityGraph(attributePaths = {"usuario", "caja"})
-    @Query("SELECT m FROM MovimientoCaja m WHERE m.caja = :caja")
-    List<MovimientoCaja> findByCaja(@Param("caja") Caja caja);
+    @Query("SELECT m FROM MovimientoCaja m WHERE m.caja = :caja AND m.negocio = :negocio")
+    List<MovimientoCaja> findByCaja(@Param("caja") Caja caja, @Param("negocio") Negocio negocio);
 
     @Query("SELECT new com.facturacion.negocio.dto.response.MovimientoCajaResponseDTO(" +
             "m.id, m.monto, m.tipo, m.usuario.username, m.motivo, m.fecha) " +
-            "FROM MovimientoCaja m WHERE m.caja = :caja ORDER BY m.fecha DESC")
-    List<MovimientoCajaResponseDTO> findResumenByCaja(@Param("caja") Caja caja);
+            "FROM MovimientoCaja m WHERE m.caja = :caja AND m.negocio = :negocio ORDER BY m.fecha DESC")
+    List<MovimientoCajaResponseDTO> findResumenByCaja(@Param("caja") Caja caja, @Param("negocio") Negocio negocio);
     /*
     List<MovimientoCaja> findByTipoMovimientoAndUsuario(
             Usuario usuario,
@@ -82,4 +111,3 @@ public interface MovimientoCajaRepository extends JpaRepository<MovimientoCaja, 
 
 
 }
-

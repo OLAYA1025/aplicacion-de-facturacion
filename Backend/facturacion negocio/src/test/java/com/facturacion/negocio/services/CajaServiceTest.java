@@ -4,6 +4,7 @@ import com.facturacion.negocio.domain.Caja;
 import com.facturacion.negocio.domain.Categoria;
 import com.facturacion.negocio.domain.DetallePedido;
 import com.facturacion.negocio.domain.MovimientoCaja;
+import com.facturacion.negocio.domain.Negocio;
 import com.facturacion.negocio.domain.Pedido;
 import com.facturacion.negocio.domain.Producto;
 import com.facturacion.negocio.domain.Usuario;
@@ -34,6 +35,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -48,16 +50,23 @@ class CajaServiceTest {
     private UsuarioRepository usuarioRepository;
     @Mock
     private PedidoRepository pedidoRepository;
+    @Mock
+    private TenantService tenantService;
 
     private CajaService cajaService;
+    private Negocio negocio;
 
     @BeforeEach
     void setUp() {
+        negocio = new Negocio("Negocio Test", null, null, null, true);
+        ReflectionTestUtils.setField(negocio, "id", 1L);
+        when(tenantService.getNegocioActual()).thenReturn(negocio);
         cajaService = new CajaService(
                 cajaRepository,
                 movimientoCajaRepository,
                 usuarioRepository,
-                pedidoRepository
+                pedidoRepository,
+                tenantService
         );
     }
 
@@ -71,9 +80,9 @@ class CajaServiceTest {
             ultimaCajaCerrada.setEstado(EstadoCaja.CERRADA);
             ultimaCajaCerrada.setMontoFinal(new BigDecimal("350000.00"));
 
-            when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
-            when(cajaRepository.existeCajaAbierta()).thenReturn(false);
-            when(cajaRepository.obtenerUltimaCajaCerrada()).thenReturn(Optional.of(ultimaCajaCerrada));
+            when(usuarioRepository.findByIdAndNegocio(1L, negocio)).thenReturn(Optional.of(usuario));
+            when(cajaRepository.existeCajaAbierta(negocio)).thenReturn(false);
+            when(cajaRepository.obtenerUltimaCajaCerrada(negocio)).thenReturn(Optional.of(ultimaCajaCerrada));
             when(cajaRepository.save(any(Caja.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
             Caja cajaAbierta = cajaService.abrirCaja(1L);
@@ -86,8 +95,8 @@ class CajaServiceTest {
         void debeRetornarConflictCuandoYaExisteCajaAbierta() {
             Usuario usuario = usuarioActivo(1L, "admin");
 
-            when(usuarioRepository.findById(1L)).thenReturn(Optional.of(usuario));
-            when(cajaRepository.existeCajaAbierta()).thenReturn(true);
+            when(usuarioRepository.findByIdAndNegocio(1L, negocio)).thenReturn(Optional.of(usuario));
+            when(cajaRepository.existeCajaAbierta(negocio)).thenReturn(true);
 
             assertThatThrownBy(() -> cajaService.abrirCaja(1L))
                     .isInstanceOf(ResponseStatusException.class)
@@ -108,9 +117,9 @@ class CajaServiceTest {
             Usuario usuarioCierre = usuarioActivo(2L, "cierre");
             Pedido pedidoPendiente = pedidoPendiente(cajaAbierta);
 
-            when(cajaRepository.obtenerCajaAbierta()).thenReturn(Optional.of(cajaAbierta));
-            when(usuarioRepository.findById(2L)).thenReturn(Optional.of(usuarioCierre));
-            when(pedidoRepository.findPedidosByCaja(10L)).thenReturn(List.of(pedidoPendiente));
+            when(cajaRepository.obtenerCajaAbierta(negocio)).thenReturn(Optional.of(cajaAbierta));
+            when(usuarioRepository.findByIdAndNegocio(2L, negocio)).thenReturn(Optional.of(usuarioCierre));
+            when(pedidoRepository.findPedidosByCaja(10L, negocio)).thenReturn(List.of(pedidoPendiente));
 
             assertThatThrownBy(() -> cajaService.cerrarCaja(2L, BigDecimal.ZERO))
                     .isInstanceOf(ResponseStatusException.class)
@@ -132,10 +141,10 @@ class CajaServiceTest {
                     usuarioActivo(3L, "cajero")
             );
 
-            when(cajaRepository.obtenerCajaAbierta()).thenReturn(Optional.of(cajaAbierta));
-            when(usuarioRepository.findById(2L)).thenReturn(Optional.of(usuarioCierre));
-            when(pedidoRepository.findPedidosByCaja(10L)).thenReturn(List.of(pedidoPagado));
-            when(cajaRepository.calcularSaldoPorCaja(10L)).thenReturn(new BigDecimal("50000.00"));
+            when(cajaRepository.obtenerCajaAbierta(negocio)).thenReturn(Optional.of(cajaAbierta));
+            when(usuarioRepository.findByIdAndNegocio(2L, negocio)).thenReturn(Optional.of(usuarioCierre));
+            when(pedidoRepository.findPedidosByCaja(10L, negocio)).thenReturn(List.of(pedidoPagado));
+            when(cajaRepository.calcularSaldoPorCaja(10L, negocio)).thenReturn(new BigDecimal("50000.00"));
             when(movimientoCajaRepository.save(any(MovimientoCaja.class)))
                     .thenAnswer(invocation -> invocation.getArgument(0));
             when(cajaRepository.save(any(Caja.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -168,12 +177,12 @@ class CajaServiceTest {
             Pedido debito = pedidoPagado(cajaAbierta, new BigDecimal("20000.00"), MetodoPago.TARJETA_DEBITO, cajero);
             Pedido pendiente = pedidoPendiente(cajaAbierta);
 
-            when(cajaRepository.obtenerCajaAbierta()).thenReturn(Optional.of(cajaAbierta));
-            when(pedidoRepository.findPedidosByCaja(25L))
+            when(cajaRepository.obtenerCajaAbierta(negocio)).thenReturn(Optional.of(cajaAbierta));
+            when(pedidoRepository.findPedidosByCaja(25L, negocio))
                     .thenReturn(List.of(efectivo, transferencia, credito, debito, pendiente));
-            when(movimientoCajaRepository.calcularTotalesByTipoAndCaja(TipoMovimiento.EGRESO, cajaAbierta))
+            when(movimientoCajaRepository.calcularTotalesByTipoAndCaja(TipoMovimiento.EGRESO, cajaAbierta, negocio))
                     .thenReturn(new BigDecimal("15000.00"));
-            when(movimientoCajaRepository.calcularTotalesByTipoAndCaja(TipoMovimiento.RETIRO, cajaAbierta))
+            when(movimientoCajaRepository.calcularTotalesByTipoAndCaja(TipoMovimiento.RETIRO, cajaAbierta, negocio))
                     .thenReturn(new BigDecimal("5000.00"));
 
             CajaResumenResponseDTO resumen = cajaService.obtenerCajaResumen();
@@ -190,12 +199,12 @@ class CajaServiceTest {
     }
 
     private Pedido pedidoPendiente(Caja caja) {
-        Producto producto = new Producto("Producto Pendiente", new BigDecimal("10000.00"), "test", new Categoria("Cat"));
+        Producto producto = new Producto("Producto Pendiente", new BigDecimal("10000.00"), "test", categoria());
         return new Pedido("Pedido pendiente", List.of(new DetallePedido(producto, 1)), caja);
     }
 
     private Pedido pedidoPagado(Caja caja, BigDecimal precio, MetodoPago metodoPago, Usuario usuario) {
-        Producto producto = new Producto("Producto " + precio, precio, "test", new Categoria("Cat"));
+        Producto producto = new Producto("Producto " + precio, precio, "test", categoria());
         Pedido pedido = new Pedido("Pedido pagado", List.of(new DetallePedido(producto, 1)), caja);
         pedido.pagar(usuario, metodoPago);
         return pedido;
@@ -210,7 +219,14 @@ class CajaServiceTest {
 
     private Usuario usuarioActivo(Long id, String username) {
         Usuario usuario = new Usuario("Usuario " + username, username, "hash", username + "@mail.test", Rol.ADMINISTRADOR);
+        usuario.setNegocio(negocio);
         ReflectionTestUtils.setField(usuario, "id", id);
         return usuario;
+    }
+
+    private Categoria categoria() {
+        Categoria categoria = new Categoria("Cat");
+        categoria.setNegocio(negocio);
+        return categoria;
     }
 }

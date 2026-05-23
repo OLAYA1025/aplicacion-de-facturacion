@@ -21,23 +21,23 @@ public final class DetallePedidoAgrupador {
         }
 
         for (DetallePedido detalle : detalles) {
-            if (detalle == null || detalle.getProducto() == null || detalle.getProducto().getCodigo() == null) {
+            if (detalle == null || detalle.getProducto() == null || detalle.getProducto().getId() == null) {
                 continue;
             }
 
             Producto producto = detalle.getProducto();
-            Long productoCodigo = producto.getCodigo();
+            Long productoId = producto.getId();
             int cantidad = detalle.getCantidad() != null ? detalle.getCantidad() : 0;
             if (cantidad <= 0) {
                 continue;
             }
 
-            DetallePedidoAgrupado acumulado = agrupados.get(productoCodigo);
+            DetallePedidoAgrupado acumulado = agrupados.get(productoId);
             if (acumulado == null) {
                 BigDecimal precioUnitario = detalle.getPrecioUnitario() != null
                         ? detalle.getPrecioUnitario()
                         : BigDecimal.ZERO;
-                agrupados.put(productoCodigo, new DetallePedidoAgrupado(producto, cantidad, precioUnitario));
+                agrupados.put(productoId, new DetallePedidoAgrupado(producto, cantidad, precioUnitario));
             } else {
                 acumulado.sumarCantidad(cantidad);
             }

@@ -1,9 +1,28 @@
 package com.facturacion.negocio.domain;
 
 import com.facturacion.negocio.enumerated.Rol;
-import jakarta.persistence.*;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
+import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 
 @Entity
+@Table(
+        uniqueConstraints = {
+                @UniqueConstraint(name = "uk_usuario_negocio_username", columnNames = {"negocio_id", "username"})
+        }
+)
 public class Usuario {
 
     @Id
@@ -15,7 +34,7 @@ public class Usuario {
     @Column(nullable = false)
     private String nombre;
 
-    @Column(unique = true, nullable = false)
+    @Column(nullable = false)
     private String username;
 
     @Column(nullable = false)
@@ -26,6 +45,10 @@ public class Usuario {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private Rol rol;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "negocio_id")
+    private Negocio negocio;
 
     protected Usuario() {
     }
@@ -105,6 +128,28 @@ public class Usuario {
         this.rol = rol;
     }
 
+    public Negocio getNegocio() {
+        return negocio;
+    }
+
+    public void setNegocio(Negocio negocio) {
+        this.negocio = negocio;
+    }
+
+    @PrePersist
+    @PreUpdate
+    private void validarNegocioPorRol() {
+        if (rol == null) {
+            throw new IllegalStateException("rol invalido");
+        }
+        if (rol == Rol.SUPER_ADMIN) {
+            if (negocio != null) {
+                throw new IllegalStateException("SUPER_ADMIN no puede tener negocio asociado");
+            }
+            return;
+        }
+        if (negocio == null) {
+            throw new IllegalStateException("usuarios de negocio requieren negocio asociado");
+        }
+    }
 }
-
-

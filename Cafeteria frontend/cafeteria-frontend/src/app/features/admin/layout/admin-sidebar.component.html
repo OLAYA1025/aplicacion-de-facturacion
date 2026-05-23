@@ -1,0 +1,129 @@
+@if (mobileOpen()) {
+  <div class="fixed inset-0 z-40 bg-black/40 lg:hidden" (click)="closeMobile.emit()"></div>
+}
+
+<div
+  class="fixed top-0 left-0 z-50 h-full border-r-2 border-gray-100 bg-white shadow-lg transition-all duration-300 lg:static lg:z-auto lg:translate-x-0 lg:shadow-none"
+  [class.w-64]="!collapsed()"
+  [class.w-20]="collapsed()"
+  [class.translate-x-0]="mobileOpen()"
+  [class.-translate-x-full]="!mobileOpen()"
+>
+  <div class="flex h-16 items-center justify-between px-4">
+    @if (!collapsed()) {
+      <span class="text-xl font-bold text-gray-800 transition-opacity duration-300"> Plataforma </span>
+    }
+
+    <button
+      (click)="toggleSidebar.emit()"
+      class="hidden rounded p-2 text-gray-600 transition-colors hover:bg-gray-100 hover:text-indigo-600 lg:block"
+      [attr.aria-label]="collapsed() ? 'Expandir sidebar' : 'Contraer sidebar'"
+      type="button"
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke-width="1.5"
+        stroke="currentColor"
+        class="h-6 w-6"
+      >
+        <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+      </svg>
+    </button>
+
+    <button
+      (click)="closeMobile.emit()"
+      class="rounded p-2 text-gray-600 transition-colors hover:bg-gray-100 hover:text-indigo-600 lg:hidden"
+      aria-label="Cerrar menú"
+      type="button"
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke-width="1.5"
+        stroke="currentColor"
+        class="h-6 w-6"
+      >
+        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+      </svg>
+    </button>
+  </div>
+
+  <nav class="mt-4 space-y-1 px-3">
+    <a
+      routerLink="/admin"
+      [routerLinkActiveOptions]="{ exact: true }"
+      routerLinkActive="border-r-2 border-indigo-500 bg-indigo-50 text-indigo-600"
+      class="group relative flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 hover:text-indigo-600 lg:text-base"
+      [class.justify-center]="collapsed()"
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke-width="1.5"
+        stroke="currentColor"
+        class="h-6 w-6 flex-shrink-0"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          d="m2.25 12 8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v10.125c0 .621.504 1.125 1.125 1.125H9.75v-4.875c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21h4.125c.621 0 1.125-.504 1.125-1.125V9.75M8.25 21h8.25"
+        />
+      </svg>
+      @if (!collapsed()) {
+        <span class="truncate">Dashboard</span>
+      }
+    </a>
+
+    <a
+      routerLink="/admin/negocios"
+      [routerLinkActiveOptions]="{ exact: true }"
+      routerLinkActive="border-r-2 border-indigo-500 bg-indigo-50 text-indigo-600"
+      class="group relative flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 hover:text-indigo-600 lg:text-base"
+      [class.justify-center]="collapsed()"
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke-width="1.5"
+        stroke="currentColor"
+        class="h-6 w-6 flex-shrink-0"
+      >
+        <path
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          d="M3.75 21h16.5M4.5 3h15a1.5 1.5 0 0 1 1.5 1.5V21H3V4.5A1.5 1.5 0 0 1 4.5 3Zm3.75 4.5h7.5m-7.5 3h7.5m-7.5 3h3.75"
+        />
+      </svg>
+      @if (!collapsed()) {
+        <span class="truncate">Negocios</span>
+      }
+    </a>
+
+    <a
+      routerLink="/admin/negocios/nuevo"
+      [routerLinkActiveOptions]="{ exact: true }"
+      routerLinkActive="border-r-2 border-indigo-500 bg-indigo-50 text-indigo-600"
+      class="group relative flex items-center gap-3 rounded-md px-3 py-2.5 text-sm font-medium text-gray-700 transition-colors hover:bg-gray-100 hover:text-indigo-600 lg:text-base"
+      [class.justify-center]="collapsed()"
+    >
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        fill="none"
+        viewBox="0 0 24 24"
+        stroke-width="1.5"
+        stroke="currentColor"
+        class="h-6 w-6 flex-shrink-0"
+      >
+        <path stroke-linecap="round" stroke-linejoin="round" d="M12 6v12m6-6H6" />
+      </svg>
+      @if (!collapsed()) {
+        <span class="truncate">Crear negocio</span>
+      }
+    </a>
+  </nav>
+</div>

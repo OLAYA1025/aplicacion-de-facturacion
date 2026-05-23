@@ -1,4 +1,5 @@
 export interface CrearProducto {
+    codigo?: string | null;
     nombre: string;
     precio: number;
     tipoGestion: 'INVENTARIABLE' | 'PREPARACION';

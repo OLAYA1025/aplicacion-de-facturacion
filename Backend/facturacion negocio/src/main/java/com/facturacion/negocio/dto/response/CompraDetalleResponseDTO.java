@@ -14,7 +14,7 @@ public class CompraDetalleResponseDTO {
 
     public static CompraDetalleResponseDTO from(CompraDetalle detalle) {
         CompraDetalleResponseDTO dto = new CompraDetalleResponseDTO();
-        dto.productoId = detalle.getProducto().getCodigo();
+        dto.productoId = detalle.getProducto().getId();
         dto.nombreProducto = detalle.getProducto().getNombre();
         dto.cantidad = detalle.getCantidad();
         dto.costoUnitario = detalle.getCostoUnitario();

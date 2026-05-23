@@ -9,7 +9,7 @@ import jakarta.persistence.*;
                 @UniqueConstraint(name = "uk_nota_predefinida_descripcion", columnNames = {"grupo_id", "descripcion"})
         }
 )
-public class NotaPredefinida {
+public class NotaPredefinida extends BaseTenantEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -51,5 +51,6 @@ public class NotaPredefinida {
 
     public void setGrupo(GrupoNotaCategoria grupo) {
         this.grupo = grupo;
+        heredarNegocio(grupo);
     }
 }

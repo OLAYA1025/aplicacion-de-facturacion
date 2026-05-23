@@ -10,15 +10,21 @@ import org.springframework.transaction.annotation.Transactional;
 public class NumberingRangeService {
 
     private final NumberingRangeRepository numberingRangeRepository;
+    private final TenantService tenantService;
 
-    public NumberingRangeService(NumberingRangeRepository numberingRangeRepository) {
+    public NumberingRangeService(NumberingRangeRepository numberingRangeRepository,
+                                 TenantService tenantService) {
         this.numberingRangeRepository = numberingRangeRepository;
+        this.tenantService = tenantService;
     }
 
     @Transactional
     public NumberAllocationResult allocateNext(Long rangeId) {
-        NumberingRange range = numberingRangeRepository.findByIdForUpdate(rangeId)
-                .orElseThrow(() -> new IllegalArgumentException("Rango no encontrado: " + rangeId));
+        NumberingRange range = tenantService.getNegocioIdActualOptional()
+                .map(negocioId -> numberingRangeRepository.findByIdForUpdateAndNegocioId(rangeId, negocioId)
+                        .orElseThrow(() -> new IllegalArgumentException("Rango no encontrado: " + rangeId)))
+                .orElseGet(() -> numberingRangeRepository.findByIdForUpdate(rangeId)
+                        .orElseThrow(() -> new IllegalArgumentException("Rango no encontrado: " + rangeId)));
 
         if (!Boolean.TRUE.equals(range.getActive())) {
             throw new IllegalStateException("El rango no esta activo");

@@ -7,7 +7,7 @@ import java.math.BigDecimal;
 import java.time.Instant;
 
 @Entity
-public class Caja {
+public class Caja extends BaseTenantEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -43,6 +43,7 @@ public class Caja {
         this.montoInicial = montoInicial;
         this.estado = EstadoCaja.ABIERTA;
         this.usuarioApertura = usuarioApertura;
+        heredarNegocio(usuarioApertura);
         this.fechaApertura = Instant.now();
     }
     public Long getId() {
@@ -117,4 +118,3 @@ public class Caja {
         return Utilidad;
     }
 }
-

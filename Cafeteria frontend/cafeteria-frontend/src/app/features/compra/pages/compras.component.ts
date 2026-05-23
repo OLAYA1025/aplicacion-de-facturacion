@@ -31,7 +31,7 @@ const OPCION_AGREGAR_PROVEEDOR = '__agregar_proveedor__' as const;
 type OpcionAgregarProveedor = typeof OPCION_AGREGAR_PROVEEDOR;
 
 interface DetalleCompraFormState {
-  productoId: number | OpcionAgregarProducto | null;
+  productoId: number | string | null;
   cantidad: number | null;
   subtotal: number | null;
 }
@@ -60,6 +60,8 @@ interface NuevoProveedorRapidoFormState {
   telefono: string;
   correo: string;
 }
+
+type ProductoConId = Producto & { id?: number | string | null };
 
 @Component({
   selector: 'app-compras',
@@ -348,7 +350,7 @@ export class ComprasComponent implements OnInit {
 
   onProductoDetalleChange(
     index: number,
-    productoId: number | OpcionAgregarProducto | null
+    productoId: number | string | null
   ): void {
     const detalle = this.nuevaCompra.detalles[index];
     if (!detalle) {
@@ -361,11 +363,15 @@ export class ComprasComponent implements OnInit {
       return;
     }
 
-    if (productoId === null) {
+    const productoIdNormalizado = this.normalizarProductoId(productoId);
+    if (productoIdNormalizado === null) {
+      detalle.productoId = null;
       return;
     }
 
-    const productoSeleccionado = this.productosDisponibles.find((producto) => producto.codigo === productoId);
+    detalle.productoId = productoIdNormalizado;
+
+    const productoSeleccionado = this.buscarProductoPorId(productoIdNormalizado);
     if (!productoSeleccionado) {
       return;
     }
@@ -396,13 +402,12 @@ export class ComprasComponent implements OnInit {
       return;
     }
 
-    if (typeof detalle.productoId !== 'number') {
+    const productoId = this.normalizarProductoId(detalle.productoId);
+    if (productoId === null) {
       return;
     }
 
-    const productoSeleccionado = this.productosDisponibles.find(
-      (producto) => producto.codigo === detalle.productoId
-    );
+    const productoSeleccionado = this.buscarProductoPorId(productoId);
     if (!productoSeleccionado) {
       return;
     }
@@ -437,6 +442,11 @@ export class ComprasComponent implements OnInit {
     return this.formatearMoneda(costoUnitario);
   }
 
+  obtenerProductoId(producto: Producto): number | string | null {
+    const productoConId = producto as ProductoConId;
+    return productoConId.id ?? null;
+  }
+
   calcularSubtotalDetalle(detalle: DetalleCompraFormState): number {
     const subtotal = this.normalizarValorMonetario(detalle.subtotal);
     if (subtotal !== null) {
@@ -449,17 +459,23 @@ export class ComprasComponent implements OnInit {
     this.errorCrearCompra = null;
     this.exitoCrearCompra = null;
 
-    if (form.invalid) {
-      this.errorCrearCompra = 'Completa los campos obligatorios para registrar la compra.';
-      return;
-    }
-
-    if (this.nuevaCompra.proveedorId === null) {
+    if (this.nuevaCompra.proveedorId === null || Number.isNaN(Number(this.nuevaCompra.proveedorId))) {
       this.errorCrearCompra = 'Selecciona un proveedor para continuar.';
       return;
     }
 
-    const detalles = this.nuevaCompra.detalles
+    if (!this.nuevaCompra.numeroFactura.trim()) {
+      this.errorCrearCompra = 'Ingresa el número de factura para continuar.';
+      return;
+    }
+
+    const detallesConDatos = this.nuevaCompra.detalles.filter((detalle) => !this.esDetalleCompraVacio(detalle));
+    if (detallesConDatos.some((detalle) => !this.esDetalleCompraCompleto(detalle))) {
+      this.errorCrearCompra = 'Completa producto, cantidad y subtotal en cada fila de detalle.';
+      return;
+    }
+
+    const detalles = detallesConDatos
       .map((detalle) => this.construirDetalleCompraRequest(detalle))
       .filter((detalle): detalle is DetalleCompraRequest => detalle !== null);
 
@@ -714,7 +730,14 @@ export class ComprasComponent implements OnInit {
           if (productoCreado.activo) {
             this.productosDisponibles = [...this.productosDisponibles, productoCreado]
               .filter((producto, index, array) => {
-                return array.findIndex((item) => item.codigo === producto.codigo) === index;
+                return (
+                  array.findIndex((item) => {
+                    return (
+                      this.normalizarProductoId(this.obtenerProductoId(item)) ===
+                      this.normalizarProductoId(this.obtenerProductoId(producto))
+                    );
+                  }) === index
+                );
               })
               .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' }));
           }
@@ -723,7 +746,7 @@ export class ComprasComponent implements OnInit {
           if (indiceDetalle !== null) {
             const detalle = this.nuevaCompra.detalles[indiceDetalle];
             if (detalle) {
-              detalle.productoId = productoCreado.codigo;
+              detalle.productoId = this.obtenerProductoId(productoCreado);
               const cantidad = this.normalizarCantidad(detalle.cantidad) ?? 1;
               if (detalle.cantidad === null || detalle.cantidad <= 0) {
                 detalle.cantidad = cantidad;
@@ -1069,8 +1092,25 @@ export class ComprasComponent implements OnInit {
     };
   }
 
+  private esDetalleCompraVacio(detalle: DetalleCompraFormState): boolean {
+    return (
+      this.normalizarProductoId(detalle.productoId) === null &&
+      this.normalizarCantidad(detalle.cantidad) === null &&
+      this.normalizarValorMonetario(detalle.subtotal) === null
+    );
+  }
+
+  private esDetalleCompraCompleto(detalle: DetalleCompraFormState): boolean {
+    return (
+      this.normalizarProductoId(detalle.productoId) !== null &&
+      this.normalizarCantidad(detalle.cantidad) !== null &&
+      this.normalizarValorMonetario(detalle.subtotal) !== null
+    );
+  }
+
   private construirDetalleCompraRequest(detalle: DetalleCompraFormState): DetalleCompraRequest | null {
-    if (typeof detalle.productoId !== 'number') {
+    const productoId = this.normalizarProductoId(detalle.productoId);
+    if (productoId === null) {
       return null;
     }
 
@@ -1085,12 +1125,32 @@ export class ComprasComponent implements OnInit {
     }
 
     detalle.subtotal = subtotal;
+    detalle.productoId = productoId;
 
     return {
-      productoId: detalle.productoId,
+      productoId,
       cantidad,
       subtotal,
     };
+  }
+
+  private normalizarProductoId(valor: number | string | null | undefined): number | null {
+    if (valor === null || valor === undefined || valor === '' || valor === OPCION_AGREGAR_PRODUCTO) {
+      return null;
+    }
+
+    const numero = Number(valor);
+    if (!Number.isInteger(numero) || numero <= 0) {
+      return null;
+    }
+
+    return numero;
+  }
+
+  private buscarProductoPorId(productoId: number): Producto | undefined {
+    return this.productosDisponibles.find((producto) => {
+      return this.normalizarProductoId(this.obtenerProductoId(producto)) === productoId;
+    });
   }
 
   private normalizarCantidad(valor: number | null): number | null {

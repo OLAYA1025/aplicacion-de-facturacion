@@ -16,7 +16,7 @@ BEGIN
             JOIN pg_attribute a
               ON a.attrelid = t.oid
              AND a.attnum = cols.attnum
-          ) = ARRAY['pedido_id', 'producto_codigo']::text[]
+          ) = ARRAY['pedido_id', 'producto_id']::text[]
     LOOP
         EXECUTE format('ALTER TABLE detalle_pedido DROP CONSTRAINT IF EXISTS %I', registro.conname);
     END LOOP;
@@ -42,7 +42,7 @@ BEGIN
             JOIN pg_attribute a
               ON a.attrelid = t.oid
              AND a.attnum = cols.attnum
-          ) = ARRAY['pedido_id', 'producto_codigo']::text[]
+          ) = ARRAY['pedido_id', 'producto_id']::text[]
     LOOP
         EXECUTE format('DROP INDEX IF EXISTS %I', registro.index_name);
     END LOOP;
