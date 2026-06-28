@@ -1,10 +1,10 @@
 package com.facturacion.negocio.domain;
 
-import com.facturacion.negocio.enumerated.ProveedorFacturacion;
 import jakarta.persistence.*;
+import com.facturacion.negocio.utils.Normalizador;
 
 
-import java.time.Instant;
+import java.util.Objects;
 
 @Entity
 @Table(name = "numbering_ranges")
@@ -13,11 +13,11 @@ public class NumberingRange extends BaseTenantEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
+    /*
     @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 20)
     private ProveedorFacturacion provider;
-
+     */
     // Para Factus, por ejemplo 8
     @Column(name = "provider_range_id")
     private Integer providerRangeId;
@@ -31,7 +31,11 @@ public class NumberingRange extends BaseTenantEntity {
     @Column(name = "to_number", nullable = false)
     private Long toNumber;
 
-    // Ultimo usado
+    /*
+    este hace de cuenta al proximo numero a usar,
+    si anteriormente en una factura se uso el 10,
+    el currentNumber seria igual a 11
+    */
     @Column(name = "current_number", nullable = false)
     private Long currentNumber;
 
@@ -44,20 +48,131 @@ public class NumberingRange extends BaseTenantEntity {
     @Column(nullable = false)
     private Boolean active = true;
 
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
+    @JoinColumn(name = "configuracion_fe_id")
+    private ConfiguracionFacturacionElectronica configuracion;
+
     protected NumberingRange() {
     }
 
+    public NumberingRange(Integer providerRangeId,
+                          String prefix,
+                          Long fromNumber,
+                          Long toNumber,
+                          Long currentNumber,
+                          String resolutionNumber,
+                          String technicalKey,
+                          ConfiguracionFacturacionElectronica configuracion){
+        if((fromNumber == null || toNumber==null || currentNumber==null) ||
+                (fromNumber<0 || toNumber<0 || currentNumber<0)){
+            throw new IllegalArgumentException("ingrese rangos de numeracion validos");
+        }
+
+        if( currentNumber < fromNumber
+                || currentNumber > toNumber){
+            throw new IllegalArgumentException("el current number no esta entre el rango de numeracion");
+        }
+
+        this.providerRangeId = providerRangeId;
+        this.prefix = Normalizador.normalizar(prefix);
+        this.fromNumber = fromNumber;
+        this.toNumber = toNumber;
+        this.currentNumber = currentNumber;
+        this.resolutionNumber = Normalizador.normalizar(resolutionNumber);
+        this.technicalKey = Normalizador.normalizar(technicalKey);
+        this.configuracion = Objects.requireNonNull(
+                configuracion,
+                "la configuracion es obligatoria"
+        );;
+        heredarNegocio(configuracion);
+    }
+
+    public void setConfiguracion(ConfiguracionFacturacionElectronica configuracion) {
+        this.configuracion = configuracion;
+        heredarNegocio(configuracion);
+    }
+
+
     public Long takeNextNumber() {
-        long next = this.currentNumber + 1;
-        if (next > this.toNumber) {
+        long current = this.currentNumber;
+        if (currentNumber > this.toNumber) {
             throw new IllegalStateException("Rango de numeracion agotado");
         }
-        this.currentNumber = next;
-        return next;
+
+        this.currentNumber = this.currentNumber + 1;
+        return current;
     }
 
     public String buildDocumentNumber(Long consecutive) {
         return this.prefix + consecutive;
+    }
+
+    public void actualizar(
+            Integer providerRangeId,
+            String prefix,
+            Long fromNumber,
+            Long toNumber,
+            Long currentNumber,
+            String resolutionNumber,
+            String technicalKey,
+            Boolean active
+    ) {
+
+        if (fromNumber == null
+                || toNumber == null
+                || currentNumber == null) {
+
+            throw new IllegalArgumentException(
+                    "ingrese rangos de numeracion validos"
+            );
+        }
+
+        if (fromNumber < 0
+                || toNumber < 0
+                || currentNumber < 0) {
+
+            throw new IllegalArgumentException(
+                    "los numeros no pueden ser negativos"
+            );
+        }
+
+        if (fromNumber > toNumber) {
+            throw new IllegalArgumentException(
+                    "el rango de numeracion es invalido"
+            );
+        }
+
+        if (currentNumber < fromNumber
+                || currentNumber > toNumber) {
+
+            throw new IllegalArgumentException(
+                    "current number fuera del rango"
+            );
+        }
+
+        if (currentNumber < this.currentNumber) {
+            throw new IllegalArgumentException(
+                    "No se puede retroceder la numeracion"
+            );
+        }
+
+        this.providerRangeId = providerRangeId;
+        this.prefix = Normalizador.normalizar(prefix);
+        this.fromNumber = fromNumber;
+        this.toNumber = toNumber;
+        this.currentNumber = currentNumber;
+        this.resolutionNumber =
+                Normalizador.normalizar(
+                        resolutionNumber
+                );
+        this.technicalKey =
+                Normalizador.normalizar(
+                        technicalKey
+                );
+
+        if (active != null) {
+            this.active = active;
+        }
     }
 
 
@@ -69,6 +184,7 @@ public class NumberingRange extends BaseTenantEntity {
         this.id = id;
     }
 
+    /*
     public ProveedorFacturacion getProvider() {
         return provider;
     }
@@ -76,6 +192,8 @@ public class NumberingRange extends BaseTenantEntity {
     public void setProvider(ProveedorFacturacion provider) {
         this.provider = provider;
     }
+
+     */
 
     public Integer getProviderRangeId() {
         return providerRangeId;
@@ -139,5 +257,9 @@ public class NumberingRange extends BaseTenantEntity {
 
     public void setActive(Boolean active) {
         this.active = active;
+    }
+
+    public ConfiguracionFacturacionElectronica getConfiguracion() {
+        return configuracion;
     }
 }

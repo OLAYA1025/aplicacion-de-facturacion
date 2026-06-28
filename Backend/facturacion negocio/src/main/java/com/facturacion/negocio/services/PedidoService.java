@@ -32,12 +32,12 @@ public class PedidoService {
     private final DocumentoFiscalRepository documentoFiscalRepository;
     private final DocumentoFiscalService documentoFiscalService;
     private final NumberingRangeRepository numberingRangeRepository;
-    private final String prefijoProveedor;
     private final SseService sseService;
     private final NotasPredefinidasService notasPredefinidasService;
     private final PdfService pdfService;
     private final Boolean electronicaHabilitada;
     private final TenantService tenantService;
+    private final ConfiguracionFacturacionElectronicaRepository configuracionFacturacionElectronicaRepository;
 
     public PedidoService(PedidoRepository pedidoRepository,
                          MovimientoCajaRepository movimientoCajaRepository,
@@ -49,12 +49,12 @@ public class PedidoService {
                          DocumentoFiscalRepository documentoFiscalRepository,
                          DocumentoFiscalService documentoFiscalService,
                          NumberingRangeRepository numberingRangeRepository,
-                         @Value("${factus.prefijo-code}") String prefijoProveedor,
                          SseService sseService,
                          NotasPredefinidasService notasPredefinidasService,
                          PdfService pdfService,
                          TenantService tenantService,
-                         @Value("${electronicaHabilitada}") Boolean electronicaHabilitada) {
+                         @Value("${electronicaHabilitada}") Boolean electronicaHabilitada,
+                         ConfiguracionFacturacionElectronicaRepository configuracionFacturacionElectronicaRepository) {
         this.pedidoRepository = pedidoRepository;
         this.movimientoCajaRepository = movimientoCajaRepository;
         this.movimientoInventarioRepository = movimientoInventarioRepository;
@@ -65,12 +65,12 @@ public class PedidoService {
         this.documentoFiscalRepository = documentoFiscalRepository;
         this.documentoFiscalService = documentoFiscalService;
         this.numberingRangeRepository = numberingRangeRepository;
-        this.prefijoProveedor = prefijoProveedor;
         this.sseService = sseService;
         this.notasPredefinidasService = notasPredefinidasService;
         this.pdfService = pdfService;
         this.tenantService = tenantService;
         this.electronicaHabilitada = electronicaHabilitada;
+        this.configuracionFacturacionElectronicaRepository = configuracionFacturacionElectronicaRepository;
     }
 
 
@@ -283,7 +283,7 @@ public class PedidoService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "La caja debe estar abierta para cobrar un pedido");
         }
 
-        if(electronicaHabilitada){
+        if(negocio.isElectronicaHabilitada()){
             // ===== 4) Resolver cliente SOLO si es FEV =====
             Cliente cliente = null;
 
@@ -316,7 +316,7 @@ public class PedidoService {
                                 ))
                         ));
 
-                // Si más adelante quieres: actualizar email si está vacío, etc.
+
             }
 
             if (tipoDocumentoFiscal == TipoDocumentoFiscal.FEV_CONS_FINAL) {
@@ -337,8 +337,20 @@ public class PedidoService {
 
             }
 
+            ConfiguracionFacturacionElectronica configElectronica = configuracionFacturacionElectronicaRepository.findByNegocioId(negocio.getId())
+                    .orElseThrow(() -> new
+                            ResponseStatusException(
+                                    HttpStatus.NOT_FOUND, "El establecimiento no tiene una configuracion de facturacion electronica asociada") );
+
             // ===== 5) Crear DocumentoFiscal y asociarlo al pedido =====
-            DocumentoFiscal documentoFiscal = DocumentoFiscal.crearBorrador(pedido, tipoDocumentoFiscal, prefijoProveedor);
+            DocumentoFiscal documentoFiscal = DocumentoFiscal.crearBorrador(pedido, tipoDocumentoFiscal, configElectronica.getPrefijoCode());
+            numberingRangeRepository.findFirstByConfiguracionIdAndActiveTrueOrderByIdAsc(configElectronica.getId())
+                    .ifPresent(range -> {
+                        documentoFiscal.setNumberingRange(range);
+                        if (range.getProviderRangeId() != null) {
+                            documentoFiscal.setNumberingRangeId(range.getProviderRangeId());
+                        }
+                    });
 
 
             if (cliente != null) {

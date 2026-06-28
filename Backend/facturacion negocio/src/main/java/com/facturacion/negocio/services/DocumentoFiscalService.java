@@ -1,5 +1,6 @@
 package com.facturacion.negocio.services;
 
+import com.facturacion.negocio.domain.ConfiguracionFacturacionElectronica;
 import com.facturacion.negocio.domain.DocumentoFiscal;
 import com.facturacion.negocio.domain.Negocio;
 import com.facturacion.negocio.domain.NumberingRange;
@@ -15,6 +16,8 @@ import com.facturacion.negocio.repository.DocumentoFiscalRepository;
 import com.facturacion.negocio.repository.NumberingRangeRepository;
 import com.facturacion.negocio.repository.PedidoTotalProjection;
 import com.facturacion.negocio.services.factus.FactusFactElectronicaRequestMapper;
+import com.facturacion.negocio.services.factus.FactusTenantConfig;
+import com.facturacion.negocio.services.factus.FactusTenantConfigResolver;
 import com.facturacion.negocio.services.tirillaFactura.Factura;
 import com.facturacion.negocio.services.tirillaFactura.PdfService;
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -70,6 +73,7 @@ public class DocumentoFiscalService {
     private final NumberingRangeService numberingRangeService;
     private final NumberingRangeRepository numberingRangeRepository;
     private final TenantService tenantService;
+    private final FactusTenantConfigResolver factusTenantConfigResolver;
 
     public DocumentoFiscalService(DocumentoFiscalRepository documentoFiscalRespository,
                                   DetallePedidoRepository detallePedidoRepository,
@@ -81,7 +85,8 @@ public class DocumentoFiscalService {
                                   @Value("${app.time-zone:America/Bogota}") String zonaHoraria,
                                   NumberingRangeService numberingRangeService,
                                   NumberingRangeRepository numberingRangeRepository,
-                                  TenantService tenantService) {
+                                  TenantService tenantService,
+                                  FactusTenantConfigResolver factusTenantConfigResolver) {
 
         this.documentoFiscalRepository = documentoFiscalRespository;
         this.detallePedidoRepository = detallePedidoRepository;
@@ -94,6 +99,7 @@ public class DocumentoFiscalService {
         this.numberingRangeService = numberingRangeService;
         this.numberingRangeRepository = numberingRangeRepository;
         this.tenantService = tenantService;
+        this.factusTenantConfigResolver = factusTenantConfigResolver;
     }
 
     @Transactional
@@ -139,11 +145,13 @@ public class DocumentoFiscalService {
                         HttpStatus.NOT_FOUND, "Documento fiscal no encontrado"));
 
         try {
+            FactusTenantConfig config = factusTenantConfigResolver.factusConfigPara(doc);
+            asociarRangoActivoSiHaceFalta(doc);
             FactusFactElectronicaRequestDTO request = mapper.from(doc);
 
             guardarRequestJson(documentoFiscalId, request);
 
-            JsonNode resp = proveedorTecnologicoClient.validarFactura(request);
+            JsonNode resp = proveedorTecnologicoClient.validarFactura(config, request);
 
             procesarRespuestaExitosa(documentoFiscalId, resp);
 
@@ -252,7 +260,8 @@ public class DocumentoFiscalService {
         }
 
         // según tu implementación: por numeroDocumento o por cufe
-        return proveedorTecnologicoClient.obtenerPdf(doc.getNumeroDocumento());
+        FactusTenantConfig config = factusTenantConfigResolver.factusConfigPara(doc);
+        return proveedorTecnologicoClient.obtenerPdf(config, doc.getNumeroDocumento());
     }
 
     @Transactional(readOnly = true)
@@ -473,6 +482,22 @@ public class DocumentoFiscalService {
                                 HttpStatus.NOT_FOUND,
                                 "Documento fiscal no encontrado"
                         )));
+    }
+
+    private void asociarRangoActivoSiHaceFalta(DocumentoFiscal doc) {
+        if (doc.getNumberingRange() != null) {
+            return;
+        }
+
+        ConfiguracionFacturacionElectronica config = factusTenantConfigResolver.configuracionPara(doc);
+        numberingRangeRepository.findFirstByConfiguracionIdAndActiveTrueOrderByIdAsc(config.getId())
+                .ifPresent(range -> {
+                    doc.setNumberingRange(range);
+                    if (range.getProviderRangeId() != null) {
+                        doc.setNumberingRangeId(range.getProviderRangeId());
+                    }
+                    documentoFiscalRepository.save(doc);
+                });
     }
 
 }

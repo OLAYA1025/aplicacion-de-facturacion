@@ -16,11 +16,12 @@ import java.time.Instant;
                 @Index(name = "idx_docfiscal_estado", columnList = "estado"),
                 @Index(name = "idx_docfiscal_tipo", columnList = "tipo"),
                 @Index(name = "idx_docfiscal_pedido", columnList = "pedido_id"),
-                @Index(name = "idx_docfiscal_ref", columnList = "reference_code")
+                @Index(name = "idx_docfiscal_ref", columnList = "reference_code"),
+                @Index(name = "idx_docfiscal_negocio", columnList = "negocio_id")
         },
         uniqueConstraints = {
                 @UniqueConstraint(name = "uk_docfiscal_pedido", columnNames = {"pedido_id"}),
-                @UniqueConstraint(name = "uk_docfiscal_ref", columnNames = {"reference_code"})
+                @UniqueConstraint(name = "uk_docfiscal_ref", columnNames = {"negocio_id", "reference_code"})
         }
 )
 public class DocumentoFiscal extends BaseTenantEntity {

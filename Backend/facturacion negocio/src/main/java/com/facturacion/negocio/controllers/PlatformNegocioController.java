@@ -3,6 +3,7 @@ package com.facturacion.negocio.controllers;
 import java.net.URI;
 import java.util.List;
 
+import com.facturacion.negocio.dto.request.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -15,7 +16,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
-import com.facturacion.negocio.dto.request.CrearNegocioPlataformaRequestDTO;
 import com.facturacion.negocio.dto.response.NegocioPlataformaResponseDTO;
 import com.facturacion.negocio.services.PlatformNegocioService;
 
@@ -68,4 +68,76 @@ public class PlatformNegocioController {
     public ResponseEntity<NegocioPlataformaResponseDTO> desactivarNegocio(@PathVariable Long id) {
         return ResponseEntity.ok(NegocioPlataformaResponseDTO.from(platformNegocioService.desactivarNegocio(id)));
     }
+
+    @PostMapping("/facturacion-electronica")
+    public ResponseEntity<Long>
+    crearConfiguracionFacturacionElectronica(@RequestBody CrearConfiguracionFeRequest request) {
+
+        Long id =
+                platformNegocioService
+                        .crearConfiguracion(request.negocioId(),
+                                request.proveedor(),
+                                request.baseUrl(),
+                                request.username(),
+                                request.password(),
+                                request.clientId(),
+                                request.clientSecret(),
+                                request.prefijoCode()
+                        );
+
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(id);
+    }
+
+    @PutMapping(
+            "/facturacion-electronica/{configuracionId}"
+    )
+    public ResponseEntity<Void>
+    editarConfiguracionFacturacionElectronica(
+            @PathVariable Long configuracionId,
+            @RequestBody EditarConfiguracionFeRequest request
+    ) {
+
+        platformNegocioService.editarConfiguracionFacturacionElectronica(
+                configuracionId,
+                request
+        );
+
+        return ResponseEntity.noContent()
+                .build();
+    }
+
+    @PostMapping("/numbering-ranges")
+    public ResponseEntity<Long>
+    crearNumberingRange(@RequestBody CrearNumberingRangeRequest request) {
+
+        Long id =
+                platformNegocioService
+                        .crearNumberingRange(
+                                request
+                        );
+
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(id);
+    }
+
+    @PutMapping(
+            "/numbering-ranges/{rangeId}"
+    )
+    public ResponseEntity<Void>
+    editarNumberingRange(
+            @PathVariable Long rangeId,
+            @RequestBody EditarNumberingRangeRequest request
+    ) {
+
+        platformNegocioService.editarNumberingRange(
+                rangeId,
+                request
+        );
+
+        return ResponseEntity.noContent()
+                .build();
+    }
+
+
 }

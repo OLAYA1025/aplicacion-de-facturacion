@@ -2,14 +2,12 @@ package com.facturacion.negocio.mock;
 
 
 
-import com.facturacion.negocio.domain.DocumentoFiscal;
 import com.facturacion.negocio.dto.factura.FactusFactElectronicaRequestDTO;
 import com.facturacion.negocio.dto.factura.response.ApiResponse;
 import com.facturacion.negocio.dto.factura.response.PdfData;
-import com.facturacion.negocio.enumerated.EstadoDocumentoFiscal;
 import com.facturacion.negocio.errors.FactusSinConexionException;
-import com.facturacion.negocio.repository.DocumentoFiscalRepository;
 import com.facturacion.negocio.services.factus.FactusAuthService;
+import com.facturacion.negocio.services.factus.FactusTenantConfig;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.core.ParameterizedTypeReference;
@@ -18,11 +16,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestTemplate;
-import org.springframework.web.reactive.function.client.WebClient;
 import com.fasterxml.jackson.databind.JsonNode;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.web.reactive.function.client.WebClientResponseException;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.Base64;
 import java.util.Collections;
@@ -34,24 +28,19 @@ public class ProveedorTecnologicoClientFactus {
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
     private final FactusAuthService authService;
-    private final String baseUrl;
-    private final DocumentoFiscalRepository documentoFiscalRepository;
 
 
     public ProveedorTecnologicoClientFactus(RestTemplate restTemplate,
                                             ObjectMapper objectMapper,
-                                            FactusAuthService authService,
-                                            @Value("${factus.base-url}") String baseUrl, DocumentoFiscalRepository documentoFiscalRepository) {
+                                            FactusAuthService authService) {
         this.restTemplate = restTemplate;
         this.objectMapper = objectMapper;
         this.authService = authService;
-        this.baseUrl = baseUrl;
-        this.documentoFiscalRepository = documentoFiscalRepository;
     }
 
-    public JsonNode validarFactura(FactusFactElectronicaRequestDTO dto) throws JsonProcessingException {
-        String token = authService.getValidAccessToken();
-        String endpoint = baseUrl + "/v1/bills/validate";
+    public JsonNode validarFactura(FactusTenantConfig config, FactusFactElectronicaRequestDTO dto) throws JsonProcessingException {
+        String token = authService.getValidAccessToken(config);
+        String endpoint = config.baseUrl() + "/v1/bills/validate";
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
@@ -85,10 +74,10 @@ public class ProveedorTecnologicoClientFactus {
 
 
 
-    public byte[] obtenerPdf(String numeroDocumento){
+    public byte[] obtenerPdf(FactusTenantConfig config, String numeroDocumento){
 
-        String token = authService.getValidAccessToken();
-        String endpoint = baseUrl + "/v1/bills/download-pdf/{numeroDocumento}";
+        String token = authService.getValidAccessToken(config);
+        String endpoint = config.baseUrl() + "/v1/bills/download-pdf/{numeroDocumento}";
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
@@ -130,7 +119,6 @@ public class ProveedorTecnologicoClientFactus {
 
     }
 }
-
 
 
 

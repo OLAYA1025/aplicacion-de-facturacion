@@ -3,14 +3,17 @@ package com.facturacion.negocio.services;
 import com.facturacion.negocio.domain.Caja;
 import com.facturacion.negocio.domain.Categoria;
 import com.facturacion.negocio.domain.Cliente;
+import com.facturacion.negocio.domain.ConfiguracionFacturacionElectronica;
 import com.facturacion.negocio.domain.DetallePedido;
 import com.facturacion.negocio.domain.DocumentoFiscal;
+import com.facturacion.negocio.domain.Negocio;
 import com.facturacion.negocio.domain.Pedido;
 import com.facturacion.negocio.domain.Producto;
 import com.facturacion.negocio.domain.Usuario;
 import com.facturacion.negocio.dto.factura.FactusFactElectronicaRequestDTO;
 import com.facturacion.negocio.enumerated.EstadoDocumentoFiscal;
 import com.facturacion.negocio.enumerated.MetodoPago;
+import com.facturacion.negocio.enumerated.ProveedorFacturacion;
 import com.facturacion.negocio.enumerated.Rol;
 import com.facturacion.negocio.enumerated.TipoDocumento;
 import com.facturacion.negocio.enumerated.TipoDocumentoFiscal;
@@ -19,9 +22,12 @@ import com.facturacion.negocio.repository.CajaRepository;
 import com.facturacion.negocio.repository.CategoriaRepository;
 import com.facturacion.negocio.repository.ClienteRepository;
 import com.facturacion.negocio.repository.DocumentoFiscalRepository;
+import com.facturacion.negocio.repository.NegocioRepository;
 import com.facturacion.negocio.repository.PedidoRepository;
 import com.facturacion.negocio.repository.ProductoRepository;
 import com.facturacion.negocio.repository.UsuarioRepository;
+import com.facturacion.negocio.services.factus.FactusTenantConfig;
+import com.facturacion.negocio.services.factus.FactusTenantConfigResolver;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
@@ -116,17 +122,23 @@ class DocumentoFiscalServiceConcurrencyTest {
     private ClienteRepository clienteRepository;
 
     @Autowired
+    private NegocioRepository negocioRepository;
+
+    @Autowired
     private ObjectMapper objectMapper;
 
     @MockitoBean
     private ProveedorTecnologicoClientFactus proveedorTecnologicoClient;
+
+    @MockitoBean
+    private FactusTenantConfigResolver factusTenantConfigResolver;
 
     @Test
     void debeInvocarProveedorUnaSolaVezCuandoDosHilosEnvianSimultaneamente() throws Exception {
         DocumentoFiscal documento = crearDocumentoFiscalPendienteEnvio();
         Long docId = documento.getId();
 
-        when(proveedorTecnologicoClient.validarFactura(any(FactusFactElectronicaRequestDTO.class)))
+        when(proveedorTecnologicoClient.validarFactura(any(FactusTenantConfig.class), any(FactusFactElectronicaRequestDTO.class)))
                 .thenReturn(respuestaExitosaFactus(docId));
 
         ExecutorService executor = Executors.newFixedThreadPool(2);
@@ -150,7 +162,8 @@ class DocumentoFiscalServiceConcurrencyTest {
         executor.shutdown();
         assertThat(executor.awaitTermination(5, TimeUnit.SECONDS)).isTrue();
 
-        verify(proveedorTecnologicoClient, times(1)).validarFactura(any(FactusFactElectronicaRequestDTO.class));
+        verify(proveedorTecnologicoClient, times(1))
+                .validarFactura(any(FactusTenantConfig.class), any(FactusFactElectronicaRequestDTO.class));
 
         DocumentoFiscal actualizado = documentoFiscalRepository.findById(docId).orElseThrow();
         assertThat(actualizado.getEstado()).isEqualTo(EstadoDocumentoFiscal.ACEPTADO_DIAN);
@@ -167,7 +180,7 @@ class DocumentoFiscalServiceConcurrencyTest {
         CountDownLatch proveedorIniciado = new CountDownLatch(1);
         CountDownLatch permitirRespuestaProveedor = new CountDownLatch(1);
 
-        when(proveedorTecnologicoClient.validarFactura(any(FactusFactElectronicaRequestDTO.class)))
+        when(proveedorTecnologicoClient.validarFactura(any(FactusTenantConfig.class), any(FactusFactElectronicaRequestDTO.class)))
                 .thenAnswer(invocation -> {
                     proveedorIniciado.countDown();
                     if (!permitirRespuestaProveedor.await(5, TimeUnit.SECONDS)) {
@@ -186,7 +199,8 @@ class DocumentoFiscalServiceConcurrencyTest {
 
         documentoFiscalService.enviarAlProveedor(docId);
 
-        verify(proveedorTecnologicoClient, times(1)).validarFactura(any(FactusFactElectronicaRequestDTO.class));
+        verify(proveedorTecnologicoClient, times(1))
+                .validarFactura(any(FactusTenantConfig.class), any(FactusFactElectronicaRequestDTO.class));
 
         permitirRespuestaProveedor.countDown();
         esperarFinalizacion(primerIntento);
@@ -211,13 +225,14 @@ class DocumentoFiscalServiceConcurrencyTest {
                 StandardCharsets.UTF_8
         );
 
-        when(proveedorTecnologicoClient.validarFactura(any(FactusFactElectronicaRequestDTO.class)))
+        when(proveedorTecnologicoClient.validarFactura(any(FactusTenantConfig.class), any(FactusFactElectronicaRequestDTO.class)))
                 .thenThrow(conflictoDuplicado);
 
         assertThatCode(() -> documentoFiscalService.enviarAlProveedor(docId))
                 .doesNotThrowAnyException();
 
-        verify(proveedorTecnologicoClient, times(1)).validarFactura(any(FactusFactElectronicaRequestDTO.class));
+        verify(proveedorTecnologicoClient, times(1))
+                .validarFactura(any(FactusTenantConfig.class), any(FactusFactElectronicaRequestDTO.class));
 
         DocumentoFiscal actualizado = documentoFiscalRepository.findById(docId).orElseThrow();
         assertThat(actualizado.getEstado()).isEqualTo(EstadoDocumentoFiscal.ENVIADO_PT);
@@ -240,17 +255,28 @@ class DocumentoFiscalServiceConcurrencyTest {
 
     private DocumentoFiscal crearDocumentoFiscalPendienteEnvio() {
         long n = SEQUENCE.getAndIncrement();
+        Negocio negocio = negocioRepository.save(new Negocio(
+                "Negocio " + n,
+                "90000000" + n,
+                "Direccion " + n,
+                "300000000" + n,
+                true
+        ));
 
-        Usuario usuario = usuarioRepository.save(new Usuario(
+        Usuario usuario = new Usuario(
                 "Usuario " + n,
                 "user" + n,
                 "pass-" + n,
                 "user" + n + "@mail.test",
                 Rol.CAJERO
-        ));
+        );
+        usuario.setNegocio(negocio);
+        usuario = usuarioRepository.save(usuario);
 
         Caja caja = cajaRepository.save(new Caja(new BigDecimal("100000.00"), usuario));
-        Categoria categoria = categoriaRepository.save(new Categoria("Categoria-" + n));
+        Categoria categoria = new Categoria("Categoria-" + n);
+        categoria.setNegocio(negocio);
+        categoria = categoriaRepository.save(categoria);
         Producto producto = productoRepository.save(new Producto(
                 "Producto-" + n,
                 new BigDecimal("1500.00"),
@@ -266,18 +292,46 @@ class DocumentoFiscalServiceConcurrencyTest {
         pedido.pagar(usuario, MetodoPago.EFECTIVO);
         pedido = pedidoRepository.saveAndFlush(pedido);
 
-        Cliente cliente = clienteRepository.save(new Cliente(
+        Cliente cliente = new Cliente(
                 TipoDocumento.CC,
                 "10" + String.format("%010d", n),
                 "Cliente " + n,
                 "cliente" + n + "@mail.test"
-        ));
+        );
+        cliente.setNegocio(negocio);
+        cliente = clienteRepository.save(cliente);
 
         DocumentoFiscal documentoFiscal = DocumentoFiscal.crearBorrador(pedido, TipoDocumentoFiscal.FEV, "PED");
         documentoFiscal.setCliente(cliente);
         documentoFiscal.marcarPendienteEnvio();
+        configurarFactusMock(documentoFiscal, n);
 
         return documentoFiscalRepository.saveAndFlush(documentoFiscal);
+    }
+
+    private void configurarFactusMock(DocumentoFiscal documentoFiscal, long n) {
+        ConfiguracionFacturacionElectronica config = new ConfiguracionFacturacionElectronica(
+                ProveedorFacturacion.FACTUS,
+                "http://localhost",
+                "tenant-" + n,
+                "password-" + n,
+                "client-" + n,
+                "secret-" + n,
+                "PED"
+        );
+        config.setNegocio(documentoFiscal.getNegocio());
+
+        FactusTenantConfig factusConfig = new FactusTenantConfig(
+                n,
+                "http://localhost",
+                "tenant-" + n,
+                "password-" + n,
+                "client-" + n,
+                "secret-" + n
+        );
+
+        when(factusTenantConfigResolver.factusConfigPara(any(DocumentoFiscal.class))).thenReturn(factusConfig);
+        when(factusTenantConfigResolver.configuracionPara(any(DocumentoFiscal.class))).thenReturn(config);
     }
 
     private JsonNode respuestaExitosaFactus(Long docId) throws Exception {

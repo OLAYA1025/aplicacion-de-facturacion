@@ -14,6 +14,8 @@ public interface NumberingRangeRepository extends JpaRepository<NumberingRange, 
 
     Optional<NumberingRange> findByIdAndNegocioId(Long id, Long negocioId);
 
+    Optional<NumberingRange> findFirstByConfiguracionIdAndActiveTrueOrderByIdAsc(Long configuracionId);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("""
         select nr

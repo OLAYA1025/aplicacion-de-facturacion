@@ -26,7 +26,15 @@ public interface DocumentoFiscalRepository extends JpaRepository<DocumentoFiscal
     @Query("select d from DocumentoFiscal d where d.id = :id and d.negocio = :negocio")
     Optional<DocumentoFiscal> findByIdForUpdate(@Param("id") Long id, @Param("negocio") Negocio negocio);
 
-    @EntityGraph(attributePaths = {"pedido", "pedido.detallePedidos", "pedido.detallePedidos.producto", "cliente"})
+    @EntityGraph(attributePaths = {
+            "negocio",
+            "numberingRange",
+            "numberingRange.configuracion",
+            "pedido",
+            "pedido.detallePedidos",
+            "pedido.detallePedidos.producto",
+            "cliente"
+    })
     @Query("select d from DocumentoFiscal d where d.id = :id")
     Optional<DocumentoFiscal> findByIdForEnvio(@Param("id") Long id);
 

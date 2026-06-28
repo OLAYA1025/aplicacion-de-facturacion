@@ -8,22 +8,32 @@ import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.ConcurrentHashMap;
 
 @Service
 public class SseService {
     private static final String EVENTO_PEDIDO_ACTUALIZADO = "nuevo-pedido";
 
-    private final List<SseEmitter> emisores = new CopyOnWriteArrayList<>();
+    private final Map<Long, CopyOnWriteArrayList<SseEmitter>> emisoresPorNegocio = new ConcurrentHashMap<>();
+    private final TenantService tenantService;
+
+    public SseService(TenantService tenantService) {
+        this.tenantService = tenantService;
+    }
 
     public SseEmitter agregarEmitter() {
+        Long negocioId = tenantService.getNegocioIdActual();
         SseEmitter emitter = new SseEmitter(Long.MAX_VALUE);
 
-        emisores.add(emitter);
+        emisoresPorNegocio
+                .computeIfAbsent(negocioId, ignored -> new CopyOnWriteArrayList<>())
+                .add(emitter);
 
-        emitter.onCompletion(() -> removerEmitter(emitter));
-        emitter.onTimeout(() -> removerEmitter(emitter));
-        emitter.onError((error) -> removerEmitter(emitter));
+        emitter.onCompletion(() -> removerEmitter(negocioId, emitter));
+        emitter.onTimeout(() -> removerEmitter(negocioId, emitter));
+        emitter.onError((error) -> removerEmitter(negocioId, emitter));
 
         return emitter;
     }
@@ -37,18 +47,31 @@ public class SseService {
     }
 
     private void enviarEventoPedido(PedidoResponseDTO dto) {
+        Long negocioId = tenantService.getNegocioIdActual();
+        List<SseEmitter> emisores = emisoresPorNegocio.get(negocioId);
+        if (emisores == null || emisores.isEmpty()) {
+            return;
+        }
+
         for (SseEmitter emitter : emisores) {
             try {
                 emitter.send(SseEmitter.event()
                         .name(EVENTO_PEDIDO_ACTUALIZADO)
                         .data(dto));
             } catch (Exception e) {
-                removerEmitter(emitter);
+                removerEmitter(negocioId, emitter);
             }
         }
     }
 
-    private void removerEmitter(SseEmitter emitter) {
+    private void removerEmitter(Long negocioId, SseEmitter emitter) {
+        List<SseEmitter> emisores = emisoresPorNegocio.get(negocioId);
+        if (emisores == null) {
+            return;
+        }
         emisores.remove(emitter);
+        if (emisores.isEmpty()) {
+            emisoresPorNegocio.remove(negocioId, emisores);
+        }
     }
 }

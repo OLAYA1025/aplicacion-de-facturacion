@@ -1,88 +1,70 @@
 package com.facturacion.negocio.services.factus;
 
 import com.facturacion.negocio.errors.FactusSinConexionException;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.HttpClientErrorException;
-import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.reactive.function.BodyInserters;
 import org.springframework.web.reactive.function.client.WebClient;
 import org.springframework.web.reactive.function.client.WebClientRequestException;
 import org.springframework.web.reactive.function.client.WebClientResponseException;
 
 import java.time.Instant;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 @Service
 public class FactusAuthService {
 
-    private final WebClient webClient;
-
-    private final String clientId;
-    private final String clientSecret;
-    private final String username;
-    private final String password;
-
-    // cache en memoria
-    private volatile String accessToken;
-    private volatile String refreshToken;
-    private volatile Instant expiresAt;
-
-    public FactusAuthService(
-            @Value("${factus.base-url}") String baseUrl,
-            @Value("${factus.client-id}") String clientId,
-            @Value("${factus.client-secret}") String clientSecret,
-            @Value("${factus.username}") String username,
-            @Value("${factus.password}") String password
-    ) {
-        this.webClient = WebClient.builder()
-                .baseUrl(baseUrl)
-                .build();
-
-        this.clientId = clientId;
-        this.clientSecret = clientSecret;
-        this.username = username;
-        this.password = password;
-    }
+    private final ConcurrentMap<String, TokenCache> tokensByConfig = new ConcurrentHashMap<>();
 
     /**
      * Devuelve un access token válido. Si está expirado, lo renueva.
      */
-    public synchronized String getValidAccessToken() {
+    public String getValidAccessToken(FactusTenantConfig config) {
+        String cacheKey = cacheKey(config);
+        TokenCache cache = tokensByConfig.computeIfAbsent(cacheKey, key -> new TokenCache());
+
+        synchronized (cache) {
+            return getValidAccessToken(config, cache);
+        }
+    }
+
+    private String getValidAccessToken(FactusTenantConfig config, TokenCache cache) {
         // margen de seguridad para no expirar en mitad de una request
-        if (accessToken != null && expiresAt != null && Instant.now().isBefore(expiresAt.minusSeconds(30))) {
-            return accessToken;
+        if (cache.accessToken != null && cache.expiresAt != null
+                && Instant.now().isBefore(cache.expiresAt.minusSeconds(30))) {
+            return cache.accessToken;
         }
 
         // 1) intenta refresh si existe
-        if (refreshToken != null && !refreshToken.isBlank()) {
+        if (cache.refreshToken != null && !cache.refreshToken.isBlank()) {
             try {
-                FactusTokenResponse refreshed = refreshWithRefreshToken(refreshToken);
-                cacheTokens(refreshed);
-                return accessToken;
+                FactusTokenResponse refreshed = refreshWithRefreshToken(config, cache.refreshToken);
+                cacheTokens(cache, refreshed);
+                return cache.accessToken;
             } catch (Exception ignored) {
                 // si refresh falla, hacemos login normal
             }
         }
 
         // 2) login con password
-        FactusTokenResponse token = loginWithPassword();
-        cacheTokens(token);
-        return accessToken;
+        FactusTokenResponse token = loginWithPassword(config);
+        cacheTokens(cache, token);
+        return cache.accessToken;
     }
 
-    private FactusTokenResponse loginWithPassword() {
+    private FactusTokenResponse loginWithPassword(FactusTenantConfig config) {
 
         try {
-            FactusTokenResponse r = webClient.post()
+            FactusTokenResponse r = webClient(config).post()
                     .uri("/oauth/token")
                     .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                     .body(BodyInserters
                             .fromFormData("grant_type", "password")
-                            .with("client_id", clientId)
-                            .with("client_secret", clientSecret)
-                            .with("username", username)
-                            .with("password", password)
+                            .with("client_id", config.clientId())
+                            .with("client_secret", config.clientSecret())
+                            .with("username", config.username())
+                            .with("password", config.password())
                     )
                     .retrieve()
                     .bodyToMono(FactusTokenResponse.class)
@@ -111,15 +93,15 @@ public class FactusAuthService {
 
     }
 
-    private FactusTokenResponse refreshWithRefreshToken(String refreshToken) {
+    private FactusTokenResponse refreshWithRefreshToken(FactusTenantConfig config, String refreshToken) {
         try {
-            FactusTokenResponse r = webClient.post()
+            FactusTokenResponse r = webClient(config).post()
                     .uri("/oauth/token")
                     .contentType(MediaType.APPLICATION_FORM_URLENCODED)
                     .body(BodyInserters
                             .fromFormData("grant_type", "refresh_token")
-                            .with("client_id", clientId)
-                            .with("client_secret", clientSecret)
+                            .with("client_id", config.clientId())
+                            .with("client_secret", config.clientSecret())
                             .with("refresh_token", refreshToken)
                     )
                     .retrieve()
@@ -144,9 +126,25 @@ public class FactusAuthService {
         }
     }
 
-    private void cacheTokens(FactusTokenResponse r) {
-        this.accessToken = r.getAccessToken();
-        this.refreshToken = r.getRefreshToken();
-        this.expiresAt = Instant.now().plusSeconds(r.getExpiresIn());
+    private void cacheTokens(TokenCache cache, FactusTokenResponse r) {
+        cache.accessToken = r.getAccessToken();
+        cache.refreshToken = r.getRefreshToken();
+        cache.expiresAt = Instant.now().plusSeconds(r.getExpiresIn());
+    }
+
+    private WebClient webClient(FactusTenantConfig config) {
+        return WebClient.builder()
+                .baseUrl(config.baseUrl())
+                .build();
+    }
+
+    private String cacheKey(FactusTenantConfig config) {
+        return config.id() + "|" + config.baseUrl() + "|" + config.username() + "|" + config.clientId();
+    }
+
+    private static class TokenCache {
+        private volatile String accessToken;
+        private volatile String refreshToken;
+        private volatile Instant expiresAt;
     }
 }

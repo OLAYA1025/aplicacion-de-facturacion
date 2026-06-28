@@ -1,11 +1,6 @@
 package com.facturacion.negocio.domain;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 
 @Entity
 @Table(name = "negocio")
@@ -30,6 +25,12 @@ public class Negocio {
     @Column(nullable = false)
     private boolean activo;
 
+    @Column(nullable = false)
+    private Boolean electronicaHabilitada;
+
+
+
+
     protected Negocio() {
     }
 
@@ -38,7 +39,12 @@ public class Negocio {
         setNit(nit);
         setDireccion(direccion);
         setTelefono(telefono);
+        this.electronicaHabilitada = false;
         this.activo = activo;
+    }
+
+    public void habilitarFacturacion(){
+        this.electronicaHabilitada = true;
     }
 
     public Long getId() {
@@ -90,5 +96,9 @@ public class Negocio {
 
     public void desactivar() {
         this.activo = false;
+    }
+
+    public Boolean isElectronicaHabilitada() {
+        return electronicaHabilitada;
     }
 }

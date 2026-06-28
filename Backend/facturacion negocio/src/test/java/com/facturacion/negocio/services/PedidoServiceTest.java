@@ -4,6 +4,7 @@ import com.facturacion.negocio.domain.Caja;
 import com.facturacion.negocio.domain.BaseTenantEntity;
 import com.facturacion.negocio.domain.Categoria;
 import com.facturacion.negocio.domain.Cliente;
+import com.facturacion.negocio.domain.ConfiguracionFacturacionElectronica;
 import com.facturacion.negocio.domain.DetallePedido;
 import com.facturacion.negocio.domain.DocumentoFiscal;
 import com.facturacion.negocio.domain.MovimientoCaja;
@@ -16,6 +17,7 @@ import com.facturacion.negocio.dto.request.DetallePedidoRequestDTO;
 import com.facturacion.negocio.enumerated.EstadoPedido;
 import com.facturacion.negocio.enumerated.EstadoDocumentoFiscal;
 import com.facturacion.negocio.enumerated.MetodoPago;
+import com.facturacion.negocio.enumerated.ProveedorFacturacion;
 import com.facturacion.negocio.enumerated.Rol;
 import com.facturacion.negocio.enumerated.TipoDocumento;
 import com.facturacion.negocio.enumerated.TipoDocumentoFiscal;
@@ -25,6 +27,7 @@ import com.facturacion.negocio.enumerated.TipoMovimiento;
 import com.facturacion.negocio.enumerated.TipoMovimientoInventario;
 import com.facturacion.negocio.repository.CajaRepository;
 import com.facturacion.negocio.repository.ClienteRepository;
+import com.facturacion.negocio.repository.ConfiguracionFacturacionElectronicaRepository;
 import com.facturacion.negocio.repository.DocumentoFiscalRepository;
 import com.facturacion.negocio.repository.MovimientoCajaRepository;
 import com.facturacion.negocio.repository.MovimientoInventarioRepository;
@@ -90,6 +93,8 @@ class PedidoServiceTest {
     private PdfService pdfService;
     @Mock
     private TenantService tenantService;
+    @Mock
+    private ConfiguracionFacturacionElectronicaRepository configuracionFacturacionElectronicaRepository;
 
     private PedidoService pedidoService;
     private Negocio negocio;
@@ -97,8 +102,24 @@ class PedidoServiceTest {
     @BeforeEach
     void setUp() {
         negocio = new Negocio("Negocio Test", null, null, null, true);
+        negocio.habilitarFacturacion();
         ReflectionTestUtils.setField(negocio, "id", 1L);
         when(tenantService.getNegocioActual()).thenReturn(negocio);
+        ConfiguracionFacturacionElectronica config = new ConfiguracionFacturacionElectronica(
+                ProveedorFacturacion.FACTUS,
+                "http://localhost",
+                "tenant",
+                "password",
+                "client",
+                "secret",
+                "PED"
+        );
+        ReflectionTestUtils.setField(config, "id", 1L);
+        config.setNegocio(negocio);
+        lenient().when(configuracionFacturacionElectronicaRepository.findByNegocioId(1L))
+                .thenReturn(Optional.of(config));
+        lenient().when(numberingRangeRepository.findFirstByConfiguracionIdAndActiveTrueOrderByIdAsc(1L))
+                .thenReturn(Optional.empty());
         lenient().when(tenantService.asignarNegocioActual(any())).thenAnswer(invocation -> {
             BaseTenantEntity entity = invocation.getArgument(0);
             entity.setNegocio(negocio);
@@ -115,13 +136,12 @@ class PedidoServiceTest {
                 documentoFiscalRepository,
                 documentoFiscalService,
                 numberingRangeRepository,
-                "PED",
                 sseService,
                 notasPredefinidasService,
-                pdfService
-                ,
+                pdfService,
                 tenantService,
-                true
+                true,
+                configuracionFacturacionElectronicaRepository
         );
     }
 

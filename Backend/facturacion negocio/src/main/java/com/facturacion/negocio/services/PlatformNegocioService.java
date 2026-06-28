@@ -2,6 +2,16 @@ package com.facturacion.negocio.services;
 
 import java.util.List;
 
+import com.facturacion.negocio.domain.ConfiguracionFacturacionElectronica;
+import com.facturacion.negocio.domain.NumberingRange;
+import com.facturacion.negocio.dto.request.CrearConfiguracionFeRequest;
+import com.facturacion.negocio.dto.request.CrearNumberingRangeRequest;
+import com.facturacion.negocio.dto.request.EditarConfiguracionFeRequest;
+import com.facturacion.negocio.dto.request.EditarNumberingRangeRequest;
+import com.facturacion.negocio.enumerated.ProveedorFacturacion;
+import com.facturacion.negocio.repository.ConfiguracionFacturacionElectronicaRepository;
+import com.facturacion.negocio.repository.NumberingRangeRepository;
+import com.facturacion.negocio.security.EncryptionService;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -16,10 +26,21 @@ public class PlatformNegocioService {
 
     private final NegocioRepository negocioRepository;
     private final UsuarioService usuarioService;
+    private final ConfiguracionFacturacionElectronicaRepository configuracionRepository;
+    private final NumberingRangeRepository numberingRangeRepository;
+    private final EncryptionService encryptionService;
 
-    public PlatformNegocioService(NegocioRepository negocioRepository, UsuarioService usuarioService) {
+    public PlatformNegocioService(NegocioRepository negocioRepository,
+                                  UsuarioService usuarioService,
+                                  ConfiguracionFacturacionElectronicaRepository configuracionRepository,
+                                  NumberingRangeRepository numberingRangeRepository,
+                                  EncryptionService encryptionService) {
         this.negocioRepository = negocioRepository;
         this.usuarioService = usuarioService;
+        this.configuracionRepository = configuracionRepository;
+        this.numberingRangeRepository = numberingRangeRepository;
+        this.encryptionService = encryptionService;
+
     }
 
     @Transactional
@@ -67,6 +88,140 @@ public class PlatformNegocioService {
         negocio.desactivar();
         return negocioRepository.save(negocio);
     }
+
+    @Transactional
+    public Long crearConfiguracion(
+            Long negocioId,
+            ProveedorFacturacion proveedor,
+            String baseUrl,
+            String username,
+            String password,
+            String clientId,
+            String clientSecret,
+            String prefijoCode
+    ) {
+
+        Negocio negocio = negocioRepository.findById(negocioId)
+                .orElseThrow(() -> new IllegalArgumentException("Negocio no existe"));
+
+
+
+
+
+        if (configuracionRepository.findByNegocioId(negocioId).isPresent()) {
+            throw new ResponseStatusException(
+                    HttpStatus.CONFLICT,
+                    "El negocio ya tiene configuracion de facturacion electronica"
+            );
+        }
+
+        ConfiguracionFacturacionElectronica config = new ConfiguracionFacturacionElectronica(
+                proveedor,
+                baseUrl,
+                username,
+                password,
+                clientId,
+                clientSecret,
+                prefijoCode
+        );
+
+        config.cifrarCredenciales(encryptionService);
+        config.setNegocio(negocio);
+        negocio.habilitarFacturacion();
+
+        configuracionRepository.save(config);
+
+        return config.getId();
+    }
+
+    @Transactional
+    public void editarConfiguracionFacturacionElectronica(
+            Long configuracionId,
+            EditarConfiguracionFeRequest request
+    ) {
+
+        ConfiguracionFacturacionElectronica configuracion =
+                configuracionRepository
+                        .findById(configuracionId)
+                        .orElseThrow(() ->
+                                new IllegalArgumentException(
+                                        "La configuracion no existe"
+                                )
+                        );
+
+        configuracion.actualizar(
+                encryptionService,
+                request.proveedor(),
+                request.baseUrl(),
+                request.username(),
+                request.password(),
+                request.clientId(),
+                request.clientSecret(),
+                request.prefijoCode()
+        );
+    }
+
+    @Transactional
+    public Long crearNumberingRange(
+            CrearNumberingRangeRequest request
+    ) {
+
+        ConfiguracionFacturacionElectronica configuracion =
+                configuracionRepository.findById(
+                        request.configuracionId()
+                ).orElseThrow(() ->
+                        new IllegalArgumentException(
+                                "La configuración no existe"
+                        )
+                );
+
+        NumberingRange range =
+                new NumberingRange(
+                        request.providerRangeId(),
+                        request.prefix(),
+                        request.fromNumber(),
+                        request.toNumber(),
+                        request.currentNumber(),
+                        request.resolutionNumber(),
+                        request.technicalKey(),
+                        configuracion
+                );
+
+        configuracion.addRange(range);
+
+        numberingRangeRepository.save(range);
+
+        return range.getId();
+    }
+
+    @Transactional
+    public void editarNumberingRange(
+            Long rangeId,
+            EditarNumberingRangeRequest request
+    ) {
+
+        NumberingRange range =
+                numberingRangeRepository
+                        .findById(rangeId)
+                        .orElseThrow(() ->
+                                new IllegalArgumentException(
+                                        "El rango no existe"
+                                )
+                        );
+
+        range.actualizar(
+                request.providerRangeId(),
+                request.prefix(),
+                request.fromNumber(),
+                request.toNumber(),
+                request.currentNumber(),
+                request.resolutionNumber(),
+                request.technicalKey(),
+                request.active()
+        );
+    }
+
+
 
     private Negocio obtenerNegocio(Long id) {
         if (id == null) {
