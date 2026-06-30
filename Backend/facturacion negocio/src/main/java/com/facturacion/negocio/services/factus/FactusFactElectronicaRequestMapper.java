@@ -2,13 +2,12 @@ package com.facturacion.negocio.services.factus;
 
 import com.facturacion.negocio.domain.DetallePedido;
 import com.facturacion.negocio.domain.DocumentoFiscal;
-import com.facturacion.negocio.domain.Negocio;
 import com.facturacion.negocio.domain.NumberingRange;
 import com.facturacion.negocio.domain.Pedido;
 import com.facturacion.negocio.dto.factura.CustomerDTO;
-import com.facturacion.negocio.dto.factura.Establecimiento;
 import com.facturacion.negocio.dto.factura.FactusFactElectronicaRequestDTO;
 import com.facturacion.negocio.dto.factura.ItemDTO;
+import com.facturacion.negocio.services.EstablecimientoResolver;
 import org.springframework.stereotype.Component;
 import com.facturacion.negocio.enumerated.TipoDocumentoFiscal;
 import com.facturacion.negocio.services.DetallePedidoAgrupador;
@@ -20,10 +19,10 @@ import java.util.List;
 @Component
 public class FactusFactElectronicaRequestMapper {
 
-    private final Establecimiento establecimiento; // Bean configurado
+    private final EstablecimientoResolver establecimientoResolver;
 
-    public FactusFactElectronicaRequestMapper(Establecimiento establecimiento) {
-        this.establecimiento = establecimiento;
+    public FactusFactElectronicaRequestMapper(EstablecimientoResolver establecimientoResolver) {
+        this.establecimientoResolver = establecimientoResolver;
     }
 
     public FactusFactElectronicaRequestDTO from(DocumentoFiscal doc) {
@@ -40,7 +39,7 @@ public class FactusFactElectronicaRequestMapper {
             dto.setSend_email(true);
         }
 
-        dto.setEstablecimiento(resolveEstablecimiento(doc));
+        dto.setEstablecimiento(establecimientoResolver.resolverPara(doc));
 
         return dto;
     }
@@ -51,40 +50,6 @@ public class FactusFactElectronicaRequestMapper {
             return range.getProviderRangeId();
         }
         return doc.getNumberingRangeId();
-    }
-
-    private Establecimiento resolveEstablecimiento(DocumentoFiscal doc) {
-        Establecimiento result = new Establecimiento();
-        result.setName(establecimiento.getName());
-        result.setNit(establecimiento.getNit());
-        result.setDv(establecimiento.getDv());
-        result.setAddress(establecimiento.getAddress());
-        result.setPhone_number(establecimiento.getPhone_number());
-        result.setEmail(establecimiento.getEmail());
-        result.setMunicipality_id(establecimiento.getMunicipality_id());
-        result.setMunicipality_code_dian(establecimiento.getMunicipality_code_dian());
-
-        Negocio negocio = doc.getNegocio();
-        if (negocio != null) {
-            if (hasText(negocio.getNombre())) {
-                result.setName(negocio.getNombre());
-            }
-            if (hasText(negocio.getNit())) {
-                result.setNit(negocio.getNit());
-            }
-            if (hasText(negocio.getDireccion())) {
-                result.setAddress(negocio.getDireccion());
-            }
-            if (hasText(negocio.getTelefono())) {
-                result.setPhone_number(negocio.getTelefono());
-            }
-        }
-
-        return result;
-    }
-
-    private boolean hasText(String value) {
-        return value != null && !value.isBlank();
     }
 
     private List<ItemDTO> mapItems(List<DetallePedido> detalles) {

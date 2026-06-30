@@ -10,7 +10,7 @@
     </parent>
     <groupId>com.facturacion.negocio</groupId>
     <artifactId>facturacion-negocio</artifactId>
-    <version>2.1.0</version>
+    <version>2.1.1</version>
     <name>facturacion negocio</name>
     <description>facturacion negocio</description>
     <url/>

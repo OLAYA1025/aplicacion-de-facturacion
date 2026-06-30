@@ -12,6 +12,10 @@ public class EstadisticasDashboardDTO {
     private BigDecimal totalUtilidades;
     private Long totalCajasCerradas;
     private BigDecimal totalRetiros;
+    private BigDecimal totalEgresos;
+    private BigDecimal totalGastos;
+    private BigDecimal ingresosTransferencia;
+    private BigDecimal ingresosTarjeta;
     private ResumenEstadisticasDTO graficoUtilidades;
     private TopProductosVendidosDTO graficoTopProductos;
     private List<HistorialCajaCerradaDTO> historialCajasCerradas;
@@ -25,6 +29,10 @@ public class EstadisticasDashboardDTO {
                                     BigDecimal totalUtilidades,
                                     Long totalCajasCerradas,
                                     BigDecimal totalRetiros,
+                                    BigDecimal totalEgresos,
+                                    BigDecimal totalGastos,
+                                    BigDecimal ingresosTransferencia,
+                                    BigDecimal ingresosTarjeta,
                                     ResumenEstadisticasDTO graficoUtilidades,
                                     TopProductosVendidosDTO graficoTopProductos,
                                     List<HistorialCajaCerradaDTO> historialCajasCerradas,
@@ -37,6 +45,10 @@ public class EstadisticasDashboardDTO {
         this.totalUtilidades = totalUtilidades;
         this.totalCajasCerradas = totalCajasCerradas;
         this.totalRetiros = totalRetiros;
+        this.totalEgresos = totalEgresos;
+        this.totalGastos = totalGastos;
+        this.ingresosTransferencia = ingresosTransferencia;
+        this.ingresosTarjeta = ingresosTarjeta;
         this.graficoUtilidades = graficoUtilidades;
         this.graficoTopProductos = graficoTopProductos;
         this.historialCajasCerradas = historialCajasCerradas;
@@ -91,6 +103,38 @@ public class EstadisticasDashboardDTO {
 
     public void setTotalRetiros(BigDecimal totalRetiros) {
         this.totalRetiros = totalRetiros;
+    }
+
+    public BigDecimal getTotalEgresos() {
+        return totalEgresos;
+    }
+
+    public void setTotalEgresos(BigDecimal totalEgresos) {
+        this.totalEgresos = totalEgresos;
+    }
+
+    public BigDecimal getTotalGastos() {
+        return totalGastos;
+    }
+
+    public void setTotalGastos(BigDecimal totalGastos) {
+        this.totalGastos = totalGastos;
+    }
+
+    public BigDecimal getIngresosTransferencia() {
+        return ingresosTransferencia;
+    }
+
+    public void setIngresosTransferencia(BigDecimal ingresosTransferencia) {
+        this.ingresosTransferencia = ingresosTransferencia;
+    }
+
+    public BigDecimal getIngresosTarjeta() {
+        return ingresosTarjeta;
+    }
+
+    public void setIngresosTarjeta(BigDecimal ingresosTarjeta) {
+        this.ingresosTarjeta = ingresosTarjeta;
     }
 
     public ResumenEstadisticasDTO getGraficoUtilidades() {

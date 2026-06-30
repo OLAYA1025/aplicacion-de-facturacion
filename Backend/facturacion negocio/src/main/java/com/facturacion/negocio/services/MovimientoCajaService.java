@@ -1,20 +1,25 @@
 package com.facturacion.negocio.services;
 
-import com.facturacion.negocio.domain.Caja;
-import com.facturacion.negocio.domain.MovimientoCaja;
-import com.facturacion.negocio.domain.Negocio;
-import com.facturacion.negocio.domain.Usuario;
-import com.facturacion.negocio.dto.response.MovimientoCajaResponseDTO;
-import com.facturacion.negocio.enumerated.TipoMovimiento;
-import com.facturacion.negocio.repository.CajaRepository;
-import com.facturacion.negocio.repository.MovimientoCajaRepository;
-import com.facturacion.negocio.repository.UsuarioRepository;
+import java.math.BigDecimal;
+import java.util.List;
+
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
 
-import java.math.BigDecimal;
-import java.util.List;
+import com.facturacion.negocio.domain.Caja;
+import com.facturacion.negocio.domain.MovimientoCaja;
+import com.facturacion.negocio.domain.Negocio;
+import com.facturacion.negocio.domain.Pedido;
+import com.facturacion.negocio.domain.Usuario;
+import com.facturacion.negocio.dto.response.MovimientoCajaResponseDTO;
+import com.facturacion.negocio.enumerated.EstadoPedido;
+import com.facturacion.negocio.enumerated.MetodoPago;
+import com.facturacion.negocio.enumerated.TipoMovimiento;
+import com.facturacion.negocio.repository.CajaRepository;
+import com.facturacion.negocio.repository.MovimientoCajaRepository;
+import com.facturacion.negocio.repository.PedidoRepository;
+import com.facturacion.negocio.repository.UsuarioRepository;
 
 @Service
 public class MovimientoCajaService{
@@ -22,15 +27,18 @@ public class MovimientoCajaService{
 
     private final MovimientoCajaRepository movimientoCajaRepository;
     private final CajaRepository cajaRepository;
+    private final PedidoRepository pedidoRepository;
     private final UsuarioRepository usuarioRepository;
     private final TenantService tenantService;
 
     public MovimientoCajaService(MovimientoCajaRepository movimientoCajaRepository,
                                  CajaRepository cajaRepository,
+                                 PedidoRepository pedidoRepository,
                                  UsuarioRepository usuarioRepository,
                                  TenantService tenantService) {
         this.movimientoCajaRepository = movimientoCajaRepository;
         this.cajaRepository = cajaRepository;
+        this.pedidoRepository = pedidoRepository;
         this.usuarioRepository = usuarioRepository;
         this.tenantService = tenantService;
     }
@@ -119,10 +127,19 @@ public class MovimientoCajaService{
                 HttpStatus.CONFLICT,
                 "La caja debe estar abierta para realizar un egreso"));
 
-        BigDecimal saldo = cajaRepository.calcularSaldoPorCaja(caja.getId(), negocio).add(caja.getMontoInicial());
-        if (saldo == null) {
-            saldo = BigDecimal.ZERO;
-        }
+        List<Pedido> pedidos = pedidoRepository.findPedidosByCaja(caja.getId(), negocio);
+        BigDecimal ingresosEfectivo = calcularIngresosPorMetodo(pedidos, MetodoPago.EFECTIVO);
+        BigDecimal egresos = valorSeguro(
+            movimientoCajaRepository.calcularTotalesByTipoAndCaja(TipoMovimiento.EGRESO, caja, negocio)
+        );
+        BigDecimal retiros = valorSeguro(
+            movimientoCajaRepository.calcularTotalesByTipoAndCaja(TipoMovimiento.RETIRO, caja, negocio)
+        );
+
+        BigDecimal saldo = valorSeguro(caja.getMontoInicial())
+            .add(ingresosEfectivo)
+            .subtract(egresos)
+            .subtract(retiros);
 
         if(saldo.compareTo(monto)<0){
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Saldo insuficiente");
@@ -132,6 +149,20 @@ public class MovimientoCajaService{
         return movimientoCajaRepository.save(movimiento);
     }
 
+
+    private BigDecimal calcularIngresosPorMetodo(List<Pedido> pedidos, MetodoPago metodoPago) {
+        BigDecimal total = BigDecimal.ZERO;
+        for (Pedido pedido : pedidos) {
+            if (pedido.getEstado() == EstadoPedido.PAGO && pedido.getMetodoPago() == metodoPago) {
+                total = total.add(valorSeguro(pedido.calcularTotal()));
+            }
+        }
+        return total;
+    }
+
+    private BigDecimal valorSeguro(BigDecimal valor) {
+        return valor == null ? BigDecimal.ZERO : valor;
+    }
 
 
 

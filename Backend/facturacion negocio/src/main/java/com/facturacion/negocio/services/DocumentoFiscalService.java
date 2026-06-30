@@ -4,7 +4,6 @@ import com.facturacion.negocio.domain.ConfiguracionFacturacionElectronica;
 import com.facturacion.negocio.domain.DocumentoFiscal;
 import com.facturacion.negocio.domain.Negocio;
 import com.facturacion.negocio.domain.NumberingRange;
-import com.facturacion.negocio.dto.factura.Establecimiento;
 import com.facturacion.negocio.dto.factura.NumberAllocationResult;
 import com.facturacion.negocio.dto.response.DocumentoFiscalListDTO;
 import com.facturacion.negocio.dto.factura.FactusFactElectronicaRequestDTO;
@@ -66,8 +65,8 @@ public class DocumentoFiscalService {
     private final DetallePedidoRepository detallePedidoRepository;
     private final ProveedorTecnologicoClientFactus proveedorTecnologicoClient;
     private final FactusFactElectronicaRequestMapper mapper;
-    private final Establecimiento establecimiento;
     private final PdfService pdfService;
+    private final EstablecimientoResolver establecimientoResolver;
     private final DocumentoFiscalTxService documentoFiscalTxService;
     private final ZoneId zonaAplicacion;
     private final NumberingRangeService numberingRangeService;
@@ -79,8 +78,8 @@ public class DocumentoFiscalService {
                                   DetallePedidoRepository detallePedidoRepository,
                                   ProveedorTecnologicoClientFactus proveedorTecnologicoClient,
                                   FactusFactElectronicaRequestMapper mapper,
-                                  Establecimiento establecimiento,
                                   PdfService pdfService,
+                                  EstablecimientoResolver establecimientoResolver,
                                   DocumentoFiscalTxService documentoFiscalTxService,
                                   @Value("${app.time-zone:America/Bogota}") String zonaHoraria,
                                   NumberingRangeService numberingRangeService,
@@ -92,8 +91,8 @@ public class DocumentoFiscalService {
         this.detallePedidoRepository = detallePedidoRepository;
         this.proveedorTecnologicoClient = proveedorTecnologicoClient;
         this.mapper = mapper;
-        this.establecimiento = establecimiento;
         this.pdfService = pdfService;
+        this.establecimientoResolver = establecimientoResolver;
         this.documentoFiscalTxService = documentoFiscalTxService;
         this.zonaAplicacion = ZoneId.of(zonaHoraria);
         this.numberingRangeService = numberingRangeService;
@@ -270,7 +269,7 @@ public class DocumentoFiscalService {
                 .orElseThrow(() -> new ResponseStatusException(
                         HttpStatus.NOT_FOUND, "Documento fiscal no encontrado"));
 
-        return pdfService.generarPdf(new Factura(doc, establecimiento));
+        return pdfService.generarPdf(new Factura(doc, establecimientoResolver.resolverPara(doc)));
     }
 
 

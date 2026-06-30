@@ -3,6 +3,7 @@ package com.facturacion.negocio.controllers;
 import java.net.URI;
 import java.util.List;
 
+import com.facturacion.negocio.domain.Negocio;
 import com.facturacion.negocio.dto.request.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.facturacion.negocio.dto.response.NegocioPlataformaResponseDTO;
+import com.facturacion.negocio.dto.response.ConfiguracionFacturacionElectronicaResponseDTO;
 import com.facturacion.negocio.services.PlatformNegocioService;
 
 @RestController
@@ -67,6 +69,19 @@ public class PlatformNegocioController {
     @PutMapping("/{id}/desactivar")
     public ResponseEntity<NegocioPlataformaResponseDTO> desactivarNegocio(@PathVariable Long id) {
         return ResponseEntity.ok(NegocioPlataformaResponseDTO.from(platformNegocioService.desactivarNegocio(id)));
+    }
+
+    @GetMapping("/{negocioId}/facturacion-electronica")
+    public ResponseEntity<ConfiguracionFacturacionElectronicaResponseDTO>
+    obtenerConfiguracionFacturacionElectronica(@PathVariable Long negocioId) {
+        ConfiguracionFacturacionElectronicaResponseDTO configuracion =
+                platformNegocioService.obtenerConfiguracionFacturacionElectronica(negocioId);
+
+        if (configuracion == null) {
+            return ResponseEntity.noContent().build();
+        }
+
+        return ResponseEntity.ok(configuracion);
     }
 
     @PostMapping("/facturacion-electronica")
@@ -137,6 +152,15 @@ public class PlatformNegocioController {
 
         return ResponseEntity.noContent()
                 .build();
+    }
+
+    @PutMapping("/{negocioId}/logo")
+    public ResponseEntity<NegocioPlataformaResponseDTO> configurarLogo(@PathVariable Long negocioId,
+                                                                       @RequestBody ConfigurarLogoRequest configurarLogoRequest){
+
+        Negocio negocio = platformNegocioService.configurarLogo(negocioId, configurarLogoRequest.nombreLogo());
+
+        return ResponseEntity.ok(NegocioPlataformaResponseDTO.from(negocio));
     }
 
 

@@ -1,18 +1,18 @@
 package com.facturacion.negocio.controllers;
 
-import com.facturacion.negocio.dto.response.ResumenEstadisticasDTO;
-import com.facturacion.negocio.dto.response.EstadisticasDashboardDTO;
-import com.facturacion.negocio.dto.response.TopProductosVendidosDTO;
-import com.facturacion.negocio.services.ReporteService;
+import java.time.LocalDate;
+
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.time.LocalDate;
+import com.facturacion.negocio.dto.response.EstadisticasDashboardDTO;
+import com.facturacion.negocio.dto.response.ResumenEstadisticasDTO;
+import com.facturacion.negocio.dto.response.TopProductosVendidosDTO;
+import com.facturacion.negocio.services.ReporteService;
 
 @RestController
 @RequestMapping("/stats")
@@ -30,9 +30,11 @@ public class StatsController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fecha,
             @RequestParam(required = false) Integer anio,
             @RequestParam(required = false) Integer desde,
-            @RequestParam(required = false) Integer hasta) {
+                        @RequestParam(required = false) Integer hasta,
+                        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaDesde,
+                        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaHasta) {
         return ResponseEntity.ok(
-                reporteService.obtenerUtilidad(modo, fecha, anio, desde, hasta)
+                                reporteService.obtenerUtilidad(modo, fecha, anio, desde, hasta, fechaDesde, fechaHasta)
         );
     }
 
@@ -43,9 +45,11 @@ public class StatsController {
             @RequestParam(required = false) Integer anio,
             @RequestParam(required = false) Integer desde,
             @RequestParam(required = false) Integer hasta,
+                        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaDesde,
+                        @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaHasta,
             @RequestParam(defaultValue = "5") Integer limite) {
         return ResponseEntity.ok(
-                reporteService.obtenerTopProductosVendidos(modo, fecha, anio, desde, hasta, limite)
+                                reporteService.obtenerTopProductosVendidos(modo, fecha, anio, desde, hasta, fechaDesde, fechaHasta, limite)
         );
     }
 
@@ -56,6 +60,8 @@ public class StatsController {
             @RequestParam(required = false) Integer anio,
             @RequestParam(required = false) Integer desde,
             @RequestParam(required = false) Integer hasta,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaDesde,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fechaHasta,
             @RequestParam(defaultValue = "5") Integer limiteTopProductos,
             @RequestParam(defaultValue = "20") Integer limiteRetiros,
             @RequestParam(defaultValue = "0") Integer paginaCajas,
@@ -69,6 +75,8 @@ public class StatsController {
                         anio,
                         desde,
                         hasta,
+                        fechaDesde,
+                        fechaHasta,
                         limiteTopProductos,
                         limiteRetiros,
                         paginaCajas,

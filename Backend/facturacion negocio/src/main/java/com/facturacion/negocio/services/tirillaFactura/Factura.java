@@ -20,6 +20,8 @@ public class Factura {
     private String empresa;
     private String nit;
     private String direccion;
+    private Long negocioId;
+    private String logoArchivo;
     private String numeroFactura;
     private String fechaHora;
     private String cajero;
@@ -56,6 +58,8 @@ public class Factura {
 
     public Factura(DocumentoFiscal doc, Establecimiento est) {
         this.setEmpresa(est.getName());
+        this.setNegocioId(doc.getNegocio() != null ? doc.getNegocio().getId() : null);
+        this.setLogoArchivo(est.getLogoFileName());
         this.setCajero(doc.getPedido().getUsuario().getNombre());
         this.setDireccion(est.getAddress());
         this.setNit(est.getNit());
@@ -143,6 +147,22 @@ public class Factura {
 
     public void setDireccion(String direccion) {
         this.direccion = direccion;
+    }
+
+    public Long getNegocioId() {
+        return negocioId;
+    }
+
+    public void setNegocioId(Long negocioId) {
+        this.negocioId = negocioId;
+    }
+
+    public String getLogoArchivo() {
+        return logoArchivo;
+    }
+
+    public void setLogoArchivo(String logoArchivo) {
+        this.logoArchivo = logoArchivo;
     }
 
 

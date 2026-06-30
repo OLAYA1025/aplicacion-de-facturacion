@@ -1,0 +1,2 @@
+ALTER TABLE negocio
+    ADD COLUMN IF NOT EXISTS logo_archivo VARCHAR(255);

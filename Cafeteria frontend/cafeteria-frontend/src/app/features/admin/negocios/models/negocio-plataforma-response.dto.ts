@@ -1,3 +1,8 @@
+import {
+  ConfiguracionFacturacionElectronicaResponseDTO,
+  NumberingRangeResponseDTO,
+} from './facturacion-electronica-plataforma.dto';
+
 export interface AdminNegocioResumenDTO {
   id?: number | string;
   nombre?: string | null;
@@ -12,6 +17,8 @@ export interface NegocioPlataformaResponseDTO {
   direccion?: string | null;
   telefono?: string | null;
   activo: boolean;
+  electronicaHabilitada?: boolean | null;
+  logoArchivo?: string | null;
   fechaCreacion?: string | null;
   createdAt?: string | null;
   administradorPrincipal?: AdminNegocioResumenDTO | null;
@@ -19,4 +26,8 @@ export interface NegocioPlataformaResponseDTO {
   adminNombre?: string | null;
   adminUsername?: string | null;
   adminEmail?: string | null;
+  configuracionFacturacionElectronica?: ConfiguracionFacturacionElectronicaResponseDTO | null;
+  facturacionElectronica?: ConfiguracionFacturacionElectronicaResponseDTO | null;
+  numberingRange?: NumberingRangeResponseDTO | null;
+  numberingRanges?: NumberingRangeResponseDTO[] | null;
 }

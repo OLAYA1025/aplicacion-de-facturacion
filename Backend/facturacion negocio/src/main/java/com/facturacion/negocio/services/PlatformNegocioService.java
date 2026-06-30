@@ -8,10 +8,12 @@ import com.facturacion.negocio.dto.request.CrearConfiguracionFeRequest;
 import com.facturacion.negocio.dto.request.CrearNumberingRangeRequest;
 import com.facturacion.negocio.dto.request.EditarConfiguracionFeRequest;
 import com.facturacion.negocio.dto.request.EditarNumberingRangeRequest;
+import com.facturacion.negocio.dto.response.ConfiguracionFacturacionElectronicaResponseDTO;
 import com.facturacion.negocio.enumerated.ProveedorFacturacion;
 import com.facturacion.negocio.repository.ConfiguracionFacturacionElectronicaRepository;
 import com.facturacion.negocio.repository.NumberingRangeRepository;
 import com.facturacion.negocio.security.EncryptionService;
+import com.facturacion.negocio.utils.Normalizador;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -87,6 +89,21 @@ public class PlatformNegocioService {
         Negocio negocio = obtenerNegocio(id);
         negocio.desactivar();
         return negocioRepository.save(negocio);
+    }
+
+    @Transactional(readOnly = true)
+    public ConfiguracionFacturacionElectronicaResponseDTO obtenerConfiguracionFacturacionElectronica(
+            Long negocioId
+    ) {
+        obtenerNegocio(negocioId);
+
+        return configuracionRepository.findByNegocioId(negocioId)
+                .map(configuracion -> ConfiguracionFacturacionElectronicaResponseDTO.from(
+                        configuracion,
+                        numberingRangeRepository.findByConfiguracionIdOrderByIdAsc(configuracion.getId()),
+                        encryptionService
+                ))
+                .orElse(null);
     }
 
     @Transactional
@@ -222,6 +239,24 @@ public class PlatformNegocioService {
     }
 
 
+    public Negocio configurarLogo(Long negocioId, String logoArchivo) {
+        if (negocioId == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "negocioId inválido");
+        }
+
+        if (logoArchivo == null || logoArchivo.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Nombre de archivo inválido");
+        }
+
+        Negocio negocio = negocioRepository.findById(negocioId)
+                .orElseThrow(() -> new ResponseStatusException(
+                        HttpStatus.NOT_FOUND,
+                        "Negocio no encontrado"));
+
+        negocio.setLogoArchivo(Normalizador.normalizar(logoArchivo));
+
+        return negocioRepository.save(negocio);
+    }
 
     private Negocio obtenerNegocio(Long id) {
         if (id == null) {

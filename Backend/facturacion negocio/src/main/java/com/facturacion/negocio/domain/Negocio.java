@@ -22,6 +22,9 @@ public class Negocio {
     @Column(length = 30)
     private String telefono;
 
+    @Column(name = "logo_archivo", length = 255)
+    private String logoArchivo;
+
     @Column(nullable = false)
     private boolean activo;
 
@@ -84,6 +87,14 @@ public class Negocio {
 
     public void setTelefono(String telefono) {
         this.telefono = telefono == null || telefono.isBlank() ? null : telefono.trim();
+    }
+
+    public String getLogoArchivo() {
+        return logoArchivo;
+    }
+
+    public void setLogoArchivo(String logoArchivo) {
+        this.logoArchivo = logoArchivo == null || logoArchivo.isBlank() ? null : logoArchivo.trim();
     }
 
     public boolean isActivo() {

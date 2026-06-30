@@ -11,6 +11,8 @@ public class NegocioPlataformaResponseDTO {
     private String direccion;
     private String telefono;
     private boolean activo;
+    private Boolean electronicaHabilitada;
+    private String logoArchivo;
     private Long administradorId;
     private String administradorUsername;
 
@@ -31,6 +33,8 @@ public class NegocioPlataformaResponseDTO {
         dto.direccion = negocio.getDireccion();
         dto.telefono = negocio.getTelefono();
         dto.activo = negocio.isActivo();
+        dto.electronicaHabilitada = negocio.isElectronicaHabilitada();
+        dto.logoArchivo = negocio.getLogoArchivo();
         return dto;
     }
 
@@ -58,6 +62,10 @@ public class NegocioPlataformaResponseDTO {
         return activo;
     }
 
+    public Boolean getElectronicaHabilitada() {
+        return electronicaHabilitada;
+    }
+
     public Long getAdministradorId() {
         return administradorId;
     }
@@ -65,4 +73,9 @@ public class NegocioPlataformaResponseDTO {
     public String getAdministradorUsername() {
         return administradorUsername;
     }
+
+    public String getLogoArchivo() {
+        return logoArchivo;
+    }
+
 }

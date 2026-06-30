@@ -7,6 +7,7 @@ public class Establecimiento {
     private String address;
     private String phone_number;
     private String email;
+    private String logoFileName;
     //Factus
     private Integer municipality_id;
     // DIAN (código DANE)
@@ -92,6 +93,14 @@ public class Establecimiento {
         this.municipality_id = municipality_id;
     }
 
+    public String getLogoFileName() {
+        return logoFileName;
+    }
+
+    public void setLogoFileName(String logoFileName) {
+        this.logoFileName = logoFileName;
+    }
+
     public String getMunicipality_code_dian() {
         return municipality_code_dian;
     }
@@ -109,6 +118,7 @@ public class Establecimiento {
                 ", address='" + address + '\'' +
                 ", phone_number='" + phone_number + '\'' +
                 ", email='" + email + '\'' +
+                ", logoFileName='" + logoFileName + '\'' +
                 ", municipality_id=" + municipality_id +
                 ", municipality_code_dian='" + municipality_code_dian + '\'' +
                 '}';

@@ -1,5 +1,26 @@
 package com.facturacion.negocio.services;
 
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.Optional;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpStatus;
+import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.web.server.ResponseStatusException;
+
 import com.facturacion.negocio.domain.Caja;
 import com.facturacion.negocio.domain.Categoria;
 import com.facturacion.negocio.domain.DetallePedido;
@@ -17,27 +38,6 @@ import com.facturacion.negocio.repository.CajaRepository;
 import com.facturacion.negocio.repository.MovimientoCajaRepository;
 import com.facturacion.negocio.repository.PedidoRepository;
 import com.facturacion.negocio.repository.UsuarioRepository;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.http.HttpStatus;
-import org.springframework.test.util.ReflectionTestUtils;
-import org.springframework.web.server.ResponseStatusException;
-
-import java.math.BigDecimal;
-import java.util.List;
-import java.util.Optional;
-
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class CajaServiceTest {
@@ -134,17 +134,22 @@ class CajaServiceTest {
         void debeCerrarCajaYRegistrarRetiroCuandoEsValido() {
             Caja cajaAbierta = cajaAbierta(10L, new BigDecimal("100000.00"));
             Usuario usuarioCierre = usuarioActivo(2L, "cierre");
-            Pedido pedidoPagado = pedidoPagado(
+            Pedido pedidoEfectivo = pedidoPagado(
                     cajaAbierta,
-                    new BigDecimal("12000.00"),
+                new BigDecimal("50000.00"),
                     MetodoPago.EFECTIVO,
                     usuarioActivo(3L, "cajero")
+            );
+            Pedido pedidoTransferencia = pedidoPagado(
+                cajaAbierta,
+                new BigDecimal("40000.00"),
+                MetodoPago.TRANSFERENCIA,
+                usuarioActivo(3L, "cajero")
             );
 
             when(cajaRepository.obtenerCajaAbierta(negocio)).thenReturn(Optional.of(cajaAbierta));
             when(usuarioRepository.findByIdAndNegocio(2L, negocio)).thenReturn(Optional.of(usuarioCierre));
-            when(pedidoRepository.findPedidosByCaja(10L, negocio)).thenReturn(List.of(pedidoPagado));
-            when(cajaRepository.calcularSaldoPorCaja(10L, negocio)).thenReturn(new BigDecimal("50000.00"));
+            when(pedidoRepository.findPedidosByCaja(10L, negocio)).thenReturn(List.of(pedidoEfectivo, pedidoTransferencia));
             when(movimientoCajaRepository.save(any(MovimientoCaja.class)))
                     .thenAnswer(invocation -> invocation.getArgument(0));
             when(cajaRepository.save(any(Caja.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -153,13 +158,43 @@ class CajaServiceTest {
 
             assertThat(cajaCerrada.isAbierta()).isFalse();
             assertThat(cajaCerrada.getMontoFinal()).isEqualByComparingTo("130000.00");
-            assertThat(cajaCerrada.getUtilidad()).isEqualByComparingTo("50000.00");
+            assertThat(cajaCerrada.getUtilidad()).isEqualByComparingTo("90000.00");
             assertThat(cajaCerrada.getUsuarioCierre()).isEqualTo(usuarioCierre);
 
             ArgumentCaptor<MovimientoCaja> movimientoCaptor = ArgumentCaptor.forClass(MovimientoCaja.class);
             verify(movimientoCajaRepository).save(movimientoCaptor.capture());
             assertThat(movimientoCaptor.getValue().getTipo()).isEqualTo(TipoMovimiento.RETIRO);
             assertThat(movimientoCaptor.getValue().getMonto()).isEqualByComparingTo("20000.00");
+        }
+
+        @Test
+        void debeRechazarRetiroCuandoSuperaElEfectivoDisponible() {
+            Caja cajaAbierta = cajaAbierta(10L, BigDecimal.ZERO);
+            Usuario usuarioCierre = usuarioActivo(2L, "cierre");
+            Pedido pedidoEfectivo = pedidoPagado(
+                cajaAbierta,
+                new BigDecimal("50000.00"),
+                MetodoPago.EFECTIVO,
+                usuarioActivo(3L, "cajero")
+            );
+            Pedido pedidoTransferencia = pedidoPagado(
+                cajaAbierta,
+                new BigDecimal("50000.00"),
+                MetodoPago.TRANSFERENCIA,
+                usuarioActivo(3L, "cajero")
+            );
+
+            when(cajaRepository.obtenerCajaAbierta(negocio)).thenReturn(Optional.of(cajaAbierta));
+            when(usuarioRepository.findByIdAndNegocio(2L, negocio)).thenReturn(Optional.of(usuarioCierre));
+            when(pedidoRepository.findPedidosByCaja(10L, negocio)).thenReturn(List.of(pedidoEfectivo, pedidoTransferencia));
+
+            assertThatThrownBy(() -> cajaService.cerrarCaja(2L, new BigDecimal("60000.00")))
+                .isInstanceOf(ResponseStatusException.class)
+                .satisfies(ex -> {
+                ResponseStatusException response = (ResponseStatusException) ex;
+                assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
+                assertThat(response.getReason()).isEqualTo("Saldo insuficiente para realizar el retiro");
+                });
         }
     }
 
@@ -194,7 +229,7 @@ class CajaServiceTest {
             assertThat(resumen.getIngresosTarjeta()).isEqualByComparingTo("70000.00");
             assertThat(resumen.getEgresos()).isEqualByComparingTo("15000.00");
             assertThat(resumen.getRetiros()).isEqualByComparingTo("5000.00");
-            assertThat(resumen.getSaldo()).isEqualByComparingTo("220000.00");
+            assertThat(resumen.getSaldo()).isEqualByComparingTo("110000.00");
         }
     }
 

@@ -1,8 +1,30 @@
 package com.facturacion.negocio.services;
 
-import com.facturacion.negocio.domain.Negocio;
+import java.math.BigDecimal;
+import java.time.DayOfWeek;
+import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
+import java.time.temporal.ChronoUnit;
+import java.time.temporal.TemporalAdjusters;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.web.server.ResponseStatusException;
+
 import com.facturacion.negocio.domain.Caja;
 import com.facturacion.negocio.domain.MovimientoCaja;
+import com.facturacion.negocio.domain.Negocio;
 import com.facturacion.negocio.domain.Usuario;
 import com.facturacion.negocio.dto.response.EstadisticasDashboardDTO;
 import com.facturacion.negocio.dto.response.HistorialCajaCerradaDTO;
@@ -12,28 +34,16 @@ import com.facturacion.negocio.dto.response.ResumenEstadisticasDTO;
 import com.facturacion.negocio.dto.response.TopProductoVendidoDTO;
 import com.facturacion.negocio.dto.response.TopProductosVendidosDTO;
 import com.facturacion.negocio.enumerated.EstadoCaja;
+import com.facturacion.negocio.enumerated.EstadoCompra;
 import com.facturacion.negocio.enumerated.TipoMovimiento;
 import com.facturacion.negocio.repository.CajaRepository;
+import com.facturacion.negocio.repository.CompraRepository;
 import com.facturacion.negocio.repository.DetallePedidoRepository;
+import com.facturacion.negocio.repository.IngresosPorMetodoProjection;
 import com.facturacion.negocio.repository.MovimientoCajaRepository;
 import com.facturacion.negocio.repository.TopProductoVendidoProjection;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
-import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
-
-import java.math.BigDecimal;
-import java.time.DayOfWeek;
-import java.time.Instant;
-import java.time.LocalDate;
-import java.time.ZoneId;
-import java.time.temporal.TemporalAdjusters;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Locale;
+import com.facturacion.negocio.repository.TotalesMovimientoPorTipoProjection;
+import com.facturacion.negocio.repository.UtilidadDiariaProjection;
 
 @Service
 public class ReporteService {
@@ -43,17 +53,20 @@ public class ReporteService {
             "Jul", "Ago", "Sep", "Oct", "Nov", "Dic");
 
     private final CajaRepository cajaRepository;
+    private final CompraRepository compraRepository;
     private final DetallePedidoRepository detallePedidoRepository;
     private final MovimientoCajaRepository movimientoCajaRepository;
     private final ZoneId zonaAplicacion;
     private final TenantService tenantService;
 
     public ReporteService(CajaRepository cajaRepository,
+                          CompraRepository compraRepository,
                           DetallePedidoRepository detallePedidoRepository,
                           MovimientoCajaRepository movimientoCajaRepository,
                           TenantService tenantService,
                           @Value("${app.time-zone:America/Bogota}") String zonaHoraria) {
         this.cajaRepository = cajaRepository;
+        this.compraRepository = compraRepository;
         this.detallePedidoRepository = detallePedidoRepository;
         this.movimientoCajaRepository = movimientoCajaRepository;
         this.tenantService = tenantService;
@@ -64,7 +77,9 @@ public class ReporteService {
                                                   LocalDate fecha,
                                                   Integer anio,
                                                   Integer desde,
-                                                  Integer hasta) {
+                                                  Integer hasta,
+                                                  LocalDate fechaDesde,
+                                                  LocalDate fechaHasta) {
         if (modo == null || modo.isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "modo es requerido");
         }
@@ -74,9 +89,10 @@ public class ReporteService {
             case "semana" -> construirResumenSemana(fecha);
             case "mes" -> construirResumenMes(anio);
             case "anio", "año" -> construirResumenAnio(desde, hasta);
+            case "personalizado" -> construirResumenPersonalizado(fechaDesde, fechaHasta);
             default -> throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
-                    "modo invalido. Valores permitidos: semana, mes, anio"
+                    "modo invalido. Valores permitidos: semana, mes, anio, personalizado"
             );
         };
     }
@@ -86,6 +102,8 @@ public class ReporteService {
                                                                  Integer anio,
                                                                  Integer desde,
                                                                  Integer hasta,
+                                                                 LocalDate fechaDesde,
+                                                                 LocalDate fechaHasta,
                                                                  Integer limiteTopProductos,
                                                                  Integer limiteRetiros,
                                                                  Integer paginaCajas,
@@ -111,17 +129,19 @@ public class ReporteService {
         validarTamanio("tamanioCajas", tamanioHistorialCajas);
         validarTamanio("tamanioRetiros", tamanioHistorialRetiros);
 
-        Periodo periodo = resolverPeriodoPorModo(modoNormalizado, fecha, anio, desde, hasta);
+        Periodo periodo = resolverPeriodoPorModo(modoNormalizado, fecha, anio, desde, hasta, fechaDesde, fechaHasta);
         LocalDate fechaFin = periodo.finExclusivo().minusDays(1);
         Negocio negocio = tenantService.getNegocioActual();
 
-        ResumenEstadisticasDTO graficoUtilidades = obtenerUtilidad(modoNormalizado, fecha, anio, desde, hasta);
+        ResumenEstadisticasDTO graficoUtilidades = obtenerUtilidad(modoNormalizado, fecha, anio, desde, hasta, fechaDesde, fechaHasta);
         TopProductosVendidosDTO graficoTopProductos = obtenerTopProductosVendidos(
                 modoNormalizado,
                 fecha,
                 anio,
                 desde,
                 hasta,
+            fechaDesde,
+            fechaHasta,
                 limiteTop
         );
 
@@ -147,11 +167,24 @@ public class ReporteService {
 
         PaginacionDTO paginacionCajasCerradas = construirPaginacion(paginaHistorialCajasCerradas);
 
-        BigDecimal totalRetiros = valorSeguro(movimientoCajaRepository.calcularTotalByMovimientoAndFechaRango(
-                TipoMovimiento.RETIRO,
-                negocio,
-                inicioDia(periodo.inicio()),
-                inicioDia(periodo.finExclusivo())
+        Map<TipoMovimiento, BigDecimal> totalesMovimientos = new LinkedHashMap<>();
+        for (TotalesMovimientoPorTipoProjection item : movimientoCajaRepository.calcularTotalesPorTipoYFechaRango(
+            List.of(TipoMovimiento.RETIRO, TipoMovimiento.EGRESO),
+            negocio,
+            inicioDia(periodo.inicio()),
+            inicioDia(periodo.finExclusivo())
+        )) {
+            totalesMovimientos.put(item.getTipo(), valorSeguro(item.getTotal()));
+        }
+
+        BigDecimal totalRetiros = totalesMovimientos.getOrDefault(TipoMovimiento.RETIRO, BigDecimal.ZERO);
+        BigDecimal totalEgresos = totalesMovimientos.getOrDefault(TipoMovimiento.EGRESO, BigDecimal.ZERO);
+
+        BigDecimal totalGastos = valorSeguro(compraRepository.calcularTotalConfirmadasPorFechaConfirmacionRango(
+            EstadoCompra.CONFIRMADA,
+            negocio,
+            inicioDia(periodo.inicio()),
+            inicioDia(periodo.finExclusivo())
         ));
 
         Page<MovimientoCaja> paginaHistorialRetirosMovimientos = movimientoCajaRepository
@@ -169,6 +202,19 @@ public class ReporteService {
 
         PaginacionDTO paginacionRetiros = construirPaginacion(paginaHistorialRetirosMovimientos);
 
+        IngresosPorMetodoProjection ingresosPorMetodo = detallePedidoRepository.findIngresosTransferenciaYTarjeta(
+            inicioDia(periodo.inicio()),
+            inicioDia(periodo.finExclusivo()),
+            negocio
+        );
+
+        BigDecimal ingresosTransferencia = valorSeguro(
+            ingresosPorMetodo != null ? ingresosPorMetodo.getIngresosTransferencia() : null
+        );
+        BigDecimal ingresosTarjeta = valorSeguro(
+            ingresosPorMetodo != null ? ingresosPorMetodo.getIngresosTarjeta() : null
+        );
+
         return new EstadisticasDashboardDTO(
                 modoNormalizado,
                 periodo.inicio(),
@@ -176,6 +222,10 @@ public class ReporteService {
                 valorSeguro(graficoUtilidades.getTotal()),
                 totalCajasCerradas,
                 totalRetiros,
+                totalEgresos,
+                totalGastos,
+                ingresosTransferencia,
+                ingresosTarjeta,
                 graficoUtilidades,
                 graficoTopProductos,
                 historialCajasCerradas,
@@ -190,6 +240,8 @@ public class ReporteService {
                                                                Integer anio,
                                                                Integer desde,
                                                                Integer hasta,
+                                                               LocalDate fechaDesde,
+                                                               LocalDate fechaHasta,
                                                                Integer limite) {
         if (modo == null || modo.isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "modo es requerido");
@@ -201,7 +253,7 @@ public class ReporteService {
         }
 
         String modoNormalizado = normalizarModo(modo);
-        Periodo periodo = resolverPeriodoPorModo(modoNormalizado, fecha, anio, desde, hasta);
+        Periodo periodo = resolverPeriodoPorModo(modoNormalizado, fecha, anio, desde, hasta, fechaDesde, fechaHasta);
         Negocio negocio = tenantService.getNegocioActual();
 
         List<TopProductoVendidoProjection> topProductos = detallePedidoRepository.findTopProductosVendidos(
@@ -245,13 +297,19 @@ public class ReporteService {
         LocalDate finSemanaExclusivo = periodo.finExclusivo();
 
         BigDecimal[] valores = inicializarEnCero(7);
-        List<Caja> cajas = buscarCajasCerradas(inicioSemana, finSemanaExclusivo);
-        for (Caja caja : cajas) {
-            if (caja.getFechaCierre() == null) {
+        List<UtilidadDiariaProjection> utilidades = cajaRepository.calcularUtilidadDiariaEnRango(
+                tenantService.getNegocioActual().getId(),
+                inicioDia(inicioSemana),
+                inicioDia(finSemanaExclusivo)
+        );
+        for (UtilidadDiariaProjection item : utilidades) {
+            if (item.getDia() == null) {
                 continue;
             }
-            int index = caja.getFechaCierre().atZone(zonaAplicacion).getDayOfWeek().getValue() - 1;
-            valores[index] = valores[index].add(valorSeguro(caja.getUtilidad()));
+            int index = item.getDia().getDayOfWeek().getValue() - 1;
+            if (index >= 0 && index < valores.length) {
+                valores[index] = valores[index].add(valorSeguro(item.getTotal()));
+            }
         }
 
         List<BigDecimal> valoresLista = Arrays.asList(valores);
@@ -271,13 +329,19 @@ public class ReporteService {
         LocalDate finAnioExclusivo = periodo.finExclusivo();
 
         BigDecimal[] valores = inicializarEnCero(12);
-        List<Caja> cajas = buscarCajasCerradas(inicioAnio, finAnioExclusivo);
-        for (Caja caja : cajas) {
-            if (caja.getFechaCierre() == null) {
+        List<UtilidadDiariaProjection> utilidades = cajaRepository.calcularUtilidadDiariaEnRango(
+                tenantService.getNegocioActual().getId(),
+                inicioDia(inicioAnio),
+                inicioDia(finAnioExclusivo)
+        );
+        for (UtilidadDiariaProjection item : utilidades) {
+            if (item.getDia() == null) {
                 continue;
             }
-            int index = caja.getFechaCierre().atZone(zonaAplicacion).getMonthValue() - 1;
-            valores[index] = valores[index].add(valorSeguro(caja.getUtilidad()));
+            int index = item.getDia().getMonthValue() - 1;
+            if (index >= 0 && index < valores.length) {
+                valores[index] = valores[index].add(valorSeguro(item.getTotal()));
+            }
         }
 
         List<BigDecimal> valoresLista = Arrays.asList(valores);
@@ -298,14 +362,18 @@ public class ReporteService {
 
         int cantidadAnios = (hasta - desde) + 1;
         BigDecimal[] valores = inicializarEnCero(cantidadAnios);
-        List<Caja> cajas = buscarCajasCerradas(inicio, finExclusivo);
-        for (Caja caja : cajas) {
-            if (caja.getFechaCierre() == null) {
+        List<UtilidadDiariaProjection> utilidades = cajaRepository.calcularUtilidadDiariaEnRango(
+                tenantService.getNegocioActual().getId(),
+                inicioDia(inicio),
+                inicioDia(finExclusivo)
+        );
+        for (UtilidadDiariaProjection item : utilidades) {
+            if (item.getDia() == null) {
                 continue;
             }
-            int index = caja.getFechaCierre().atZone(zonaAplicacion).getYear() - desde;
+            int index = item.getDia().getYear() - desde;
             if (index >= 0 && index < cantidadAnios) {
-                valores[index] = valores[index].add(valorSeguro(caja.getUtilidad()));
+                valores[index] = valores[index].add(valorSeguro(item.getTotal()));
             }
         }
 
@@ -322,6 +390,48 @@ public class ReporteService {
                 labels,
                 valoresLista,
                 sumar(valoresLista)
+        );
+    }
+
+    private ResumenEstadisticasDTO construirResumenPersonalizado(LocalDate fechaDesde, LocalDate fechaHasta) {
+        Periodo periodo = resolverPeriodoPersonalizado(fechaDesde, fechaHasta);
+        LocalDate inicio = periodo.inicio();
+        LocalDate finExclusivo = periodo.finExclusivo();
+
+        long dias = ChronoUnit.DAYS.between(inicio, finExclusivo);
+        if (dias <= 0 || dias > Integer.MAX_VALUE) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "rango de fechas invalido");
+        }
+
+        Map<LocalDate, BigDecimal> utilidadesPorDia = new LinkedHashMap<>();
+        List<UtilidadDiariaProjection> utilidades = cajaRepository.calcularUtilidadDiariaEnRango(
+                tenantService.getNegocioActual().getId(),
+                inicioDia(inicio),
+                inicioDia(finExclusivo)
+        );
+
+        for (UtilidadDiariaProjection item : utilidades) {
+            if (item.getDia() != null) {
+                utilidadesPorDia.put(item.getDia(), valorSeguro(item.getTotal()));
+            }
+        }
+
+        List<String> labels = new ArrayList<>((int) dias);
+        List<BigDecimal> valores = new ArrayList<>((int) dias);
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM");
+
+        for (LocalDate fechaActual = inicio; !fechaActual.isEqual(finExclusivo); fechaActual = fechaActual.plusDays(1)) {
+            labels.add(fechaActual.format(formatter));
+            valores.add(utilidadesPorDia.getOrDefault(fechaActual, BigDecimal.ZERO));
+        }
+
+        return new ResumenEstadisticasDTO(
+                "personalizado",
+                inicio,
+                finExclusivo.minusDays(1),
+                labels,
+                valores,
+                sumar(valores)
         );
     }
 
@@ -387,15 +497,6 @@ public class ReporteService {
         return "Sin nombre";
     }
 
-    private List<Caja> buscarCajasCerradas(LocalDate desdeInclusive, LocalDate hastaExclusive) {
-        return cajaRepository.findByEstadoAndFechaCierreGreaterThanEqualAndFechaCierreLessThanAndNegocio(
-                EstadoCaja.CERRADA,
-                inicioDia(desdeInclusive),
-                inicioDia(hastaExclusive),
-                tenantService.getNegocioActual()
-        );
-    }
-
     private Instant inicioDia(LocalDate fecha) {
         return fecha.atStartOfDay(zonaAplicacion).toInstant();
     }
@@ -440,10 +541,10 @@ public class ReporteService {
         if ("año".equals(modoNormalizado)) {
             return "anio";
         }
-        if (!List.of("semana", "mes", "anio").contains(modoNormalizado)) {
+        if (!List.of("semana", "mes", "anio", "personalizado").contains(modoNormalizado)) {
             throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
-                    "modo invalido. Valores permitidos: semana, mes, anio"
+                "modo invalido. Valores permitidos: semana, mes, anio, personalizado"
             );
         }
         return modoNormalizado;
@@ -453,16 +554,29 @@ public class ReporteService {
                                            LocalDate fecha,
                                            Integer anio,
                                            Integer desde,
-                                           Integer hasta) {
+                                           Integer hasta,
+                                           LocalDate fechaDesde,
+                                           LocalDate fechaHasta) {
         return switch (modo) {
             case "semana" -> resolverPeriodoSemana(fecha);
             case "mes" -> resolverPeriodoMes(anio);
             case "anio" -> resolverPeriodoAnio(desde, hasta);
+            case "personalizado" -> resolverPeriodoPersonalizado(fechaDesde, fechaHasta);
             default -> throw new ResponseStatusException(
                     HttpStatus.BAD_REQUEST,
-                    "modo invalido. Valores permitidos: semana, mes, anio"
+                    "modo invalido. Valores permitidos: semana, mes, anio, personalizado"
             );
         };
+    }
+
+    private Periodo resolverPeriodoPersonalizado(LocalDate fechaDesde, LocalDate fechaHasta) {
+        if (fechaDesde == null || fechaHasta == null) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "fechaDesde y fechaHasta son requeridas cuando modo=personalizado");
+        }
+        if (fechaDesde.isAfter(fechaHasta)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "fechaDesde no puede ser mayor a fechaHasta");
+        }
+        return new Periodo(fechaDesde, fechaHasta.plusDays(1));
     }
 
     private void validarPaginacion(String campo, int pagina) {

@@ -9,12 +9,15 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.Optional;
+import java.util.List;
 
 public interface NumberingRangeRepository extends JpaRepository<NumberingRange, Long> {
 
     Optional<NumberingRange> findByIdAndNegocioId(Long id, Long negocioId);
 
     Optional<NumberingRange> findFirstByConfiguracionIdAndActiveTrueOrderByIdAsc(Long configuracionId);
+
+    List<NumberingRange> findByConfiguracionIdOrderByIdAsc(Long configuracionId);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("""

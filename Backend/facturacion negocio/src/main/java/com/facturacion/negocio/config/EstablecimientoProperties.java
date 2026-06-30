@@ -16,6 +16,7 @@ public class EstablecimientoProperties {
     private String direccion;
     private String telefono;
     private String email;
+    private String logoArchivo;
     private Integer municipaly;
     private String municipalityCodeDian;
 
@@ -28,6 +29,7 @@ public class EstablecimientoProperties {
         establecimiento.setAddress(props.getDireccion());
         establecimiento.setPhone_number(props.getTelefono());
         establecimiento.setEmail(props.getEmail());
+        establecimiento.setLogoFileName(props.getLogoArchivo());
         establecimiento.setMunicipality_id(props.getMunicipaly());
         establecimiento.setMunicipality_code_dian(props.getMunicipalityCodeDian());
         return establecimiento;
@@ -79,6 +81,14 @@ public class EstablecimientoProperties {
 
     public void setEmail(String email) {
         this.email = email;
+    }
+
+    public String getLogoArchivo() {
+        return logoArchivo;
+    }
+
+    public void setLogoArchivo(String logoArchivo) {
+        this.logoArchivo = logoArchivo;
     }
 
     public Integer getMunicipaly() {

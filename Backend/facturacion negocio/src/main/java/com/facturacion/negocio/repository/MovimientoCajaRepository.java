@@ -1,11 +1,10 @@
 package com.facturacion.negocio.repository;
 
-import com.facturacion.negocio.domain.Caja;
-import com.facturacion.negocio.domain.MovimientoCaja;
-import com.facturacion.negocio.domain.Negocio;
-import com.facturacion.negocio.domain.Usuario;
-import com.facturacion.negocio.dto.response.MovimientoCajaResponseDTO;
-import com.facturacion.negocio.enumerated.TipoMovimiento;
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.util.List;
+import java.util.Optional;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
@@ -14,10 +13,12 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.math.BigDecimal;
-import java.time.Instant;
-import java.util.List;
-import java.util.Optional;
+import com.facturacion.negocio.domain.Caja;
+import com.facturacion.negocio.domain.MovimientoCaja;
+import com.facturacion.negocio.domain.Negocio;
+import com.facturacion.negocio.domain.Usuario;
+import com.facturacion.negocio.dto.response.MovimientoCajaResponseDTO;
+import com.facturacion.negocio.enumerated.TipoMovimiento;
 
 @Repository
 public interface MovimientoCajaRepository extends JpaRepository<MovimientoCaja, Long> {
@@ -60,6 +61,23 @@ public interface MovimientoCajaRepository extends JpaRepository<MovimientoCaja, 
                                                        @Param("negocio") Negocio negocio,
                                                        @Param("desde") Instant desde,
                                                        @Param("hasta") Instant hasta);
+
+    @Query("""
+            SELECT m.tipo AS tipo,
+                   COALESCE(SUM(m.monto), 0) AS total
+            FROM MovimientoCaja m
+            WHERE m.tipo IN :tipos
+              AND m.negocio = :negocio
+              AND m.fecha >= :desde
+              AND m.fecha < :hasta
+            GROUP BY m.tipo
+            """)
+    List<TotalesMovimientoPorTipoProjection> calcularTotalesPorTipoYFechaRango(
+            @Param("tipos") List<TipoMovimiento> tipos,
+            @Param("negocio") Negocio negocio,
+            @Param("desde") Instant desde,
+            @Param("hasta") Instant hasta
+    );
 
     @EntityGraph(attributePaths = {"usuario", "caja"})
     @Query("""

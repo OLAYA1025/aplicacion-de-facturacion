@@ -86,6 +86,32 @@
             </div>
           </div>
 
+          <div *ngIf="modoSeleccionado === 'personalizado'" class="sm:col-span-2 lg:col-span-2">
+            <div class="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <div>
+                <label class="mb-2 block text-xs font-semibold uppercase tracking-wide text-gray-500">
+                  Fecha desde
+                </label>
+                <input
+                  type="date"
+                  [(ngModel)]="fechaDesdePersonalizada"
+                  class="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+                />
+              </div>
+
+              <div>
+                <label class="mb-2 block text-xs font-semibold uppercase tracking-wide text-gray-500">
+                  Fecha hasta
+                </label>
+                <input
+                  type="date"
+                  [(ngModel)]="fechaHastaPersonalizada"
+                  class="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+                />
+              </div>
+            </div>
+          </div>
+
           <div class="flex items-end">
             <button
               type="button"
@@ -132,26 +158,48 @@
     </section>
 
     <section class="grid grid-cols-1 gap-4 md:grid-cols-3">
-      <article class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-        <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Total de utilidades</p>
+      <article class="border-t-4 border-gray-500 dark:bg-gray-900/60 dark:backdrop-blur-md bg-white rounded-xl shadow-sm p-5">
+        <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Total de ingresos</p>
         <p class="mt-2 text-2xl font-bold text-gray-900 sm:text-3xl">{{ formatearMoneda(data.totalUtilidades) }}</p>
       </article>
+
+      <article class="border-t-4  border-red-600 dark:backdrop-blur-md dark:bg-gray-900/60 bg-white rounded-xl shadow-sm p-5">
+        <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">total de egresos</p>
+        <p class="mt-2 text-2xl font-bold text-gray-900 sm:text-3xl">{{ formatearMoneda(data.totalEgresos) }}</p>
+      </article>
+
+      <article class="border-t-4  border-red-600 dark:backdrop-blur-md dark:bg-gray-900/60 bg-white rounded-xl shadow-sm p-5">
+        <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">total de gastos</p>
+        <p class="mt-2 text-2xl font-bold text-gray-900 sm:text-3xl">{{ formatearMoneda(data.totalGastos) }}</p>
+      </article>
+
+      <article class="border-t-4 border-emerald-500 dark:bg-gray-900/60 dark:backdrop-blur-md bg-white rounded-xl shadow-sm p-5">
+        <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Total de retiros</p>
+        <p class="mt-2 text-2xl font-bold text-gray-900 sm:text-3xl">{{ formatearMoneda(data.totalRetiros) }}</p>
+      </article>
+
+      <article class="border-t-4 border-emerald-500 dark:bg-gray-900/60 dark:backdrop-blur-md bg-white rounded-xl shadow-sm p-5">
+        <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">ingresos por transferencia</p>
+        <p class="mt-2 text-2xl font-bold text-gray-900 sm:text-3xl">{{ formatearMoneda(data.ingresosTransferencia) }}</p>
+      </article>
+
+      <article class="border-t-4 border-emerald-500 dark:bg-gray-900/60 dark:backdrop-blur-md bg-white rounded-xl shadow-sm p-5">
+        <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">ingresos por tarjeta</p>
+        <p class="mt-2 text-2xl font-bold text-gray-900 sm:text-3xl">{{ formatearMoneda(data.ingresosTarjeta) }}</p>
+      </article>
+
 
       <article class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
         <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Total de cajas cerradas</p>
         <p class="mt-2 text-2xl font-bold text-gray-900 sm:text-3xl">{{ data.totalCajasCerradas }}</p>
       </article>
-
-      <article class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm">
-        <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Total de retiros</p>
-        <p class="mt-2 text-2xl font-bold text-gray-900 sm:text-3xl">{{ formatearMoneda(data.totalRetiros) }}</p>
-      </article>
+      
     </section>
 
     <section class="grid grid-cols-1 gap-6 xl:grid-cols-5">
       <article class="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm xl:col-span-3">
         <div class="mb-4">
-          <h2 class="text-lg font-bold text-gray-900">Utilidades</h2>
+          <h2 class="text-lg font-bold text-gray-900">Ingresos totales</h2>
           <p class="text-sm text-gray-500">Grafico de barras por periodo seleccionado</p>
         </div>
 
@@ -194,7 +242,7 @@
                       >
                         <div class="flex items-center gap-2 whitespace-nowrap">
                           <span class="h-2 w-2 rounded-full bg-indigo-500"></span>
-                          <span class="text-gray-600">Utilidad:</span>
+                          <span class="text-gray-600">Ingreso:</span>
                           <span class="font-semibold text-gray-900">{{ formatearMoneda(barra.value) }}</span>
                         </div>
                       </div>

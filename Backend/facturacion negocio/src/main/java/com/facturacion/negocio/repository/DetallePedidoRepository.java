@@ -45,4 +45,30 @@ public interface DetallePedidoRepository extends JpaRepository<DetallePedido, Lo
     List<PedidoTotalProjection> findTotalesPorPedidoIds(@Param("pedidoIds") List<Long> pedidoIds,
                                                         @Param("negocio") Negocio negocio);
 
+                @Query("""
+                                                SELECT COALESCE(SUM(CASE
+                                                                                                                                 WHEN d.pedido.metodoPago = com.facturacion.negocio.enumerated.MetodoPago.TRANSFERENCIA
+                                                                                                                                                 THEN d.precioUnitario * d.cantidad
+                                                                                                                                 ELSE 0
+                                                                                                                         END), 0) AS ingresosTransferencia,
+                                                                         COALESCE(SUM(CASE
+                                                                                                                                 WHEN d.pedido.metodoPago IN (
+                                                                                                                                                        com.facturacion.negocio.enumerated.MetodoPago.TARJETA_CREDITO,
+                                                                                                                                                        com.facturacion.negocio.enumerated.MetodoPago.TARJETA_DEBITO
+                                                                                                                                 )
+                                                                                                                                                 THEN d.precioUnitario * d.cantidad
+                                                                                                                                 ELSE 0
+                                                                                                                         END), 0) AS ingresosTarjeta
+                                                FROM DetallePedido d
+                                                WHERE d.pedido.estado = com.facturacion.negocio.enumerated.EstadoPedido.PAGO
+                                                        AND d.negocio = :negocio
+                                                        AND d.pedido.fecha >= :desde
+                                                        AND d.pedido.fecha < :hasta
+                                                """)
+                IngresosPorMetodoProjection findIngresosTransferenciaYTarjeta(
+                                                @Param("desde") Instant desde,
+                                                @Param("hasta") Instant hasta,
+                                                @Param("negocio") Negocio negocio
+                );
+
 }

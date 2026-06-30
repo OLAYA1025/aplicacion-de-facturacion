@@ -1,5 +1,14 @@
 package com.facturacion.negocio.services;
 
+import java.math.BigDecimal;
+import java.util.List;
+import java.util.Optional;
+
+import org.springframework.http.HttpStatus;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
+
 import com.facturacion.negocio.domain.Caja;
 import com.facturacion.negocio.domain.MovimientoCaja;
 import com.facturacion.negocio.domain.Negocio;
@@ -9,15 +18,10 @@ import com.facturacion.negocio.dto.response.CajaResumenResponseDTO;
 import com.facturacion.negocio.enumerated.EstadoPedido;
 import com.facturacion.negocio.enumerated.MetodoPago;
 import com.facturacion.negocio.enumerated.TipoMovimiento;
-import com.facturacion.negocio.repository.*;
-import org.springframework.transaction.annotation.Transactional;
-import org.springframework.http.HttpStatus;
-import org.springframework.stereotype.Service;
-import org.springframework.web.server.ResponseStatusException;
-
-import java.math.BigDecimal;
-import java.util.List;
-import java.util.Optional;
+import com.facturacion.negocio.repository.CajaRepository;
+import com.facturacion.negocio.repository.MovimientoCajaRepository;
+import com.facturacion.negocio.repository.PedidoRepository;
+import com.facturacion.negocio.repository.UsuarioRepository;
 
 @Service
 public class CajaService {
@@ -186,24 +190,36 @@ public class CajaService {
             );
         }
 
-        // saldo de movimientos (sin monto inicial)
-        BigDecimal saldoMovimientos = cajaRepository.calcularSaldoPorCaja(caja.getId(), negocio);
-        if (saldoMovimientos == null) {
-            saldoMovimientos = BigDecimal.ZERO;
-        }
         BigDecimal montoInicial = caja.getMontoInicial();
         if (montoInicial == null) {
             montoInicial = BigDecimal.ZERO;
         }
 
-        // saldo total antes del retiro
-        BigDecimal saldoActual = montoInicial.add(saldoMovimientos);
+        BigDecimal ingresosEfectivo = calcularIngresosPorMetodo(pedidos, MetodoPago.EFECTIVO);
+        BigDecimal ingresosTransferencia = calcularIngresosPorMetodo(pedidos, MetodoPago.TRANSFERENCIA);
+        BigDecimal ingresosTarjetaCredito = calcularIngresosPorMetodo(pedidos, MetodoPago.TARJETA_CREDITO);
+        BigDecimal ingresosTarjetaDebito = calcularIngresosPorMetodo(pedidos, MetodoPago.TARJETA_DEBITO);
+        BigDecimal ingresosTarjeta = ingresosTarjetaCredito.add(ingresosTarjetaDebito);
+        BigDecimal ingresosTotales = ingresosEfectivo
+            .add(ingresosTransferencia)
+            .add(ingresosTarjeta);
 
-        // utilidad real del turno (solo movimientos)
-        BigDecimal utilidad = saldoActual.subtract(montoInicial);
+        BigDecimal egresos = valorSeguro(
+            movimientoCajaRepository.calcularTotalesByTipoAndCaja(TipoMovimiento.EGRESO, caja, negocio)
+        );
+        BigDecimal retirosPrevios = valorSeguro(
+            movimientoCajaRepository.calcularTotalesByTipoAndCaja(TipoMovimiento.RETIRO, caja, negocio)
+        );
+
+        BigDecimal saldoDisponibleEfectivo = montoInicial
+            .add(ingresosEfectivo)
+            .subtract(egresos)
+            .subtract(retirosPrevios);
+
+        BigDecimal utilidad = ingresosTotales.subtract(egresos);
 
         // validar que el retiro no supere el saldo
-        if (saldoActual.compareTo(retiro) < 0) {
+        if (saldoDisponibleEfectivo.compareTo(retiro) < 0) {
             throw new ResponseStatusException(
                     HttpStatus.CONFLICT,
                     "Saldo insuficiente para realizar el retiro"
@@ -223,7 +239,7 @@ public class CajaService {
         }
 
         //monto final después del retiro
-        BigDecimal montoFinal = saldoActual.subtract(retiro);
+        BigDecimal montoFinal = saldoDisponibleEfectivo.subtract(retiro);
 
         // cerrar caja
         caja.cerrarCaja(usuarioCierre, utilidad, montoFinal);

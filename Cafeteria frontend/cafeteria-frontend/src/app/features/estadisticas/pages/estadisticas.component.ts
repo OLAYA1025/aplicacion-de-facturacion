@@ -1,7 +1,9 @@
 import { CommonModule } from '@angular/common';
-import { ApplicationRef, ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
+import { ChangeDetectionStrategy, ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { Observable, finalize } from 'rxjs';
+import { ModalMensajeService } from '../../../shared/services/modal-mensaje.service';
+import { obtenerMensajeError } from '../../../shared/utils/error-message.util';
 import {
   EstadisticasDashboard,
   HistorialCajaCerrada,
@@ -11,10 +13,8 @@ import {
   TopProductosVendidos,
 } from '../models/resumen-estadisticas.model';
 import { EstadisticasService } from '../services/estadisticas.service';
-import { ModalMensajeService } from '../../../shared/services/modal-mensaje.service';
-import { obtenerMensajeError } from '../../../shared/utils/error-message.util';
 
-type ModoFiltro = 'semana' | 'mes' | 'anio';
+type ModoFiltro = 'semana' | 'mes' | 'anio' | 'personalizado';
 
 interface BarraUtilidad {
   label: string;
@@ -43,18 +43,43 @@ interface ValidacionFiltro {
   selector: 'app-estadisticas',
   standalone: true,
   imports: [CommonModule, FormsModule],
+  changeDetection: ChangeDetectionStrategy.OnPush,
   templateUrl: './estadisticas.component.html',
 })
 export class EstadisticasComponent implements OnInit {
   private readonly cdr = inject(ChangeDetectorRef);
-  private readonly appRef = inject(ApplicationRef);
   private readonly estadisticasService = inject(EstadisticasService);
   private readonly modalMensajeService = inject(ModalMensajeService);
+
+  private readonly formateadorMoneda = new Intl.NumberFormat('es-CO', {
+    style: 'currency',
+    currency: 'COP',
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0,
+  });
+
+  private readonly formateadorFechaCorta = new Intl.DateTimeFormat('es-CO', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+  });
+
+  private readonly formateadorFechaLarga = new Intl.DateTimeFormat('es-CO', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
+
+  private readonly formateadorFechaHora = new Intl.DateTimeFormat('es-CO', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  });
 
   readonly opcionesModo: ReadonlyArray<{ value: ModoFiltro; label: string }> = [
     { value: 'semana', label: 'Semana' },
     { value: 'mes', label: 'Mes' },
     { value: 'anio', label: 'Año' },
+    { value: 'personalizado', label: 'Personalizado' },
   ];
 
   readonly anioActual: number = new Date().getFullYear();
@@ -64,6 +89,8 @@ export class EstadisticasComponent implements OnInit {
   anioMes: number = this.anioActual;
   anioDesde: number = this.anioActual - 4;
   anioHasta: number = this.anioActual;
+  fechaDesdePersonalizada: string = this.obtenerFechaHaceDiasISO(7);
+  fechaHastaPersonalizada: string = this.obtenerFechaHoyISO();
   paginaCajas: number = 0;
   tamanioCajas: number = 10;
   paginaRetiros: number = 0;
@@ -121,6 +148,10 @@ export class EstadisticasComponent implements OnInit {
       this.dashboard.totalUtilidades === 0 &&
       this.dashboard.totalCajasCerradas === 0 &&
       this.dashboard.totalRetiros === 0 &&
+      this.dashboard.totalEgresos === 0 &&
+      this.dashboard.totalGastos === 0 &&
+      this.dashboard.ingresosTransferencia === 0 &&
+      this.dashboard.ingresosTarjeta === 0 &&
       this.barrasUtilidades.length === 0 &&
       this.barrasTopProductos.length === 0 &&
       this.dashboard.historialCajasCerradas.length === 0 &&
@@ -129,12 +160,7 @@ export class EstadisticasComponent implements OnInit {
   }
 
   formatearMoneda(valor: number): string {
-    return new Intl.NumberFormat('es-CO', {
-      style: 'currency',
-      currency: 'COP',
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(valor);
+    return this.formateadorMoneda.format(valor);
   }
 
   formatearFecha(fechaIso: string): string {
@@ -143,11 +169,7 @@ export class EstadisticasComponent implements OnInit {
       return '-';
     }
 
-    return fecha.toLocaleDateString('es-CO', {
-      day: '2-digit',
-      month: 'short',
-      year: 'numeric',
-    });
+    return this.formateadorFechaCorta.format(fecha);
   }
 
   formatearFechaDiaAnio(fechaIso: string): string {
@@ -156,11 +178,7 @@ export class EstadisticasComponent implements OnInit {
       return '-';
     }
 
-    return fecha.toLocaleDateString('es-CO', {
-      day: 'numeric',
-      month: 'long',
-      year: 'numeric',
-    });
+    return this.formateadorFechaLarga.format(fecha);
   }
 
   formatearFechaHora(fechaIso: string): string {
@@ -173,10 +191,7 @@ export class EstadisticasComponent implements OnInit {
       return '-';
     }
 
-    return fecha.toLocaleString('es-CO', {
-      dateStyle: 'medium',
-      timeStyle: 'short',
-    });
+    return this.formateadorFechaHora.format(fecha);
   }
 
   textoCaja(cajaId: number | null): string {
@@ -323,9 +338,22 @@ export class EstadisticasComponent implements OnInit {
       );
     }
 
-    return this.estadisticasService.obtenerDashboardAnio(
-      this.anioDesde,
-      this.anioHasta,
+    if (this.modoSeleccionado === 'anio') {
+      return this.estadisticasService.obtenerDashboardAnio(
+        this.anioDesde,
+        this.anioHasta,
+        5,
+        this.tamanioRetiros,
+        this.paginaCajas,
+        this.tamanioCajas,
+        this.paginaRetiros,
+        this.tamanioRetiros
+      );
+    }
+
+    return this.estadisticasService.obtenerDashboardPersonalizado(
+      this.fechaDesdePersonalizada,
+      this.fechaHastaPersonalizada,
       5,
       this.tamanioRetiros,
       this.paginaCajas,
@@ -347,6 +375,18 @@ export class EstadisticasComponent implements OnInit {
       if (!this.esAnioValido(this.anioMes)) {
         return { esValido: false, mensaje: 'Ingresa un año valido para la consulta mensual.' };
       }
+      return { esValido: true, mensaje: null };
+    }
+
+    if (this.modoSeleccionado === 'personalizado') {
+      if (!this.fechaDesdePersonalizada || !this.fechaHastaPersonalizada) {
+        return { esValido: false, mensaje: 'Selecciona una fecha inicial y final para la consulta.' };
+      }
+
+      if (this.fechaDesdePersonalizada > this.fechaHastaPersonalizada) {
+        return { esValido: false, mensaje: 'La fecha inicial no puede ser mayor que la fecha final.' };
+      }
+
       return { esValido: true, mensaje: null };
     }
 
@@ -564,10 +604,18 @@ export class EstadisticasComponent implements OnInit {
     return `${anio}-${mes}-${dia}`;
   }
 
+  private obtenerFechaHaceDiasISO(dias: number): string {
+    const fecha = new Date();
+    fecha.setDate(fecha.getDate() - dias);
+    const anio = fecha.getFullYear();
+    const mes = String(fecha.getMonth() + 1).padStart(2, '0');
+    const dia = String(fecha.getDate()).padStart(2, '0');
+    return `${anio}-${mes}-${dia}`;
+  }
+
   private refrescarVista(): void {
     queueMicrotask(() => {
       this.cdr.detectChanges();
-      this.appRef.tick();
     });
   }
 

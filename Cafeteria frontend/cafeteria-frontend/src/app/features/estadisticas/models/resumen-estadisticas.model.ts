@@ -1,4 +1,4 @@
-export type ModoUtilidad = 'semana' | 'mes' | 'anio';
+export type ModoUtilidad = 'semana' | 'mes' | 'anio' | 'personalizado';
 
 export interface ResumenEstadisticas {
   modo: ModoUtilidad;
@@ -25,7 +25,13 @@ export interface UtilidadAnioQuery {
   hasta: number;
 }
 
-export type UtilidadQuery = UtilidadSemanaQuery | UtilidadMesQuery | UtilidadAnioQuery;
+export interface UtilidadPersonalizadaQuery {
+  modo: 'personalizado';
+  fechaDesde: string;
+  fechaHasta: string;
+}
+
+export type UtilidadQuery = UtilidadSemanaQuery | UtilidadMesQuery | UtilidadAnioQuery | UtilidadPersonalizadaQuery;
 
 export interface TopProductoVendido {
   productoId: number;
@@ -82,6 +88,10 @@ export interface EstadisticasDashboard {
   totalUtilidades: number;
   totalCajasCerradas: number;
   totalRetiros: number;
+  totalEgresos: number;
+  totalGastos: number;
+  ingresosTransferencia: number;
+  ingresosTarjeta: number;
   graficoUtilidades: ResumenEstadisticas;
   graficoTopProductos: TopProductosVendidos;
   historialCajasCerradas: HistorialCajaCerrada[];

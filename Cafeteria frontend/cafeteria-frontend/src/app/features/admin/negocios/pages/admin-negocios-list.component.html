@@ -94,6 +94,43 @@
                       </button>
                     }
 
+                    <button
+                  
+                      type="button"
+                      (click)="abrirModalConfigurarLogo(negocio)"
+                      class="inline-flex items-center gap-2 rounded-lg border border-gray-300 px-3 py-1.5 text-xs font-semibold text-gray-700 transition-colors hover:bg-gray-100"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke-width="1.8"
+                        stroke="currentColor"
+                        class="h-4 w-4"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          d="m16.862 4.487 1.687-1.687a1.875 1.875 0 1 1 2.652 2.652L10.582 16.07a4.5 4.5 0 0 1-1.897 1.13L6 18l.8-2.686a4.5 4.5 0 0 1 1.13-1.897l8.932-8.93Z"
+                        />
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          d="M18 14v4.75A2.25 2.25 0 0 1 15.75 21H5.25A2.25 2.25 0 0 1 3 18.75V8.25A2.25 2.25 0 0 1 5.25 6H10"
+                        />
+                      </svg>
+                      Editar Logo
+                    </button>
+
+                    <button
+                      type="button"
+                      (click)="abrirModalFacturacionElectronica(negocio)"
+                      [disabled]="estaProcesando(negocio.id)"
+                      class="rounded-lg border border-sky-200 px-3 py-1.5 text-xs font-semibold text-sky-700 transition-colors hover:bg-sky-50 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {{ textoAccionFacturacion(negocio) }}
+                    </button>
+
                     <a
                       routerLink="/admin/negocios/nuevo"
                       class="rounded-lg border border-indigo-200 px-3 py-1.5 text-xs font-semibold text-indigo-700 transition-colors hover:bg-indigo-50"
@@ -109,4 +146,424 @@
       </div>
     }
   </section>
+
 </div>
+
+@if (modalFacturacionAbierto) {
+    <div
+      class="fixed inset-0 z-[120] flex items-start justify-center overflow-y-auto bg-black/70 px-4 py-4 backdrop-blur-sm sm:items-center"
+    >
+      <div
+        class="w-full max-w-5xl overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-2xl"
+        (click)="$event.stopPropagation()"
+      >
+        <form
+          [formGroup]="facturacionForm"
+          (ngSubmit)="guardarFacturacionElectronica()"
+          class="max-h-[calc(100dvh-2rem)] overflow-y-auto"
+        >
+          <div class="flex items-start justify-between gap-4 border-b border-gray-200 px-5 py-4 sm:px-6">
+            <div>
+              <h2 class="text-xl font-bold text-gray-900">Facturación Electrónica</h2>
+              <p class="mt-1 text-sm text-gray-600">
+                {{ negocioFacturacionSeleccionado?.nombre }} ·
+                @if (cargandoFacturacion) {
+                  Cargando configuración
+                } @else {
+                  {{
+                    negocioFacturacionSeleccionado?.electronicaHabilitada
+                      ? 'Editar configuración'
+                      : 'Crear configuración'
+                  }}
+                }
+              </p>
+            </div>
+            <button
+              type="button"
+              (click)="cerrarModalFacturacionElectronica()"
+              class="rounded-lg p-2 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700"
+              aria-label="Cerrar"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke-width="2.2"
+                stroke="currentColor"
+                class="h-5 w-5"
+              >
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18 18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+
+          <div class="space-y-6 p-5 sm:p-6">
+            @if (cargandoFacturacion) {
+              <div class="flex items-center gap-3 rounded-lg border border-indigo-100 bg-indigo-50 px-4 py-3 text-sm font-semibold text-indigo-700">
+                <div class="h-5 w-5 animate-spin rounded-full border-2 border-indigo-600 border-r-transparent"></div>
+                Cargando datos de facturación electrónica...
+              </div>
+            }
+
+            <section class="space-y-4">
+              <div>
+                <h3 class="text-base font-bold text-gray-900">
+                  Configuración de Facturación Electrónica
+                </h3>
+              </div>
+
+              <div class="grid gap-4 md:grid-cols-2">
+                <div>
+                  <label for="fe-proveedor" class="mb-2 block text-sm font-semibold text-gray-700">
+                    Proveedor
+                  </label>
+                  <select
+                    id="fe-proveedor"
+                    formControlName="proveedor"
+                    required
+                    class="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+                  >
+                    <option value="" disabled>Selecciona un proveedor</option>
+                    @for (proveedor of proveedoresFacturacion; track proveedor) {
+                      <option [value]="proveedor">{{ proveedor }}</option>
+                    }
+                  </select>
+                </div>
+
+                <div>
+                  <label for="fe-prefijo" class="mb-2 block text-sm font-semibold text-gray-700">
+                    Prefijo Code
+                  </label>
+                  <input
+                    id="fe-prefijo"
+                    formControlName="prefijoCode"
+                    required
+                    placeholder="Ej. PED-"
+                    class="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+                  />
+                </div>
+
+                <div class="md:col-span-2">
+                  <label for="fe-base-url" class="mb-2 block text-sm font-semibold text-gray-700">
+                    Base URL
+                  </label>
+                  <input
+                    id="fe-base-url"
+                    formControlName="baseUrl"
+                    required
+                    placeholder="https://api-sandbox.factus.com.co"
+                    class="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+                  />
+                </div>
+
+                <div>
+                  <label for="fe-username" class="mb-2 block text-sm font-semibold text-gray-700">
+                    Username
+                  </label>
+                  <input
+                    id="fe-username"
+                    formControlName="username"
+                    required
+                    autocomplete="username"
+                    class="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+                  />
+                </div>
+
+                <div>
+                  <label for="fe-password" class="mb-2 block text-sm font-semibold text-gray-700">
+                    Password
+                  </label>
+                  <input
+                    id="fe-password"
+                    formControlName="password"
+                    type="text"
+                    required
+                    autocomplete="off"
+                    class="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+                  />
+                </div>
+
+                <div>
+                  <label for="fe-client-id" class="mb-2 block text-sm font-semibold text-gray-700">
+                    Client ID
+                  </label>
+                  <input
+                    id="fe-client-id"
+                    formControlName="clientId"
+                    required
+                    class="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+                  />
+                </div>
+
+                <div>
+                  <label
+                    for="fe-client-secret"
+                    class="mb-2 block text-sm font-semibold text-gray-700"
+                  >
+                    Client Secret
+                  </label>
+                  <input
+                    id="fe-client-secret"
+                    formControlName="clientSecret"
+                    type="text"
+                    required
+                    autocomplete="off"
+                    class="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+                  />
+                </div>
+              </div>
+            </section>
+
+            <section
+              class="space-y-4 border-t border-gray-200 pt-6"
+              [formGroup]="numberingRangeForm"
+            >
+              <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <h3 class="text-base font-bold text-gray-900">Numbering Range</h3>
+                  <p class="mt-1 text-sm text-gray-500">
+                    {{ tieneNumberingRange ? 'Rango existente' : 'Sin rango registrado' }}
+                  </p>
+                </div>
+
+                @if (tieneNumberingRange) {
+                  <label class="inline-flex items-center gap-2 text-sm font-semibold text-gray-700">
+                    <input
+                      type="checkbox"
+                      formControlName="active"
+                      class="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                    />
+                    Activo
+                  </label>
+                }
+              </div>
+
+              <div class="grid gap-4 md:grid-cols-3">
+                <div>
+                  <label
+                    for="nr-provider-range-id"
+                    class="mb-2 block text-sm font-semibold text-gray-700"
+                  >
+                    Provider Range ID
+                  </label>
+                  <input
+                    id="nr-provider-range-id"
+                    formControlName="providerRangeId"
+                    type="number"
+                    step="1"
+                    class="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+                  />
+                </div>
+
+                <div>
+                  <label for="nr-prefix" class="mb-2 block text-sm font-semibold text-gray-700">
+                    Prefix
+                  </label>
+                  <input
+                    id="nr-prefix"
+                    formControlName="prefix"
+                    [required]="tieneNumberingRange"
+                    placeholder="Ej. SETT"
+                    class="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+                  />
+                </div>
+
+                <div>
+                  <label
+                    for="nr-resolution-number"
+                    class="mb-2 block text-sm font-semibold text-gray-700"
+                  >
+                    Resolution Number
+                  </label>
+                  <input
+                    id="nr-resolution-number"
+                    formControlName="resolutionNumber"
+                    class="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+                  />
+                </div>
+
+                <div>
+                  <label for="nr-from-number" class="mb-2 block text-sm font-semibold text-gray-700">
+                    From Number
+                  </label>
+                  <input
+                    id="nr-from-number"
+                    formControlName="fromNumber"
+                    type="number"
+                    min="0"
+                    step="1"
+                    [required]="tieneNumberingRange"
+                    class="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+                  />
+                </div>
+
+                <div>
+                  <label for="nr-to-number" class="mb-2 block text-sm font-semibold text-gray-700">
+                    To Number
+                  </label>
+                  <input
+                    id="nr-to-number"
+                    formControlName="toNumber"
+                    type="number"
+                    min="0"
+                    step="1"
+                    [required]="tieneNumberingRange"
+                    class="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+                  />
+                </div>
+
+                <div>
+                  <label
+                    for="nr-current-number"
+                    class="mb-2 block text-sm font-semibold text-gray-700"
+                  >
+                    Current Number
+                  </label>
+                  <input
+                    id="nr-current-number"
+                    formControlName="currentNumber"
+                    type="number"
+                    min="0"
+                    step="1"
+                    [required]="tieneNumberingRange"
+                    class="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+                  />
+                </div>
+
+                <div class="md:col-span-3">
+                  <label for="nr-technical-key" class="mb-2 block text-sm font-semibold text-gray-700">
+                    Technical Key
+                  </label>
+                  <input
+                    id="nr-technical-key"
+                    formControlName="technicalKey"
+                    class="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+                  />
+                </div>
+              </div>
+            </section>
+
+            @if (errorFacturacion) {
+              <p class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                {{ errorFacturacion }}
+              </p>
+            }
+          </div>
+
+          <div class="flex flex-wrap justify-end gap-2 border-t border-gray-200 px-5 py-4 sm:px-6">
+            <button
+              type="button"
+              (click)="cerrarModalFacturacionElectronica()"
+              class="rounded-xl border border-gray-300 px-5 py-2.5 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-100"
+            >
+              Cancelar
+            </button>
+            <button
+              type="submit"
+              [disabled]="guardandoFacturacion || cargandoFacturacion"
+              class="rounded-xl bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {{ tituloBotonFacturacion }}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  }
+
+
+@if (modalConfigurarLogoAbierto) {
+  <div
+    class="fixed inset-0 z-[120] flex items-start justify-center overflow-y-auto bg-black/70 px-4 py-4 backdrop-blur-sm sm:items-center"
+    (click)="cerrarModalConfigurarLogo()"
+  >
+    <div
+      class="w-full max-w-lg rounded-2xl bg-white shadow-2xl"
+      (click)="$event.stopPropagation()"
+    >
+      <form [formGroup]="logoForm" (ngSubmit)="guardarLogo()">
+
+        <!-- Header -->
+        <div class="flex items-start justify-between border-b border-gray-200 px-6 py-5">
+          <div>
+            <h2 class="text-xl font-bold text-gray-900">
+              Configurar logo
+            </h2>
+            <p class="mt-1 text-sm text-gray-600">
+              {{ negocioLogoSeleccionado?.nombre }}
+            </p>
+          </div>
+
+          <button
+            type="button"
+            (click)="cerrarModalConfigurarLogo()"
+            class="rounded-lg p-2 text-gray-500 transition hover:bg-gray-100 hover:text-gray-700"
+          >
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke-width="2"
+              stroke="currentColor"
+              class="h-5 w-5"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+          </button>
+        </div>
+
+        <!-- Body -->
+        <div class="space-y-5 px-6 py-5">
+
+          <div>
+            <label
+              for="logo-nombre"
+              class="mb-2 block text-sm font-medium text-gray-700"
+            >
+              Nombre del archivo
+            </label>
+
+            <input
+              id="logo-nombre"
+              formControlName="nombreLogo"
+              placeholder="Ej. montara.png"
+              class="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 focus:outline-none"
+            />
+
+            <p class="mt-2 text-xs text-gray-500">
+              Solo escribe el nombre del archivo. El sistema buscará la imagen
+              dentro del directorio configurado de logos.
+            </p>
+          </div>
+
+        </div>
+
+        <!-- Footer -->
+        <div class="flex justify-end gap-3 border-t border-gray-200 px-6 py-4">
+          <button
+            type="button"
+            (click)="cerrarModalConfigurarLogo()"
+            class="rounded-xl border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+          >
+            Cancelar
+          </button>
+
+          <button
+            type="submit"
+            [disabled]="logoForm.invalid || guardandoLogo"
+            class="rounded-xl bg-indigo-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-indigo-700 disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {{ guardandoLogo ? 'Guardando...' : 'Guardar' }}
+          </button>
+        </div>
+
+      </form>
+    </div>
+  </div>
+}
+
+

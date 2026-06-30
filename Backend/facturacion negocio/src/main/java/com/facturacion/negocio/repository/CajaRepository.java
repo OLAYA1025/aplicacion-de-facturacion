@@ -1,9 +1,10 @@
 package com.facturacion.negocio.repository;
 
-import com.facturacion.negocio.domain.Caja;
-import com.facturacion.negocio.domain.Negocio;
-import com.facturacion.negocio.enumerated.EstadoCaja;
-import jakarta.persistence.LockModeType;
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.util.List;
+import java.util.Optional;
+
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.EntityGraph;
@@ -13,11 +14,11 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-import java.math.BigDecimal;
-import java.time.Instant;
+import com.facturacion.negocio.domain.Caja;
+import com.facturacion.negocio.domain.Negocio;
+import com.facturacion.negocio.enumerated.EstadoCaja;
 
-import java.util.List;
-import java.util.Optional;
+import jakarta.persistence.LockModeType;
 
 @Repository
 public interface CajaRepository extends JpaRepository<Caja, Long> {
@@ -103,6 +104,23 @@ AND c.fechaCierre = (
             Instant desdeInclusive,
             Instant hastaExclusive,
             Negocio negocio
+    );
+
+    @Query(value = """
+            SELECT CAST(c.fecha_cierre AS date) AS dia,
+                   COALESCE(SUM(c.utilidad), 0) AS total
+            FROM caja c
+            WHERE c.estado = 'CERRADA'
+              AND c.negocio_id = :negocioId
+              AND c.fecha_cierre >= :desde
+              AND c.fecha_cierre < :hasta
+            GROUP BY CAST(c.fecha_cierre AS date)
+            ORDER BY dia
+            """, nativeQuery = true)
+    List<UtilidadDiariaProjection> calcularUtilidadDiariaEnRango(
+            @Param("negocioId") Long negocioId,
+            @Param("desde") Instant desde,
+            @Param("hasta") Instant hasta
     );
 
 

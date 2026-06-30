@@ -324,11 +324,11 @@
       </button>
     </div>
 
-    <!-- Saldo actual -->
+    <!-- efectivo actual -->
     <div class="mb-6 p-4 bg-indigo-50 rounded-lg border border-indigo-200">
-      <p class="text-sm text-indigo-900 mb-1">Saldo disponible</p>
+      <p class="text-sm text-indigo-900 mb-1">Efectivo disponible</p>
       <p class="text-2xl font-bold text-indigo-600">
-        {{ formatearMonto(cajaResumen?.saldo || 0) }}
+        {{ formatearMonto((cajaResumen?.ingresosEfectivo || 0) + (cajaResumen?.montoInicial || 0)) }}
       </p>
     </div>
 
@@ -347,7 +347,7 @@
                class="mt-1">
         <div class="flex-1">
           <p class="font-semibold text-gray-900">No retirar nada</p>
-          <p class="text-sm text-gray-500">Dejar el saldo completo para la próxima caja</p>
+          <p class="text-sm text-gray-500">Dejar el efectivo completo para la próxima caja</p>
         </div>
       </label>
 
@@ -363,7 +363,7 @@
                class="mt-1">
         <div class="flex-1">
           <p class="font-semibold text-gray-900">Dejar caja en $0</p>
-          <p class="text-sm text-gray-500">Retirar todo el saldo ({{ formatearMonto(cajaResumen?.saldo || 0) }})</p>
+          <p class="text-sm text-gray-500">Retirar todo el efectivo disponible ({{ formatearMonto((cajaResumen?.ingresosEfectivo || 0) + (cajaResumen?.montoInicial || 0)) }})</p>
         </div>
       </label>
 
@@ -385,12 +385,12 @@
           <div *ngIf="opcionRetiro === 'personalizado'" class="mt-3">
             <input type="number" 
                    [(ngModel)]="montoRetiroPersonalizado"
-                   [max]="cajaResumen?.saldo || 0"
+                   [max]="(cajaResumen?.ingresosEfectivo || 0) + (cajaResumen?.montoInicial || 0)"
                    min="0"
                    placeholder="Ingresa el monto"
                    class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500">
             <p class="text-xs text-gray-500 mt-1">
-              Quedará en caja: {{ formatearMonto((cajaResumen?.saldo || 0) - montoRetiroPersonalizado) }}
+              Quedará en caja: {{ formatearMonto( ((cajaResumen?.ingresosEfectivo || 0) + (cajaResumen?.montoInicial || 0)) - montoRetiroPersonalizado) }}
             </p>
           </div>
         </div>

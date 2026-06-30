@@ -3,13 +3,14 @@ import { Injectable } from '@angular/core';
 import { Observable } from 'rxjs';
 import { environment } from 'src/environments/environment';
 import {
-  EstadisticasDashboard,
-  ResumenEstadisticas,
-  TopProductosVendidos,
-  UtilidadAnioQuery,
-  UtilidadMesQuery,
-  UtilidadQuery,
-  UtilidadSemanaQuery,
+    EstadisticasDashboard,
+    ResumenEstadisticas,
+    TopProductosVendidos,
+    UtilidadAnioQuery,
+    UtilidadMesQuery,
+    UtilidadPersonalizadaQuery,
+    UtilidadQuery,
+    UtilidadSemanaQuery,
 } from '../models/resumen-estadisticas.model';
 
 @Injectable({ providedIn: 'root' })
@@ -32,6 +33,10 @@ export class EstadisticasService {
     return this.obtenerUtilidad({ modo: 'anio', desde, hasta });
   }
 
+  obtenerUtilidadPersonalizada(fechaDesde: string, fechaHasta: string): Observable<ResumenEstadisticas> {
+    return this.obtenerUtilidad({ modo: 'personalizado', fechaDesde, fechaHasta });
+  }
+
   obtenerUtilidad(query: UtilidadQuery): Observable<ResumenEstadisticas> {
     let params = new HttpParams().set('modo', query.modo);
 
@@ -44,6 +49,9 @@ export class EstadisticasService {
         break;
       case 'anio':
         params = this.agregarParamsAnio(params, query);
+        break;
+      case 'personalizado':
+        params = this.agregarParamsPersonalizado(params, query);
         break;
     }
 
@@ -62,6 +70,10 @@ export class EstadisticasService {
     return this.obtenerTopProductos({ modo: 'anio', desde, hasta }, limite);
   }
 
+  obtenerTopProductosPersonalizado(fechaDesde: string, fechaHasta: string, limite = 5): Observable<TopProductosVendidos> {
+    return this.obtenerTopProductos({ modo: 'personalizado', fechaDesde, fechaHasta }, limite);
+  }
+
   obtenerTopProductos(query: UtilidadQuery, limite = 5): Observable<TopProductosVendidos> {
     let params = new HttpParams().set('modo', query.modo).set('limite', limite);
 
@@ -74,6 +86,9 @@ export class EstadisticasService {
         break;
       case 'anio':
         params = this.agregarParamsAnio(params, query);
+        break;
+      case 'personalizado':
+        params = this.agregarParamsPersonalizado(params, query);
         break;
     }
 
@@ -141,6 +156,27 @@ export class EstadisticasService {
     );
   }
 
+  obtenerDashboardPersonalizado(
+    fechaDesde: string,
+    fechaHasta: string,
+    limiteTopProductos = 5,
+    limiteRetiros = 20,
+    paginaCajas = 0,
+    tamanioCajas = 20,
+    paginaRetiros = 0,
+    tamanioRetiros = limiteRetiros
+  ): Observable<EstadisticasDashboard> {
+    return this.obtenerDashboard(
+      { modo: 'personalizado', fechaDesde, fechaHasta },
+      limiteTopProductos,
+      limiteRetiros,
+      paginaCajas,
+      tamanioCajas,
+      paginaRetiros,
+      tamanioRetiros
+    );
+  }
+
   obtenerDashboard(
     query: UtilidadQuery,
     limiteTopProductos = 5,
@@ -169,6 +205,9 @@ export class EstadisticasService {
       case 'anio':
         params = this.agregarParamsAnio(params, query);
         break;
+      case 'personalizado':
+        params = this.agregarParamsPersonalizado(params, query);
+        break;
     }
 
     return this.http.get<EstadisticasDashboard>(this.dashboardUrl, { params });
@@ -184,6 +223,10 @@ export class EstadisticasService {
 
   private agregarParamsAnio(params: HttpParams, query: UtilidadAnioQuery): HttpParams {
     return params.set('desde', query.desde).set('hasta', query.hasta);
+  }
+
+  private agregarParamsPersonalizado(params: HttpParams, query: UtilidadPersonalizadaQuery): HttpParams {
+    return params.set('fechaDesde', query.fechaDesde).set('fechaHasta', query.fechaHasta);
   }
 }
 
