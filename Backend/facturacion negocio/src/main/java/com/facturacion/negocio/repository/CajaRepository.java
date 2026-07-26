@@ -107,20 +107,21 @@ AND c.fechaCierre = (
     );
 
     @Query(value = """
-            SELECT CAST(c.fecha_cierre AS date) AS dia,
+            SELECT (c.fecha_cierre AT TIME ZONE :zonaHoraria)::date AS dia,
                    COALESCE(SUM(c.utilidad), 0) AS total
             FROM caja c
             WHERE c.estado = 'CERRADA'
               AND c.negocio_id = :negocioId
               AND c.fecha_cierre >= :desde
               AND c.fecha_cierre < :hasta
-            GROUP BY CAST(c.fecha_cierre AS date)
-            ORDER BY dia
+            GROUP BY 1
+            ORDER BY 1
             """, nativeQuery = true)
     List<UtilidadDiariaProjection> calcularUtilidadDiariaEnRango(
             @Param("negocioId") Long negocioId,
             @Param("desde") Instant desde,
-            @Param("hasta") Instant hasta
+            @Param("hasta") Instant hasta,
+            @Param("zonaHoraria") String zonaHoraria
     );
 
 

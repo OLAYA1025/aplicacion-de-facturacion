@@ -45,6 +45,22 @@
     </div>
 
     <div>
+      <label [for]="'costo-crear-' + formIdPrefix" class="mb-2 block text-sm font-semibold text-gray-700">
+        Costo
+      </label>
+      <input
+        [id]="'costo-crear-' + formIdPrefix"
+        [name]="'costoCrear' + formIdPrefix"
+        [(ngModel)]="nuevoProducto.costo"
+        type="number"
+        required
+        min="0"
+        placeholder="0"
+        class="w-full rounded-xl border border-gray-300 px-3 py-2.5 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+      />
+    </div>
+
+    <div>
       <label [for]="'categoria-crear-' + formIdPrefix" class="mb-2 block text-sm font-semibold text-gray-700">
         Categoría
       </label>
@@ -142,7 +158,7 @@
     </div>
   </div>
 
-  <div *ngIf="nuevoProducto.tipoGestion === 'INVENTARIABLE'" class="grid gap-5 md:grid-cols-4">
+  <div class="grid gap-5 md:grid-cols-2">
     <div>
       <label [for]="'tipo-impuesto-crear-' + formIdPrefix" class="mb-2 block text-sm font-semibold text-gray-700">
         Tipo de impuesto
@@ -181,7 +197,9 @@
         </ng-template>
       </select>
     </div>
+  </div>
 
+  <div *ngIf="nuevoProducto.tipoGestion === 'INVENTARIABLE'" class="grid gap-5 md:grid-cols-2">
     <div>
       <label [for]="'stock-inicial-' + formIdPrefix" class="mb-2 block text-sm font-semibold text-gray-700">
         Stock inicial
@@ -217,7 +235,7 @@
     *ngIf="nuevoProducto.tipoGestion === 'PREPARACION'"
     class="rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800"
   >
-    Producto en modo preparación: no se solicitarán datos de stock y el impuesto queda fijo en INC 8%.
+    Producto en modo preparación: no se solicitarán datos de stock.
   </p>
 
   <p *ngIf="errorCrearProducto" class="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">

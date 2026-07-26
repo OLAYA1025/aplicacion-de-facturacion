@@ -1,12 +1,12 @@
 package com.facturacion.negocio.dto.factura;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
+
 import com.facturacion.negocio.domain.DetallePedido;
 import com.facturacion.negocio.domain.Producto;
 import com.facturacion.negocio.enumerated.TipoImpuesto;
 import com.fasterxml.jackson.annotation.JsonProperty;
-
-import java.math.BigDecimal;
-import java.math.RoundingMode;
 
 public class ItemDTO {
     private String code_reference;
@@ -19,13 +19,30 @@ public class ItemDTO {
     private Integer standard_code_id = 1; //ID que corresponde al código de estándar que se adopto para los productos o servicios
     @JsonProperty("is_excluded")
     private Integer isExcluded; //Si el producto está excluido de IVA (0: no, 1: sí).
-    private Integer tribute_id = 1; //1 para IVA (0%, 5%, 19%) y 4 para INC (8% impuesto nacional al consumo. Para preparaciones)
+    private Integer tribute_id = 1; //1 para IVA (0%, 5%, 19%) y 4 para INC (8% impuesto nacional al consumo)
 
     public static ItemDTO from(DetallePedido detalle) {
-        return from(detalle.getProducto(), detalle.getCantidad(), detalle.getPrecioUnitario());
+        return from(
+                detalle.getProducto(),
+                detalle.getCantidad(),
+                detalle.getPrecioUnitario(),
+                detalle.getTipoImpuesto(),
+                detalle.getImpuestoPorcentaje()
+        );
     }
 
     public static ItemDTO from(Producto producto, Integer cantidad, BigDecimal precioUnitario) {
+        if (producto == null) {
+            throw new IllegalArgumentException("producto invalido");
+        }
+        return from(producto, cantidad, precioUnitario, producto.getTipoImpuesto(), producto.getImpuestoPorcentaje());
+    }
+
+    public static ItemDTO from(Producto producto,
+                               Integer cantidad,
+                               BigDecimal precioUnitario,
+                               TipoImpuesto tipoImpuesto,
+                               BigDecimal impuestoPorcentaje) {
         if (producto == null) {
             throw new IllegalArgumentException("producto invalido");
         }
@@ -33,17 +50,15 @@ public class ItemDTO {
             throw new IllegalArgumentException("cantidad invalida");
         }
         ItemDTO itemDTO = new ItemDTO();
+        TipoImpuesto tipoNormalizado = tipoImpuesto != null ? tipoImpuesto : TipoImpuesto.IVA;
+        BigDecimal impuestoNormalizado = impuestoPorcentaje != null ? impuestoPorcentaje : BigDecimal.ZERO;
         itemDTO.setCode_reference(producto.getId().toString());
         itemDTO.setName(producto.getNombre());
         itemDTO.setQuantity(cantidad);
         itemDTO.setPrice(precioUnitario);
         itemDTO.setIsExcluded(Boolean.TRUE.equals(producto.getIsExcluded()) ? 1 : 0);
-        TipoImpuesto tipoImpuesto = producto.getTipoImpuesto() != null ? producto.getTipoImpuesto() : TipoImpuesto.IVA;
-        itemDTO.setTribute_id(tipoImpuesto.getTributeId());
-        BigDecimal porcentaje = producto.getImpuestoPorcentaje() != null
-                ? producto.getImpuestoPorcentaje()
-                : BigDecimal.ZERO;
-        String taxString = porcentaje.setScale(2, RoundingMode.HALF_UP).toPlainString();
+        itemDTO.setTribute_id(tipoNormalizado.getTributeId());
+        String taxString = impuestoNormalizado.setScale(2, RoundingMode.HALF_UP).toPlainString();
         itemDTO.setTax_rate(taxString);
 
         return itemDTO;

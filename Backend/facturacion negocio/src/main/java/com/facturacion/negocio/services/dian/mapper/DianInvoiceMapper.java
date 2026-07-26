@@ -1,19 +1,25 @@
 package com.facturacion.negocio.services.dian.mapper;
 
-import com.facturacion.negocio.domain.*;
-import com.facturacion.negocio.dto.factura.Establecimiento;
-import com.facturacion.negocio.services.dian.dto.DianCustomerData;
-import com.facturacion.negocio.services.dian.dto.DianInvoiceData;
-import com.facturacion.negocio.services.dian.dto.DianInvoiceLineData;
-import com.facturacion.negocio.services.dian.dto.DianSupplierData;
-import com.facturacion.negocio.services.DetallePedidoAgrupador;
-import com.facturacion.negocio.services.DetallePedidoAgrupador.DetallePedidoAgrupado;
-import org.springframework.stereotype.Component;
-
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.List;
+
+import org.springframework.stereotype.Component;
+
+import com.facturacion.negocio.domain.Cliente;
+import com.facturacion.negocio.domain.DetallePedido;
+import com.facturacion.negocio.domain.DocumentoFiscal;
+import com.facturacion.negocio.domain.Pedido;
+import com.facturacion.negocio.domain.Producto;
+import com.facturacion.negocio.dto.factura.Establecimiento;
+import com.facturacion.negocio.enumerated.TipoImpuesto;
+import com.facturacion.negocio.services.DetallePedidoAgrupador;
+import com.facturacion.negocio.services.DetallePedidoAgrupador.DetallePedidoAgrupado;
+import com.facturacion.negocio.services.dian.dto.DianCustomerData;
+import com.facturacion.negocio.services.dian.dto.DianInvoiceData;
+import com.facturacion.negocio.services.dian.dto.DianInvoiceLineData;
+import com.facturacion.negocio.services.dian.dto.DianSupplierData;
 
 @Component
 public class DianInvoiceMapper {
@@ -63,13 +69,6 @@ public class DianInvoiceMapper {
     private BigDecimal calculateSubtotal(List<DianInvoiceLineData> lines) {
         return lines.stream()
                 .map(DianInvoiceLineData::getLineExtensionAmount)
-                .reduce(BigDecimal.ZERO, BigDecimal::add)
-                .setScale(2, RoundingMode.HALF_UP);
-    }
-
-    private BigDecimal calculateTaxTotal(List<DianInvoiceLineData> lines) {
-        return lines.stream()
-                .map(DianInvoiceLineData::getTaxAmount)
                 .reduce(BigDecimal.ZERO, BigDecimal::add)
                 .setScale(2, RoundingMode.HALF_UP);
     }
@@ -127,11 +126,16 @@ public class DianInvoiceMapper {
         return supplier;
     }
 
-    private DianInvoiceLineData mapLine(Producto producto, Integer cantidad, BigDecimal precioVenta) {
-        BigDecimal porcentaje = producto.getImpuestoPorcentaje();
+        private DianInvoiceLineData mapLine(Producto producto,
+                        Integer cantidad,
+                        BigDecimal precioVenta,
+                        TipoImpuesto tipoImpuesto,
+                        BigDecimal porcentaje) {
+        TipoImpuesto tipoNormalizado = tipoImpuesto != null ? tipoImpuesto : TipoImpuesto.IVA;
+        BigDecimal impuestoPorcentaje = porcentaje != null ? porcentaje : BigDecimal.ZERO;
 
         BigDecimal divisor = BigDecimal.ONE.add(
-                porcentaje.divide(BigDecimal.valueOf(100), 6, RoundingMode.HALF_UP)
+            impuestoPorcentaje.divide(BigDecimal.valueOf(100), 6, RoundingMode.HALF_UP)
         );
 
         BigDecimal baseUnitPrice = precioVenta.divide(divisor, 2, RoundingMode.HALF_UP);
@@ -150,9 +154,9 @@ public class DianInvoiceMapper {
 
         line.setUnitPrice(baseUnitPrice);
 
-        line.setTaxPercent(porcentaje);
+        line.setTaxPercent(impuestoPorcentaje);
 
-        line.setTaxCode(producto.getTipoImpuesto().getIdDian());
+        line.setTaxCode(tipoNormalizado.getIdDian());
 
         line.setLineExtensionAmount(lineExtensionAmount);
 
@@ -169,7 +173,9 @@ public class DianInvoiceMapper {
             lines.add(mapLine(
                     detalleAgrupado.getProducto(),
                     detalleAgrupado.getCantidad(),
-                    detalleAgrupado.getPrecioUnitario()
+                    detalleAgrupado.getPrecioUnitario(),
+                    detalleAgrupado.getTipoImpuesto(),
+                    detalleAgrupado.getImpuestoPorcentaje()
             ));
         }
 

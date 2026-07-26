@@ -10,7 +10,7 @@
         }
 
         body {
-            font-family: monospace;
+            font-family: 'Roboto', sans-serif;
             font-size: 11px;
             width: 76mm;
             margin: 0 auto;
@@ -27,6 +27,17 @@
 
         .bold {
             font-weight: bold;
+        }
+
+        .titulo{
+            font-weight: 800;
+        }
+        .texto{
+            font-weight: 500;
+        }
+
+        .subtitulo{
+            font-weight: 600;
         }
 
         .small {
@@ -105,41 +116,41 @@
     <img th:if="${logo != null}" th:src="${logo}" width="120" alt="Logo" />
 </div>
 
-<div class="center bold" th:text="${factura.empresa}">MI EMPRESA SAS</div>
-<div class="center" th:text="'NIT ' + ${factura.nit}">NIT 900000000-1</div>
-<div class="center" th:text="${factura.direccion}">CARRERA 65 # 8B - 91</div>
+<div class="center titulo" th:text="${factura.empresa}">MI EMPRESA SAS</div>
+<div class="center texto" th:text="'NIT ' + ${factura.nit}">NIT 900000000-1</div>
+<div class="center texto" th:text="${factura.direccion}">CARRERA 65 # 8B - 91</div>
 
 <div class="line2"></div>
-<div class="center bold mt-2">
+<div class="center titulo mt-2">
     FACTURA ELECTRONICA DE VENTA
 </div>
 <div class="line2"></div>
 
-<div class="mt-2">Nro factura: <span th:text="${factura.numeroFactura}">FE1-123</span></div>
-<div>Fecha-Hora: <span th:text="${factura.fechaHora}">2026-03-06 13:30</span></div>
-<div>Cajero: <span th:text="${factura.cajero}">Caja 1</span></div>
-<div>Cliente: <span th:text="${factura.cliente}">Consumidor final</span></div>
-<div>Nit/C.C.: <span th:text="${factura.identificacion}">123456789</span></div>
+<div class="mt-2 texto">Nro factura: <span th:text="${factura.numeroFactura}">FE1-123</span></div>
+<div class="texto">Fecha-Hora: <span th:text="${factura.fechaHora}">2026-03-06 13:30</span></div>
+<div class="texto">Cajero: <span th:text="${factura.cajero}">Caja 1</span></div>
+<div class="texto">Cliente: <span th:text="${factura.cliente}">Consumidor final</span></div>
+<div class="texto">Nit/C.C.: <span th:text="${factura.identificacion}">123456789</span></div>
 
 <div class="line"></div>
 
 <table class="items">
     <thead>
     <tr>
-        <th class="w-item">ITEM</th>
-        <th class="w-desc">DESCRIPCION</th>
-        <th class="w-cant right">CANT</th>
-        <th class="w-valor right">VALOR</th>
+        <th class="w-item titulo">ITEM</th>
+        <th class="w-desc titulo">DESCRIPCION</th>
+        <th class="w-cant right titulo">CANT</th>
+        <th class="w-valor right titulo">VALOR</th>
     </tr>
     </thead>
     <tbody>
     <tr th:each="item, stat : ${factura.items}">
-        <td th:text="${stat.count}">1</td>
+        <td class="texto" th:text="${stat.count}">1</td>
         <td>
-            <div th:text="${item.nombre}">CAPUCCINO</div>
+            <div class="texto" th:text="${item.nombre}">CAPUCCINO</div>
         </td>
-        <td class="right" th:text="${item.cantidad}">1</td>
-        <td class="right" th:text="'$' + ${#numbers.formatDecimal(item.valorUnitario, 0, 'COMMA', 2, 'POINT')}">$5000.00</td>
+        <td class="right texto" th:text="${item.cantidad}">1</td>
+        <td class="right texto" th:text="'$' + ${#numbers.formatDecimal(item.valorUnitario.multiply(item.cantidad), 0, 'COMMA', 2, 'POINT')}">$5000.00</td>
     </tr>
     </tbody>
 </table>
@@ -156,9 +167,9 @@
     </thead>
     <tbody>
     <tr th:each="impuesto : ${factura.impuestos}">
-        <td class="center" th:text="${impuesto.tipoImpuesto} +' '+ ${impuesto.getImpuestoPorcentaje}+'%' ">IVA</td>
-        <td class="right" th:text="'$' + ${#numbers.formatDecimal(impuesto.base, 0, 'COMMA', 2, 'POINT')}">$0</td>
-        <td class="right" th:text="'$' + ${#numbers.formatDecimal(impuesto.totalImpuesto, 0, 'COMMA', 2, 'POINT')}">$0</td>
+        <td class="center texto" th:text="${impuesto.tipoImpuesto} +' '+ ${impuesto.getImpuestoPorcentaje}+'%' ">IVA</td>
+        <td class="right texto" th:text="'$' + ${#numbers.formatDecimal(impuesto.base, 0, 'COMMA', 2, 'POINT')}">$0</td>
+        <td class="right texto" th:text="'$' + ${#numbers.formatDecimal(impuesto.totalImpuesto, 0, 'COMMA', 2, 'POINT')}">$0</td>
     </tr>
     </tbody>
 </table>
@@ -167,16 +178,16 @@
 
 <table class="totales">
     <tr>
-        <td>VALOR BASE</td>
-        <td class="right" th:text="'$' + ${#numbers.formatDecimal(factura.valorBase, 0, 'COMMA', 2, 'POINT')}">$0</td>
+        <td class="subtitulo">VALOR BASE</td>
+        <td class="right texto" th:text="'$' + ${#numbers.formatDecimal(factura.valorBase, 0, 'COMMA', 2, 'POINT')}">$0</td>
     </tr>
     <tr>
-        <td>IMPUESTOS</td>
-        <td class="right" th:text="'$' + ${#numbers.formatDecimal(factura.totalImpuestos, 0, 'COMMA', 2, 'POINT')}">$0</td>
+        <td class="subtitulo">IMPUESTOS</td>
+        <td class="right texto" th:text="'$' + ${#numbers.formatDecimal(factura.totalImpuestos, 0, 'COMMA', 2, 'POINT')}">$0</td>
     </tr>
     <tr>
-        <td class="bold">TOTAL</td>
-        <td class="right bold" th:text="'$' + ${#numbers.formatDecimal(factura.total, 0, 'COMMA', 2, 'POINT')}">$0</td>
+        <td class="titulo">TOTAL</td>
+        <td class="right titulo" th:text="'$' + ${#numbers.formatDecimal(factura.total, 0, 'COMMA', 2, 'POINT')}">$0</td>
     </tr>
 </table>
 
@@ -188,9 +199,9 @@
 </div>
 
 
-<div class="mt-2 small preline">
+<div class="mt-2 small preline titulo">
     CUFE:
-    <span th:text="${factura.cufe}">CUFE</span>
+    <span class="texto" th:text="${factura.cufe}">CUFE</span>
 </div>
 
 </body>

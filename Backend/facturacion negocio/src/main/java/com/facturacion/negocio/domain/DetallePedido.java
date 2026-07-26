@@ -1,9 +1,5 @@
 package com.facturacion.negocio.domain;
 
-import jakarta.persistence.*;
-import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotNull;
-
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.util.ArrayList;
@@ -12,6 +8,23 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+
+import com.facturacion.negocio.enumerated.TipoImpuesto;
+
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
 
 @Entity
 public class DetallePedido extends BaseTenantEntity {
@@ -37,6 +50,13 @@ public class DetallePedido extends BaseTenantEntity {
     @NotNull
     private BigDecimal precioUnitario;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "tipo_impuesto", nullable = false, length = 10)
+    private TipoImpuesto tipoImpuesto;
+
+    @Column(name = "impuesto_porcentaje", nullable = false, precision = 5, scale = 2)
+    private BigDecimal impuestoPorcentaje;
+
     @OneToMany(mappedBy = "detallePedido", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<DetallePedidoNota> detallePedidoNotas = new ArrayList<>();
 
@@ -50,6 +70,10 @@ public class DetallePedido extends BaseTenantEntity {
         heredarNegocio(producto);
         this.cantidad = cantidad;
         this.precioUnitario = producto.getPrecio().setScale(2, RoundingMode.HALF_UP);
+        this.tipoImpuesto = producto.getTipoImpuesto() != null ? producto.getTipoImpuesto() : TipoImpuesto.IVA;
+        this.impuestoPorcentaje = producto.getImpuestoPorcentaje() != null
+            ? producto.getImpuestoPorcentaje().setScale(2, RoundingMode.HALF_UP)
+            : BigDecimal.ZERO.setScale(2, RoundingMode.HALF_UP);
     }
 
     public Long getId() { return id; }
@@ -66,6 +90,14 @@ public class DetallePedido extends BaseTenantEntity {
     }
 
     public BigDecimal getPrecioUnitario() { return precioUnitario; }
+
+    public TipoImpuesto getTipoImpuesto() {
+        return tipoImpuesto;
+    }
+
+    public BigDecimal getImpuestoPorcentaje() {
+        return impuestoPorcentaje;
+    }
 
     public List<DetallePedidoNota> getDetallePedidoNotas() {
         return Collections.unmodifiableList(detallePedidoNotas);

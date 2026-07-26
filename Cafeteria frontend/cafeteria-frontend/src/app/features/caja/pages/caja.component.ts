@@ -177,12 +177,12 @@ export class CajaComponent implements OnInit {
         montoRetiro = 0;
         break;
       case 'todo':
-        montoRetiro = (this.cajaResumen?.ingresosEfectivo || 0) + (this.cajaResumen?.montoInicial || 0);
+        montoRetiro = (this.cajaResumen?.ingresosEfectivo || 0) + (this.cajaResumen?.montoInicial || 0) - (this.cajaResumen?.egresos || 0);
         break;
       case 'personalizado':
         montoRetiro = this.montoRetiroPersonalizado;
         // Validar que no retire más del efectivo disponible + monto inicial
-        if (montoRetiro > ((this.cajaResumen?.ingresosEfectivo || 0) + (this.cajaResumen?.montoInicial || 0))) {
+        if (montoRetiro > ((this.cajaResumen?.ingresosEfectivo || 0) + (this.cajaResumen?.montoInicial || 0) - (this.cajaResumen?.egresos || 0))) {
           this.mostrarError('No puedes retirar más del efectivo disponible en la caja');
           return;
         }

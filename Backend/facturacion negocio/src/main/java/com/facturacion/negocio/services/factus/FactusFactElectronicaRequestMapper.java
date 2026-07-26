@@ -1,5 +1,10 @@
 package com.facturacion.negocio.services.factus;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import org.springframework.stereotype.Component;
+
 import com.facturacion.negocio.domain.DetallePedido;
 import com.facturacion.negocio.domain.DocumentoFiscal;
 import com.facturacion.negocio.domain.NumberingRange;
@@ -7,14 +12,10 @@ import com.facturacion.negocio.domain.Pedido;
 import com.facturacion.negocio.dto.factura.CustomerDTO;
 import com.facturacion.negocio.dto.factura.FactusFactElectronicaRequestDTO;
 import com.facturacion.negocio.dto.factura.ItemDTO;
-import com.facturacion.negocio.services.EstablecimientoResolver;
-import org.springframework.stereotype.Component;
 import com.facturacion.negocio.enumerated.TipoDocumentoFiscal;
 import com.facturacion.negocio.services.DetallePedidoAgrupador;
 import com.facturacion.negocio.services.DetallePedidoAgrupador.DetallePedidoAgrupado;
-
-import java.util.ArrayList;
-import java.util.List;
+import com.facturacion.negocio.services.EstablecimientoResolver;
 
 @Component
 public class FactusFactElectronicaRequestMapper {
@@ -59,7 +60,9 @@ public class FactusFactElectronicaRequestMapper {
             itemsDTO.add(ItemDTO.from(
                     detalleAgrupado.getProducto(),
                     detalleAgrupado.getCantidad(),
-                    detalleAgrupado.getPrecioUnitario()
+                    detalleAgrupado.getPrecioUnitario(),
+                    detalleAgrupado.getTipoImpuesto(),
+                    detalleAgrupado.getImpuestoPorcentaje()
             ));
         }
         return itemsDTO;

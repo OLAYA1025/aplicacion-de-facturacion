@@ -280,6 +280,7 @@ class DocumentoFiscalServiceConcurrencyTest {
         Producto producto = productoRepository.save(new Producto(
                 "Producto-" + n,
                 new BigDecimal("1500.00"),
+                BigDecimal.ZERO,
                 "Producto de prueba",
                 categoria
         ));

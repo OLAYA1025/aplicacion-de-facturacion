@@ -21,6 +21,11 @@
           <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
             Precio
           </th>
+
+          <th class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
+            Costo
+          </th>
+
           <th
             *ngIf="esInventariable"
             class="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500"
@@ -47,6 +52,10 @@
 
           <td class="px-5 py-4 text-sm font-semibold text-gray-900">
             {{ formatearMoneda(producto.precio) }}
+          </td>
+
+          <td class="px-5 py-4 text-sm font-semibold text-gray-900">
+            {{ formatearMoneda(producto.costo) }}
           </td>
 
           <td *ngIf="esInventariable" class="px-5 py-4">

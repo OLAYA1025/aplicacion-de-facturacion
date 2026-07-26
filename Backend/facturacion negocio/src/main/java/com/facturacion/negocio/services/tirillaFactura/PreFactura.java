@@ -1,14 +1,15 @@
 package com.facturacion.negocio.services.tirillaFactura;
 
 
-import com.facturacion.negocio.domain.DetallePedido;
-import com.facturacion.negocio.domain.Pedido;
-import com.facturacion.negocio.services.DetallePedidoAgrupador;
 import java.math.BigDecimal;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+
+import com.facturacion.negocio.domain.DetallePedido;
+import com.facturacion.negocio.domain.Pedido;
+import com.facturacion.negocio.services.DetallePedidoAgrupador;
 
 
 public class PreFactura {
@@ -49,7 +50,9 @@ public class PreFactura {
             FacturaItem item = FacturaItem.from(
                     detalleAgrupado.getProducto(),
                     detalleAgrupado.getCantidad(),
-                    detalleAgrupado.getPrecioUnitario()
+                    detalleAgrupado.getPrecioUnitario(),
+                    detalleAgrupado.getTipoImpuesto(),
+                    detalleAgrupado.getImpuestoPorcentaje()
             );
             items.add(item);
 

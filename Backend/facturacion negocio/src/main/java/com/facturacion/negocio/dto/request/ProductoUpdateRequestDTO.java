@@ -11,6 +11,7 @@ public class ProductoUpdateRequestDTO {
     private String nombre;
     private String codigo;
     private BigDecimal precio;
+    private BigDecimal costo;
     private String descripcion;
     private TipoGestionProducto tipoProducto;
     private TipoGestionProducto tipoGestion;
@@ -43,6 +44,14 @@ public class ProductoUpdateRequestDTO {
 
     public void setPrecio(BigDecimal precio) {
         this.precio = precio;
+    }
+
+    public BigDecimal getCosto() {
+        return costo;
+    }
+
+    public void setCosto(BigDecimal costo) {
+        this.costo = costo;
     }
 
     public String getDescripcion() {

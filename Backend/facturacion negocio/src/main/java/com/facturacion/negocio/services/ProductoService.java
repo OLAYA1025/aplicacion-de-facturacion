@@ -67,6 +67,7 @@ public class ProductoService {
     public Producto crearProducto(String nombre,
                                   String codigo,
                                   BigDecimal precio,
+                                  BigDecimal costo,
                                   String descripcion,
                                   Long categoriaId,
                                   TipoGestionProducto tipoGestion,
@@ -74,7 +75,7 @@ public class ProductoService {
                                   BigDecimal impuestoPorcentaje,
                                   Integer stockInicial,
                                   Integer stockMinimo){
-        if(nombre == null || precio == null || categoriaId == null){
+        if(nombre == null || precio == null || costo == null || categoriaId == null){
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Datos invalidos");
         }
         Negocio negocio = tenantService.getNegocioActual();
@@ -89,6 +90,7 @@ public class ProductoService {
             Producto producto = new Producto(
                     nombre,
                     precio,
+                    costo,
                     descripcion,
                     categoria,
                     tipoGestion,
@@ -110,13 +112,14 @@ public class ProductoService {
                                    String nombre,
                                    String codigo,
                                    BigDecimal precio,
+                                   BigDecimal costo,
                                    String descripcion,
                                    Long categoriaId,
                                    TipoGestionProducto tipoGestion,
                                    TipoImpuesto tipoImpuesto,
                                    BigDecimal impuestoPorcentaje,
                                    Integer stockMinimo){
-        if(id  == null || nombre == null || precio == null || categoriaId == null){
+        if(id  == null || nombre == null || precio == null || costo == null || categoriaId == null){
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Datos invalidos");
         }
 
@@ -138,6 +141,7 @@ public class ProductoService {
             producto.actualizarProducto(
                     nombre,
                     precio,
+                    costo,
                     descripcion,
                     categoria,
                     tipoGestion,

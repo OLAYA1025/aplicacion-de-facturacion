@@ -1,10 +1,10 @@
 package com.facturacion.negocio.services.tirillaFactura;
 
+import java.math.BigDecimal;
+
 import com.facturacion.negocio.domain.DetallePedido;
 import com.facturacion.negocio.domain.Producto;
 import com.facturacion.negocio.enumerated.TipoImpuesto;
-
-import java.math.BigDecimal;
 
 public class FacturaItem {
     private Integer cantidad;
@@ -17,10 +17,27 @@ public class FacturaItem {
     public FacturaItem(){}
 
     public static FacturaItem from(DetallePedido detalle){
-        return from(detalle.getProducto(), detalle.getCantidad(), detalle.getPrecioUnitario());
+        return from(
+                detalle.getProducto(),
+                detalle.getCantidad(),
+                detalle.getPrecioUnitario(),
+                detalle.getTipoImpuesto(),
+                detalle.getImpuestoPorcentaje()
+        );
     }
 
     public static FacturaItem from(Producto producto, Integer cantidad, BigDecimal precioUnitario){
+        if (producto == null) {
+            throw new IllegalArgumentException("producto invalido");
+        }
+        return from(producto, cantidad, precioUnitario, producto.getTipoImpuesto(), producto.getImpuestoPorcentaje());
+    }
+
+    public static FacturaItem from(Producto producto,
+                                   Integer cantidad,
+                                   BigDecimal precioUnitario,
+                                   TipoImpuesto tipoImpuesto,
+                                   BigDecimal impuestoPorcentaje){
         if (producto == null) {
             throw new IllegalArgumentException("producto invalido");
         }
@@ -28,17 +45,18 @@ public class FacturaItem {
             throw new IllegalArgumentException("cantidad invalida");
         }
         FacturaItem facturaItem = new FacturaItem();
+        TipoImpuesto tipoNormalizado = tipoImpuesto != null ? tipoImpuesto : TipoImpuesto.IVA;
+        BigDecimal impuestoNormalizado = impuestoPorcentaje != null ? impuestoPorcentaje : BigDecimal.ZERO;
         facturaItem.setId(producto.getId().toString());
         facturaItem.setNombre(producto.getNombre());
         facturaItem.setCantidad(cantidad);
         facturaItem.setValorUnitario(precioUnitario);
-        facturaItem.setImpuesto(producto.getImpuestoPorcentaje());
-        facturaItem.setTipoImpuesto(producto.getTipoImpuesto());
+        facturaItem.setImpuesto(impuestoNormalizado);
+        facturaItem.setTipoImpuesto(tipoNormalizado);
         return facturaItem;
     }
 
     public BigDecimal calcularSubtotal(){
-        BigDecimal subtotal = BigDecimal.ZERO;
         return this.valorUnitario.multiply(BigDecimal.valueOf(this.cantidad.doubleValue()));
     }
 

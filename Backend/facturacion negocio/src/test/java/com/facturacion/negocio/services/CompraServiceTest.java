@@ -152,6 +152,7 @@ class CompraServiceTest {
         Producto producto = new Producto(
                 "Producto Test",
                 new BigDecimal("5000.00"),
+                BigDecimal.ZERO,
                 "Producto para test",
                 categoria,
                 TipoGestionProducto.INVENTARIABLE,

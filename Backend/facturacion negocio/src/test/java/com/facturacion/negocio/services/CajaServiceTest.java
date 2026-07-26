@@ -234,12 +234,12 @@ class CajaServiceTest {
     }
 
     private Pedido pedidoPendiente(Caja caja) {
-        Producto producto = new Producto("Producto Pendiente", new BigDecimal("10000.00"), "test", categoria());
+        Producto producto = new Producto("Producto Pendiente", new BigDecimal("10000.00"),BigDecimal.ZERO, "test", categoria());
         return new Pedido("Pedido pendiente", List.of(new DetallePedido(producto, 1)), caja);
     }
 
     private Pedido pedidoPagado(Caja caja, BigDecimal precio, MetodoPago metodoPago, Usuario usuario) {
-        Producto producto = new Producto("Producto " + precio, precio, "test", categoria());
+        Producto producto = new Producto("Producto " + precio, precio,BigDecimal.ZERO, "test", categoria());
         Pedido pedido = new Pedido("Pedido pagado", List.of(new DetallePedido(producto, 1)), caja);
         pedido.pagar(usuario, metodoPago);
         return pedido;

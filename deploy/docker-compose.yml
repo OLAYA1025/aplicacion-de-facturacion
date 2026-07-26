@@ -4,6 +4,8 @@ services:
     container_name: facturacion_backend
     env_file:
       - .env
+    volumes:
+      - ${LOGOS_HOST_DIRECTORY}:/logos
     depends_on:
       db:
         condition: service_healthy
@@ -28,6 +30,7 @@ services:
       POSTGRES_PASSWORD: ***REMOVED***
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./backups-data:/backups
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres -d facturacion"]
       interval: 5s

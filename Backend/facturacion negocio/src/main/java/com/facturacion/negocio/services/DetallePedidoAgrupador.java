@@ -1,13 +1,14 @@
 package com.facturacion.negocio.services;
 
-import com.facturacion.negocio.domain.DetallePedido;
-import com.facturacion.negocio.domain.Producto;
-
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+
+import com.facturacion.negocio.domain.DetallePedido;
+import com.facturacion.negocio.domain.Producto;
+import com.facturacion.negocio.enumerated.TipoImpuesto;
 
 public final class DetallePedidoAgrupador {
 
@@ -37,7 +38,13 @@ public final class DetallePedidoAgrupador {
                 BigDecimal precioUnitario = detalle.getPrecioUnitario() != null
                         ? detalle.getPrecioUnitario()
                         : BigDecimal.ZERO;
-                agrupados.put(productoId, new DetallePedidoAgrupado(producto, cantidad, precioUnitario));
+                agrupados.put(productoId, new DetallePedidoAgrupado(
+                        producto,
+                        cantidad,
+                        precioUnitario,
+                        detalle.getTipoImpuesto(),
+                        detalle.getImpuestoPorcentaje()
+                ));
             } else {
                 acumulado.sumarCantidad(cantidad);
             }
@@ -49,12 +56,20 @@ public final class DetallePedidoAgrupador {
     public static final class DetallePedidoAgrupado {
         private final Producto producto;
         private final BigDecimal precioUnitario;
+        private final TipoImpuesto tipoImpuesto;
+        private final BigDecimal impuestoPorcentaje;
         private int cantidad;
 
-        private DetallePedidoAgrupado(Producto producto, int cantidad, BigDecimal precioUnitario) {
+        private DetallePedidoAgrupado(Producto producto,
+                                      int cantidad,
+                                      BigDecimal precioUnitario,
+                                      TipoImpuesto tipoImpuesto,
+                                      BigDecimal impuestoPorcentaje) {
             this.producto = producto;
             this.cantidad = cantidad;
             this.precioUnitario = precioUnitario;
+            this.tipoImpuesto = tipoImpuesto;
+            this.impuestoPorcentaje = impuestoPorcentaje;
         }
 
         public Producto getProducto() {
@@ -63,6 +78,14 @@ public final class DetallePedidoAgrupador {
 
         public BigDecimal getPrecioUnitario() {
             return precioUnitario;
+        }
+
+        public TipoImpuesto getTipoImpuesto() {
+            return tipoImpuesto;
+        }
+
+        public BigDecimal getImpuestoPorcentaje() {
+            return impuestoPorcentaje;
         }
 
         public int getCantidad() {

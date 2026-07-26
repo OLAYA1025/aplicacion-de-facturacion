@@ -53,19 +53,16 @@
         </div>
 
         <div>
-          <label for="editar-categoria" class="mb-1 block text-sm font-semibold text-gray-700">Categoría</label>
-          <select
-            id="editar-categoria"
-            name="editarCategoria"
-            [(ngModel)]="edicionProducto.categoriaId"
+          <label for="editar-costo" class="mb-1 block text-sm font-semibold text-gray-700">Costo</label>
+          <input
+            id="editar-costo"
+            name="editarCosto"
+            [(ngModel)]="edicionProducto.costo"
+            type="number"
+            min="0"
             required
             class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
-          >
-            <option [ngValue]="null">Selecciona una categoría</option>
-            <option *ngFor="let categoria of categorias" [ngValue]="categoria.id">
-              {{ categoria.nombre }}
-            </option>
-          </select>
+          />
         </div>
       </div>
 
@@ -103,7 +100,7 @@
         </div>
       </div>
 
-      <div *ngIf="edicionProducto.tipoGestion === 'INVENTARIABLE'" class="grid gap-4 sm:grid-cols-3">
+      <div class="grid gap-4 sm:grid-cols-2">
         <div>
           <label for="editar-tipo-impuesto" class="mb-1 block text-sm font-semibold text-gray-700">Tipo de impuesto</label>
           <select
@@ -139,6 +136,9 @@
           </select>
         </div>
 
+      </div>
+
+      <div *ngIf="edicionProducto.tipoGestion === 'INVENTARIABLE'" class="grid gap-4 sm:grid-cols-2">
         <div>
           <label for="editar-stock-minimo" class="mb-1 block text-sm font-semibold text-gray-700">Stock mínimo</label>
           <input
@@ -151,6 +151,22 @@
             class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
           />
         </div>
+      </div>
+
+      <div>
+        <label for="editar-categoria" class="mb-1 block text-sm font-semibold text-gray-700">Categoría</label>
+        <select
+          id="editar-categoria"
+          name="editarCategoria"
+          [(ngModel)]="edicionProducto.categoriaId"
+          required
+          class="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
+        >
+          <option [ngValue]="null">Selecciona una categoría</option>
+          <option *ngFor="let categoria of categorias" [ngValue]="categoria.id">
+            {{ categoria.nombre }}
+          </option>
+        </select>
       </div>
 
       <p *ngIf="errorEditarProducto" class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">

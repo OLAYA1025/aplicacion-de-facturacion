@@ -4,7 +4,7 @@
       <div>
         <h1 class="text-2xl font-bold text-gray-900">Estadisticas</h1>
         <p class="mt-1 text-sm text-gray-600">
-          Analiza utilidades, cajas cerradas, retiros y productos mas vendidos.
+          Analiza ingresos, cajas cerradas, retiros y productos mas vendidos.
         </p>
         <p *ngIf="dashboard" class="mt-2 text-xs font-semibold uppercase tracking-wide text-gray-500">
           Periodo: {{ rangoPeriodo }}
@@ -160,6 +160,7 @@
     <section class="grid grid-cols-1 gap-4 md:grid-cols-3">
       <article class="border-t-4 border-gray-500 dark:bg-gray-900/60 dark:backdrop-blur-md bg-white rounded-xl shadow-sm p-5">
         <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">Total de ingresos</p>
+        <!-- se cambia el calculo de los ingresos, mientras que se arregla el calculo de las utilidades -->
         <p class="mt-2 text-2xl font-bold text-gray-900 sm:text-3xl">{{ formatearMoneda(data.totalUtilidades) }}</p>
       </article>
 
@@ -303,6 +304,8 @@
     <section class="rounded-2xl border border-gray-200 bg-white shadow-sm">
       <div class="border-b border-gray-200 px-5 py-4">
         <h2 class="text-lg font-bold text-gray-900">Historial de cajas cerradas</h2>
+        <p class="text-sm text-gray-500">Registro de todas las cajas que han sido cerradas durante el periodo seleccionado.</p>
+        <p class="text-sm text-gray-500">El campo de ingresos hace referencia al total de ingresos de cada caja menos los egresos.</p>
       </div>
 
       <div *ngIf="data.historialCajasCerradas.length === 0" class="p-6 text-center">
@@ -326,7 +329,7 @@
                 Fecha cierre
               </th>
               <th class="px-5 py-3 text-right text-xs font-semibold uppercase tracking-wide text-gray-500">
-                Utilidad
+                Ingresos
               </th>
             </tr>
           </thead>
@@ -380,6 +383,7 @@
     <section class="rounded-2xl border border-gray-200 bg-white shadow-sm">
       <div class="border-b border-gray-200 px-5 py-4">
         <h2 class="text-lg font-bold text-gray-900">Ultimos retiros</h2>
+        <p class="text-sm text-gray-500">Registro de los ultimos retiros realizados durante el periodo seleccionado.</p>
       </div>
 
       <div *ngIf="data.historialRetiros.length === 0" class="p-6 text-center">

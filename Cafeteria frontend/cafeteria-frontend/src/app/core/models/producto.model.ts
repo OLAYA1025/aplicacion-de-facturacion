@@ -3,6 +3,7 @@ export interface Producto{
     codigo?: string | null;
     nombre: string;
     precio: number;
+    costo: number;
     activo: boolean;
     tipoGestion: 'INVENTARIABLE' | 'PREPARACION';
     tipoProducto?: 'INVENTARIABLE' | 'PREPARACION';

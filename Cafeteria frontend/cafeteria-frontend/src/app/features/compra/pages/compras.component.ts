@@ -1,9 +1,11 @@
 import { CommonModule } from '@angular/common';
-import { ChangeDetectorRef, Component, OnInit, inject } from '@angular/core';
+import { ChangeDetectorRef, Component, HostListener, OnInit, inject } from '@angular/core';
 import { FormsModule, NgForm } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { catchError, finalize, forkJoin, of } from 'rxjs';
 import { Producto } from '../../../core/models/producto.model';
+import { ModalMensajeService } from '../../../shared/services/modal-mensaje.service';
+import { obtenerMensajeError } from '../../../shared/utils/error-message.util';
 import { Categoria } from '../../productos/models/categoria.model';
 import { CrearProducto } from '../../productos/models/crearProducto.model';
 import { CategoriaService } from '../../productos/services/categoria.service';
@@ -12,12 +14,10 @@ import { CrearProveedorRequest } from '../../proveedor/models/crearProveedor.mod
 import { Proveedor } from '../../proveedor/models/proveedor.model';
 import { TipoDocumento } from '../../proveedor/models/tipoDocumento.model';
 import { ProveedorService } from '../../proveedor/services/proveedor.service';
+import { DetalleCompraRequest } from '../models/compraDetalle.model';
 import { CompraResponse } from '../models/compraResponse.model';
 import { CompraResumenResponse } from '../models/compraResumenResponse.model';
 import { CompraService } from '../services/compra.service';
-import { DetalleCompraRequest } from '../models/compraDetalle.model';
-import { ModalMensajeService } from '../../../shared/services/modal-mensaje.service';
-import { obtenerMensajeError } from '../../../shared/utils/error-message.util';
 
 type TabCompras = 'listado' | 'nueva';
 type EstadoCompraFiltro = 'TODAS' | 'BORRADOR' | 'CONFIRMADA' | 'ANULADA';
@@ -32,8 +32,18 @@ type OpcionAgregarProveedor = typeof OPCION_AGREGAR_PROVEEDOR;
 
 interface DetalleCompraFormState {
   productoId: number | string | null;
+  productoBusqueda: string;
+  productoBusquedaAbierta: boolean;
+  productoBusquedaIndiceActiva: number;
   cantidad: number | null;
   subtotal: number | null;
+}
+
+interface PosicionBusquedaProductoOverlay {
+  top: number;
+  left: number;
+  width: number;
+  maxHeight: number;
 }
 
 interface NuevaCompraFormState {
@@ -128,6 +138,9 @@ export class ComprasComponent implements OnInit {
   modalCrearProveedorRapidoAbierto: boolean = false;
   guardandoProveedorRapido: boolean = false;
   errorCrearProveedorRapido: string | null = null;
+  indiceBusquedaProductoActiva: number | null = null;
+  elementoBusquedaProductoActiva: HTMLInputElement | null = null;
+  posicionBusquedaProducto: PosicionBusquedaProductoOverlay | null = null;
 
   proveedores: Proveedor[] = [];
   productosDisponibles: Producto[] = [];
@@ -157,6 +170,14 @@ export class ComprasComponent implements OnInit {
     return this.nuevaCompra.detalles.reduce((acumulado, detalle) => {
       return acumulado + this.calcularSubtotalDetalle(detalle);
     }, 0);
+  }
+
+  get detalleBusquedaProductoActiva(): DetalleCompraFormState | null {
+    if (this.indiceBusquedaProductoActiva === null) {
+      return null;
+    }
+
+    return this.nuevaCompra.detalles[this.indiceBusquedaProductoActiva] ?? null;
   }
 
   get paginasVisibles(): number[] {
@@ -330,6 +351,9 @@ export class ComprasComponent implements OnInit {
   agregarDetalle(): void {
     this.nuevaCompra.detalles.push({
       productoId: null,
+      productoBusqueda: '',
+      productoBusquedaAbierta: false,
+      productoBusquedaIndiceActiva: 0,
       cantidad: null,
       subtotal: null,
     });
@@ -339,6 +363,9 @@ export class ComprasComponent implements OnInit {
     if (this.nuevaCompra.detalles.length === 1) {
       this.nuevaCompra.detalles[0] = {
         productoId: null,
+        productoBusqueda: '',
+        productoBusquedaAbierta: false,
+        productoBusquedaIndiceActiva: 0,
         cantidad: null,
         subtotal: null,
       };
@@ -359,6 +386,9 @@ export class ComprasComponent implements OnInit {
 
     if (productoId === OPCION_AGREGAR_PRODUCTO) {
       detalle.productoId = null;
+      detalle.productoBusqueda = '';
+      detalle.productoBusquedaAbierta = false;
+      detalle.productoBusquedaIndiceActiva = 0;
       this.abrirModalCrearProductoRapido(index);
       return;
     }
@@ -373,8 +403,15 @@ export class ComprasComponent implements OnInit {
 
     const productoSeleccionado = this.buscarProductoPorId(productoIdNormalizado);
     if (!productoSeleccionado) {
+      detalle.productoBusqueda = '';
+      detalle.productoBusquedaAbierta = false;
+      detalle.productoBusquedaIndiceActiva = 0;
       return;
     }
+
+    detalle.productoBusqueda = productoSeleccionado.nombre;
+    detalle.productoBusquedaAbierta = false;
+    detalle.productoBusquedaIndiceActiva = 0;
 
     const cantidad = this.normalizarCantidad(detalle.cantidad) ?? 1;
     if (detalle.cantidad === null || detalle.cantidad <= 0) {
@@ -424,6 +461,176 @@ export class ComprasComponent implements OnInit {
     detalle.subtotal = subtotal;
   }
 
+  onBusquedaProductoDetalleChange(index: number, valor: string, input?: HTMLInputElement): void {
+    const detalle = this.nuevaCompra.detalles[index];
+    if (!detalle) {
+      return;
+    }
+
+    detalle.productoBusqueda = valor;
+    detalle.productoBusquedaAbierta = true;
+    detalle.productoBusquedaIndiceActiva = 0;
+    this.establecerBusquedaProductoActiva(index, input);
+
+    if (valor.trim().length === 0) {
+      detalle.productoId = null;
+      detalle.subtotal = null;
+      this.actualizarPosicionBusquedaProductoActiva();
+      return;
+    }
+
+    const productoSeleccionado = this.buscarProductoPorNombreOCodigo(valor);
+    if (!productoSeleccionado) {
+      detalle.productoId = null;
+      detalle.subtotal = null;
+      this.actualizarPosicionBusquedaProductoActiva();
+      return;
+    }
+
+    const productoId = this.normalizarProductoId(this.obtenerProductoId(productoSeleccionado));
+    if (productoId === null) {
+      detalle.productoId = null;
+      detalle.subtotal = null;
+      return;
+    }
+
+    detalle.productoId = productoId;
+    detalle.productoBusqueda = productoSeleccionado.nombre;
+    detalle.productoBusquedaAbierta = false;
+    detalle.productoBusquedaIndiceActiva = 0;
+    this.limpiarBusquedaProductoActiva(index);
+
+    const cantidad = this.normalizarCantidad(detalle.cantidad) ?? 1;
+    if (detalle.cantidad === null || detalle.cantidad <= 0) {
+      detalle.cantidad = cantidad;
+    }
+    if (this.normalizarValorMonetario(detalle.subtotal) === null) {
+      detalle.subtotal = this.redondearMoneda(cantidad * Number(productoSeleccionado.precio));
+    }
+  }
+
+  productosFiltradosParaDetalle(index: number): Producto[] {
+    const detalle = this.nuevaCompra.detalles[index];
+    if (!detalle) {
+      return [];
+    }
+
+    const termino = detalle.productoBusqueda.trim().toLowerCase();
+    let resultado = [...this.productosDisponibles];
+
+    if (termino) {
+      resultado = resultado.filter((producto) => {
+        return (
+          producto.nombre.toLowerCase().includes(termino) ||
+          (this.obtenerProductoId(producto)?.toString().toLowerCase() ?? '').includes(termino) ||
+          (producto.codigo ?? '').toLowerCase().includes(termino)
+        );
+      });
+    }
+
+    return resultado.slice(0, 8);
+  }
+
+  abrirBusquedaProductoDetalle(index: number, input?: HTMLInputElement): void {
+    const detalle = this.nuevaCompra.detalles[index];
+    if (!detalle) {
+      return;
+    }
+
+    detalle.productoBusquedaAbierta = true;
+    this.establecerBusquedaProductoActiva(index, input);
+    if (detalle.productoBusquedaIndiceActiva >= this.productosFiltradosParaDetalle(index).length) {
+      detalle.productoBusquedaIndiceActiva = 0;
+    }
+
+    this.actualizarPosicionBusquedaProductoActiva();
+  }
+
+  cerrarBusquedaProductoDetalle(index: number): void {
+    const detalle = this.nuevaCompra.detalles[index];
+    if (!detalle) {
+      return;
+    }
+
+    detalle.productoBusquedaAbierta = false;
+    detalle.productoBusquedaIndiceActiva = 0;
+    this.limpiarBusquedaProductoActiva(index);
+  }
+
+  manejarTeclaBusquedaProductoDetalle(index: number, event: KeyboardEvent, input?: HTMLInputElement): void {
+    const detalle = this.nuevaCompra.detalles[index];
+    if (!detalle) {
+      return;
+    }
+
+    const sugerencias = this.productosFiltradosParaDetalle(index);
+    this.establecerBusquedaProductoActiva(index, input);
+    if (!sugerencias.length) {
+      if (event.key === 'Escape') {
+        this.cerrarBusquedaProductoDetalle(index);
+      }
+      return;
+    }
+
+    if (event.key === 'ArrowDown') {
+      event.preventDefault();
+      detalle.productoBusquedaAbierta = true;
+      detalle.productoBusquedaIndiceActiva = (detalle.productoBusquedaIndiceActiva + 1) % sugerencias.length;
+      this.actualizarPosicionBusquedaProductoActiva();
+      return;
+    }
+
+    if (event.key === 'ArrowUp') {
+      event.preventDefault();
+      detalle.productoBusquedaAbierta = true;
+      detalle.productoBusquedaIndiceActiva =
+        (detalle.productoBusquedaIndiceActiva - 1 + sugerencias.length) % sugerencias.length;
+      this.actualizarPosicionBusquedaProductoActiva();
+      return;
+    }
+
+    if (event.key === 'Enter') {
+      event.preventDefault();
+      const productoSeleccionado = sugerencias[detalle.productoBusquedaIndiceActiva] ?? sugerencias[0];
+      if (productoSeleccionado) {
+        this.seleccionarProductoDetalle(index, productoSeleccionado);
+        this.cerrarBusquedaProductoDetalle(index);
+      }
+      return;
+    }
+
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      this.cerrarBusquedaProductoDetalle(index);
+    }
+  }
+
+  seleccionarProductoDetalle(index: number, producto: Producto): void {
+    const detalle = this.nuevaCompra.detalles[index];
+    if (!detalle) {
+      return;
+    }
+
+    const productoId = this.normalizarProductoId(this.obtenerProductoId(producto));
+    if (productoId === null) {
+      return;
+    }
+
+    detalle.productoId = productoId;
+    detalle.productoBusqueda = producto.nombre;
+    detalle.productoBusquedaAbierta = false;
+    detalle.productoBusquedaIndiceActiva = 0;
+    this.limpiarBusquedaProductoActiva(index);
+
+    const cantidad = this.normalizarCantidad(detalle.cantidad) ?? 1;
+    if (detalle.cantidad === null || detalle.cantidad <= 0) {
+      detalle.cantidad = cantidad;
+    }
+    if (this.normalizarValorMonetario(detalle.subtotal) === null) {
+      detalle.subtotal = this.redondearMoneda(cantidad * Number(producto.precio));
+    }
+  }
+
   calcularCostoUnitarioDetalle(detalle: DetalleCompraFormState): number | null {
     const cantidad = this.normalizarCantidad(detalle.cantidad);
     const subtotal = this.normalizarValorMonetario(detalle.subtotal);
@@ -445,6 +652,19 @@ export class ComprasComponent implements OnInit {
   obtenerProductoId(producto: Producto): number | string | null {
     const productoConId = producto as ProductoConId;
     return productoConId.id ?? null;
+  }
+
+  mostrarNombreProductoDetalle(detalle: DetalleCompraFormState): string {
+    if (detalle.productoBusqueda.trim()) {
+      return detalle.productoBusqueda;
+    }
+
+    const productoId = this.normalizarProductoId(detalle.productoId);
+    if (productoId === null) {
+      return '';
+    }
+
+    return this.buscarProductoPorId(productoId)?.nombre ?? '';
   }
 
   calcularSubtotalDetalle(detalle: DetalleCompraFormState): number {
@@ -707,6 +927,7 @@ export class ComprasComponent implements OnInit {
     const payload: CrearProducto = {
       nombre,
       precio: Number(this.nuevoProductoRapido.precio),
+      costo: 0,
       tipoGestion: 'INVENTARIABLE',
       tipoImpuesto: this.nuevoProductoRapido.tipoImpuesto,
       impuestoPorcentaje: Number(this.nuevoProductoRapido.impuestoPorcentaje),
@@ -1024,7 +1245,9 @@ export class ComprasComponent implements OnInit {
         this.categoriasProductoRapido = [...categorias].sort((a, b) =>
           a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' })
         );
-        this.productosDisponibles = productos.filter((producto) => producto.activo);
+        this.productosDisponibles = productos
+          .filter((producto) => producto.activo)
+          .sort((a, b) => a.nombre.localeCompare(b.nombre, 'es', { sensitivity: 'base' }));
 
         if (!this.nuevoProductoRapido.categoriaId && this.categoriasProductoRapido.length > 0) {
           this.nuevoProductoRapido.categoriaId = this.categoriasProductoRapido[0].id;
@@ -1085,6 +1308,9 @@ export class ComprasComponent implements OnInit {
       detalles: [
         {
           productoId: null,
+          productoBusqueda: '',
+          productoBusquedaAbierta: false,
+          productoBusquedaIndiceActiva: 0,
           cantidad: null,
           subtotal: null,
         },
@@ -1153,6 +1379,22 @@ export class ComprasComponent implements OnInit {
     });
   }
 
+  private buscarProductoPorNombreOCodigo(terminoBusqueda: string): Producto | undefined {
+    const termino = terminoBusqueda.trim().toLowerCase();
+    if (!termino) {
+      return undefined;
+    }
+
+    return this.productosDisponibles.find((producto) => {
+      const idProducto = this.obtenerProductoId(producto)?.toString().toLowerCase() ?? '';
+      return (
+        producto.nombre.toLowerCase() === termino ||
+        idProducto === termino ||
+        (producto.codigo ?? '').toLowerCase() === termino
+      );
+    });
+  }
+
   private normalizarCantidad(valor: number | null): number | null {
     if (valor === null) {
       return null;
@@ -1209,6 +1451,61 @@ export class ComprasComponent implements OnInit {
     requestAnimationFrame(() => {
       this.cdr.detectChanges();
     });
+  }
+
+  @HostListener('window:resize')
+  onWindowResize(): void {
+    this.actualizarPosicionBusquedaProductoActiva();
+  }
+
+  onFormularioCompraScroll(): void {
+    this.actualizarPosicionBusquedaProductoActiva();
+  }
+
+  private establecerBusquedaProductoActiva(index: number, input?: HTMLInputElement): void {
+    this.nuevaCompra.detalles.forEach((detalle, detalleIndex) => {
+      if (detalleIndex !== index) {
+        detalle.productoBusquedaAbierta = false;
+        detalle.productoBusquedaIndiceActiva = 0;
+      }
+    });
+
+    this.indiceBusquedaProductoActiva = index;
+    if (input) {
+      this.elementoBusquedaProductoActiva = input;
+    }
+  }
+
+  private limpiarBusquedaProductoActiva(index: number): void {
+    if (this.indiceBusquedaProductoActiva === index) {
+      this.indiceBusquedaProductoActiva = null;
+      this.elementoBusquedaProductoActiva = null;
+      this.posicionBusquedaProducto = null;
+    }
+  }
+
+  private actualizarPosicionBusquedaProductoActiva(): void {
+    const input = this.elementoBusquedaProductoActiva;
+    const indice = this.indiceBusquedaProductoActiva;
+    if (!input || indice === null) {
+      this.posicionBusquedaProducto = null;
+      return;
+    }
+
+    const rect = input.getBoundingClientRect();
+    const margen = 12;
+    const espacioAbajo = Math.max(0, window.innerHeight - rect.bottom - margen);
+    const maxHeight = Math.max(140, Math.min(280, espacioAbajo));
+    const width = Math.min(rect.width, window.innerWidth - margen * 2);
+    const left = Math.max(margen, Math.min(rect.left, window.innerWidth - margen - width));
+    const top = rect.bottom + 8;
+
+    this.posicionBusquedaProducto = {
+      top,
+      left,
+      width,
+      maxHeight,
+    };
   }
 
   private normalizarPorcentajeImpuesto(

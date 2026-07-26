@@ -1,13 +1,5 @@
 package com.facturacion.negocio.services.tirillaFactura;
 
-import com.facturacion.negocio.domain.Cliente;
-import com.facturacion.negocio.domain.DetallePedido;
-import com.facturacion.negocio.domain.DocumentoFiscal;
-import com.facturacion.negocio.dto.factura.Establecimiento;
-import com.facturacion.negocio.enumerated.TipoImpuesto;
-import com.facturacion.negocio.services.DetallePedidoAgrupador;
-import com.facturacion.negocio.services.DetallePedidoAgrupador.DetallePedidoAgrupado;
-
 import java.math.BigDecimal;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -15,6 +7,14 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+
+import com.facturacion.negocio.domain.Cliente;
+import com.facturacion.negocio.domain.DetallePedido;
+import com.facturacion.negocio.domain.DocumentoFiscal;
+import com.facturacion.negocio.dto.factura.Establecimiento;
+import com.facturacion.negocio.enumerated.TipoImpuesto;
+import com.facturacion.negocio.services.DetallePedidoAgrupador;
+import com.facturacion.negocio.services.DetallePedidoAgrupador.DetallePedidoAgrupado;
 
 public class Factura {
     private String empresa;
@@ -91,7 +91,9 @@ public class Factura {
             FacturaItem item = FacturaItem.from(
                     detalleAgrupado.getProducto(),
                     detalleAgrupado.getCantidad(),
-                    detalleAgrupado.getPrecioUnitario()
+                detalleAgrupado.getPrecioUnitario(),
+                detalleAgrupado.getTipoImpuesto(),
+                detalleAgrupado.getImpuestoPorcentaje()
             );
             items.add(item);
 

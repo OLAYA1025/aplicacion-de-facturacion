@@ -48,6 +48,9 @@ public class Producto extends BaseTenantEntity {
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal precio;
 
+    @Column(nullable = false, precision = 10, scale = 2)
+    private BigDecimal costo;
+
     @Column(nullable = false)
     private Boolean activo;
 
@@ -81,12 +84,13 @@ public class Producto extends BaseTenantEntity {
     protected Producto() {
     }
 
-    public Producto(String nombre, BigDecimal precio, String descripcion, Categoria categoria) {
-        this(nombre, precio, descripcion, categoria, TipoGestionProducto.PREPARACION, null, null, null, null);
+    public Producto(String nombre, BigDecimal precio, BigDecimal costo, String descripcion, Categoria categoria) {
+        this(nombre, precio, costo, descripcion, categoria, TipoGestionProducto.PREPARACION, null, null, null, null);
     }
 
     public Producto(String nombre,
                     BigDecimal precio,
+                    BigDecimal costo,
                     String descripcion,
                     Categoria categoria,
                     TipoGestionProducto tipoGestion,
@@ -96,6 +100,7 @@ public class Producto extends BaseTenantEntity {
                     Integer stockMinimo) {
         this.nombre = nombre;
         this.precio = precio;
+        this.costo = validarImporteNoNegativo(costo, "costo");
         this.activo = true;
         this.descripcion = descripcion;
         this.categoria = Objects.requireNonNull(categoria, "categoria requerida");
@@ -155,6 +160,7 @@ public class Producto extends BaseTenantEntity {
         actualizarProducto(
                 nombre,
                 precio,
+                this.costo,
                 descripcion,
                 categoria,
                 this.tipoGestion,
@@ -166,6 +172,7 @@ public class Producto extends BaseTenantEntity {
 
     public void actualizarProducto(String nombre,
                                    BigDecimal precio,
+                                   BigDecimal costo,
                                    String descripcion,
                                    Categoria categoria,
                                    TipoGestionProducto tipoGestion,
@@ -175,6 +182,7 @@ public class Producto extends BaseTenantEntity {
         TipoGestionProducto gestionNueva = tipoGestion != null ? tipoGestion : this.tipoGestion;
         this.nombre = nombre;
         this.precio = precio;
+        this.costo = validarImporteNoNegativo(costo, "costo");
         this.descripcion = descripcion;
         this.categoria = Objects.requireNonNull(categoria, "categoria requerida");
         heredarNegocio(categoria);
@@ -211,6 +219,10 @@ public class Producto extends BaseTenantEntity {
 
     public BigDecimal getPrecio() {
         return precio;
+    }
+
+    public BigDecimal getCosto() {
+        return costo;
     }
 
     public Long getId() {
@@ -364,6 +376,16 @@ public class Producto extends BaseTenantEntity {
         return valor;
     }
 
+    private BigDecimal validarImporteNoNegativo(BigDecimal valor, String campo) {
+        if (valor == null) {
+            throw new IllegalArgumentException(campo + " requerido");
+        }
+        if (valor.compareTo(BigDecimal.ZERO) < 0) {
+            throw new IllegalArgumentException(campo + " no puede ser negativo");
+        }
+        return valor;
+    }
+
     private String normalizarCodigo(String codigo) {
         if (codigo == null) {
             return null;
@@ -384,13 +406,6 @@ public class Producto extends BaseTenantEntity {
     }
 
     private void aplicarReglasImpuesto(TipoImpuesto tipoImpuestoSolicitado, BigDecimal impuestoPorcentajeSolicitado) {
-        if (this.tipoGestion == TipoGestionProducto.PREPARACION) {
-            this.tipoImpuesto = TipoImpuesto.INC;
-            this.impuestoPorcentaje = INC_OCHO;
-            this.isExcluded = false;
-            return;
-        }
-
         TipoImpuesto tipoNormalizado = tipoImpuestoSolicitado != null
                 ? tipoImpuestoSolicitado
                 : (this.tipoImpuesto != null ? this.tipoImpuesto : TipoImpuesto.IVA);

@@ -1,13 +1,14 @@
 package com.facturacion.negocio.dto.response;
 
-import com.facturacion.negocio.domain.DetallePedido;
-import com.facturacion.negocio.domain.DetallePedidoNota;
-import com.facturacion.negocio.domain.Producto;
-
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+
+import com.facturacion.negocio.domain.DetallePedido;
+import com.facturacion.negocio.domain.DetallePedidoNota;
+import com.facturacion.negocio.domain.Producto;
+import com.facturacion.negocio.enumerated.TipoImpuesto;
 
 public class DetallePedidoResponseDTO {
     private Long id;
@@ -15,6 +16,8 @@ public class DetallePedidoResponseDTO {
     private String productoNombre;
     private Integer cantidad;
     private BigDecimal precioUnitario;
+    private TipoImpuesto tipoImpuesto;
+    private BigDecimal impuestoPorcentaje;
     private BigDecimal subtotal;
     private List<DetallePedidoNotaResponseDTO> notas = new ArrayList<>();
 
@@ -28,6 +31,8 @@ public class DetallePedidoResponseDTO {
         dto.setId(detalle.getId());
         dto.setCantidad(detalle.getCantidad());
         dto.setPrecioUnitario(detalle.getPrecioUnitario());
+        dto.setTipoImpuesto(detalle.getTipoImpuesto());
+        dto.setImpuestoPorcentaje(detalle.getImpuestoPorcentaje());
         dto.setSubtotal(detalle.calcularSubtotal());
         List<DetallePedidoNota> detalleNotas = new ArrayList<>(detalle.getDetallePedidoNotas());
         detalleNotas.sort(Comparator.comparing(
@@ -89,6 +94,22 @@ public class DetallePedidoResponseDTO {
 
     public void setPrecioUnitario(BigDecimal precioUnitario) {
         this.precioUnitario = precioUnitario;
+    }
+
+    public TipoImpuesto getTipoImpuesto() {
+        return tipoImpuesto;
+    }
+
+    public void setTipoImpuesto(TipoImpuesto tipoImpuesto) {
+        this.tipoImpuesto = tipoImpuesto;
+    }
+
+    public BigDecimal getImpuestoPorcentaje() {
+        return impuestoPorcentaje;
+    }
+
+    public void setImpuestoPorcentaje(BigDecimal impuestoPorcentaje) {
+        this.impuestoPorcentaje = impuestoPorcentaje;
     }
 
     public BigDecimal getSubtotal() {

@@ -353,6 +353,7 @@ class PedidoServiceTest {
         Producto producto = new Producto(
                 "Producto " + id,
                 precio,
+                BigDecimal.ZERO,
                 "Producto para test",
                 categoria(id),
                 TipoGestionProducto.INVENTARIABLE,

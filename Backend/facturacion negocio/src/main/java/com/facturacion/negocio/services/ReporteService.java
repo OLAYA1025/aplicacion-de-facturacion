@@ -300,7 +300,8 @@ public class ReporteService {
         List<UtilidadDiariaProjection> utilidades = cajaRepository.calcularUtilidadDiariaEnRango(
                 tenantService.getNegocioActual().getId(),
                 inicioDia(inicioSemana),
-                inicioDia(finSemanaExclusivo)
+                inicioDia(finSemanaExclusivo),
+                zonaAplicacion.toString()
         );
         for (UtilidadDiariaProjection item : utilidades) {
             if (item.getDia() == null) {
@@ -332,7 +333,8 @@ public class ReporteService {
         List<UtilidadDiariaProjection> utilidades = cajaRepository.calcularUtilidadDiariaEnRango(
                 tenantService.getNegocioActual().getId(),
                 inicioDia(inicioAnio),
-                inicioDia(finAnioExclusivo)
+                inicioDia(finAnioExclusivo),
+                zonaAplicacion.toString()
         );
         for (UtilidadDiariaProjection item : utilidades) {
             if (item.getDia() == null) {
@@ -365,7 +367,8 @@ public class ReporteService {
         List<UtilidadDiariaProjection> utilidades = cajaRepository.calcularUtilidadDiariaEnRango(
                 tenantService.getNegocioActual().getId(),
                 inicioDia(inicio),
-                inicioDia(finExclusivo)
+                inicioDia(finExclusivo),
+                zonaAplicacion.toString()
         );
         for (UtilidadDiariaProjection item : utilidades) {
             if (item.getDia() == null) {
@@ -407,7 +410,8 @@ public class ReporteService {
         List<UtilidadDiariaProjection> utilidades = cajaRepository.calcularUtilidadDiariaEnRango(
                 tenantService.getNegocioActual().getId(),
                 inicioDia(inicio),
-                inicioDia(finExclusivo)
+                inicioDia(finExclusivo),
+                zonaAplicacion.toString()
         );
 
         for (UtilidadDiariaProjection item : utilidades) {

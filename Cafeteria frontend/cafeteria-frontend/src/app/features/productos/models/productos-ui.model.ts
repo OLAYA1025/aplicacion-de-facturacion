@@ -15,6 +15,7 @@ export interface ProductoCrearFormState {
   codigo: string;
   nombre: string;
   precio: number | null;
+  costo: number | null;
   tipoGestion: TipoGestion;
   tipoImpuesto: TipoImpuesto;
   impuestoPorcentaje: number | null;
@@ -27,6 +28,7 @@ export interface ProductoEditarFormState {
   codigo: string;
   nombre: string;
   precio: number | null;
+  costo: number | null;
   tipoGestion: TipoGestion;
   tipoImpuesto: TipoImpuesto;
   impuestoPorcentaje: number | null;

@@ -237,12 +237,10 @@ export class ProductosComponent implements OnInit, OnDestroy {
       codigo: producto.codigo ?? '',
       nombre: producto.nombre,
       precio: producto.precio,
+      costo: producto.costo,
       tipoGestion: producto.tipoGestion,
-      tipoImpuesto: producto.tipoGestion === 'INVENTARIABLE' ? tipoImpuesto : 'INC',
-      impuestoPorcentaje:
-        producto.tipoGestion === 'INVENTARIABLE'
-          ? this.normalizarPorcentajeSegunTipo(tipoImpuesto, porcentajeActual)
-          : ProductosComponent.INC_PORCENTAJE,
+      tipoImpuesto,
+      impuestoPorcentaje: this.normalizarPorcentajeSegunTipo(tipoImpuesto, porcentajeActual),
       stockMinimo: producto.tipoGestion === 'INVENTARIABLE' ? producto.stockMinimo : null,
       categoriaId: producto.categoria.id,
     };
@@ -257,8 +255,6 @@ export class ProductosComponent implements OnInit, OnDestroy {
 
   onTipoGestionEdicionChange(): void {
     if (this.edicionProducto.tipoGestion === 'PREPARACION') {
-      this.edicionProducto.tipoImpuesto = 'INC';
-      this.edicionProducto.impuestoPorcentaje = ProductosComponent.INC_PORCENTAJE;
       this.edicionProducto.stockMinimo = null;
       return;
     }
@@ -295,13 +291,10 @@ export class ProductosComponent implements OnInit, OnDestroy {
       codigo: this.normalizarCodigo(this.edicionProducto.codigo),
       nombre: this.edicionProducto.nombre.trim(),
       precio: Number(this.edicionProducto.precio),
+      costo: Number(this.edicionProducto.costo),
       tipoGestion: this.edicionProducto.tipoGestion,
-      ...(this.edicionProducto.tipoGestion === 'INVENTARIABLE'
-        ? {
-            tipoImpuesto: this.edicionProducto.tipoImpuesto,
-            impuestoPorcentaje: Number(this.edicionProducto.impuestoPorcentaje),
-          }
-        : {}),
+      tipoImpuesto: this.edicionProducto.tipoImpuesto,
+      impuestoPorcentaje: Number(this.edicionProducto.impuestoPorcentaje),
       stockMinimo:
         this.edicionProducto.tipoGestion === 'INVENTARIABLE'
           ? Number(this.edicionProducto.stockMinimo)
@@ -341,8 +334,6 @@ export class ProductosComponent implements OnInit, OnDestroy {
 
   onTipoGestionCrearChange(): void {
     if (this.nuevoProducto.tipoGestion === 'PREPARACION') {
-      this.nuevoProducto.tipoImpuesto = 'INC';
-      this.nuevoProducto.impuestoPorcentaje = ProductosComponent.INC_PORCENTAJE;
       this.nuevoProducto.stockInicial = null;
       this.nuevoProducto.stockMinimo = null;
       return;
@@ -463,13 +454,10 @@ export class ProductosComponent implements OnInit, OnDestroy {
       codigo: this.normalizarCodigo(this.nuevoProducto.codigo),
       nombre: this.nuevoProducto.nombre.trim(),
       precio: Number(this.nuevoProducto.precio),
+      costo: Number(this.nuevoProducto.costo),
       tipoGestion: this.nuevoProducto.tipoGestion,
-      ...(this.nuevoProducto.tipoGestion === 'INVENTARIABLE'
-        ? {
-            tipoImpuesto: this.nuevoProducto.tipoImpuesto,
-            impuestoPorcentaje: Number(this.nuevoProducto.impuestoPorcentaje),
-          }
-        : {}),
+      tipoImpuesto: this.nuevoProducto.tipoImpuesto,
+      impuestoPorcentaje: Number(this.nuevoProducto.impuestoPorcentaje),
       stockInicial:
         this.nuevoProducto.tipoGestion === 'INVENTARIABLE'
           ? Number(this.nuevoProducto.stockInicial)
@@ -627,6 +615,7 @@ export class ProductosComponent implements OnInit, OnDestroy {
       codigo: '',
       nombre: '',
       precio: null,
+      costo: 0,
       tipoGestion: 'INVENTARIABLE',
       tipoImpuesto: 'IVA',
       impuestoPorcentaje: 19,
@@ -641,6 +630,7 @@ export class ProductosComponent implements OnInit, OnDestroy {
       codigo: '',
       nombre: '',
       precio: null,
+      costo: 0,
       tipoGestion: 'INVENTARIABLE',
       tipoImpuesto: 'IVA',
       impuestoPorcentaje: 19,
@@ -692,20 +682,24 @@ export class ProductosComponent implements OnInit, OnDestroy {
       return 'El precio debe ser un valor válido.';
     }
 
+    if (this.nuevoProducto.costo === null || this.nuevoProducto.costo < 0) {
+      return 'El costo debe ser un valor válido.';
+    }
+
+    if (
+      !this.esCombinacionImpuestoValida(
+        this.nuevoProducto.tipoImpuesto,
+        this.nuevoProducto.impuestoPorcentaje
+      )
+    ) {
+      return 'Selecciona un impuesto válido: IVA (0%, 5%, 19%) o INC (8%).';
+    }
+
     if (this.nuevoProducto.categoriaId === null) {
       return 'Selecciona una categoría para continuar.';
     }
 
     if (this.nuevoProducto.tipoGestion === 'INVENTARIABLE') {
-      if (
-        !this.esCombinacionImpuestoValida(
-          this.nuevoProducto.tipoImpuesto,
-          this.nuevoProducto.impuestoPorcentaje
-        )
-      ) {
-        return 'Selecciona un impuesto válido: IVA (0%, 5%, 19%) o INC (8%).';
-      }
-
       if (this.nuevoProducto.stockInicial === null || this.nuevoProducto.stockInicial < 0) {
         return 'El stock inicial debe ser un valor mayor o igual a 0.';
       }
@@ -731,20 +725,24 @@ export class ProductosComponent implements OnInit, OnDestroy {
       return 'El precio debe ser un valor válido.';
     }
 
+    if (this.edicionProducto.costo === null || this.edicionProducto.costo < 0) {
+      return 'El costo debe ser un valor válido.';
+    }
+
+    if (
+      !this.esCombinacionImpuestoValida(
+        this.edicionProducto.tipoImpuesto,
+        this.edicionProducto.impuestoPorcentaje
+      )
+    ) {
+      return 'Selecciona un impuesto válido: IVA (0%, 5%, 19%) o INC (8%).';
+    }
+
     if (this.edicionProducto.categoriaId === null) {
       return 'Selecciona una categoría para el producto.';
     }
 
     if (this.edicionProducto.tipoGestion === 'INVENTARIABLE') {
-      if (
-        !this.esCombinacionImpuestoValida(
-          this.edicionProducto.tipoImpuesto,
-          this.edicionProducto.impuestoPorcentaje
-        )
-      ) {
-        return 'Selecciona un impuesto válido: IVA (0%, 5%, 19%) o INC (8%).';
-      }
-
       if (this.edicionProducto.stockMinimo === null || this.edicionProducto.stockMinimo < 0) {
         return 'El stock mínimo debe ser mayor o igual a 0.';
       }
@@ -757,7 +755,7 @@ export class ProductosComponent implements OnInit, OnDestroy {
     if (producto.tipoImpuesto === 'IVA' || producto.tipoImpuesto === 'INC') {
       return producto.tipoImpuesto;
     }
-    return producto.tipoGestion === 'PREPARACION' ? 'INC' : 'IVA';
+    return 'IVA';
   }
 
   private resolverImpuestoPorcentajeProducto(producto: Producto): number | null {

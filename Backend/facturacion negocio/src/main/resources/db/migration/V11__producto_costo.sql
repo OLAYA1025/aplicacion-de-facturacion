@@ -1,0 +1,9 @@
+ALTER TABLE IF EXISTS producto
+    ADD COLUMN IF NOT EXISTS costo NUMERIC(10,2);
+
+UPDATE producto
+SET costo = COALESCE(costo, 0)
+WHERE costo IS NULL;
+
+ALTER TABLE IF EXISTS producto
+    ALTER COLUMN costo SET NOT NULL;

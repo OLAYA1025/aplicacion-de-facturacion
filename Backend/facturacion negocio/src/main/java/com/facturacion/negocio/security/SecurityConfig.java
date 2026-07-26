@@ -12,6 +12,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+
 @Configuration
 @EnableMethodSecurity
 public class SecurityConfig {
@@ -26,17 +27,17 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 .requestMatchers("/auth/**").permitAll()
                 .requestMatchers("/platform/negocios/**").hasRole("SUPER_ADMIN")
-                .requestMatchers("/usuario/**").hasRole("ADMINISTRADOR")
+                .requestMatchers("/usuario/**").hasAnyRole("ADMINISTRADOR", "PROPIETARIO")
                 .requestMatchers("/actuator/**").permitAll()
-                .requestMatchers("/caja/**").hasAnyRole("ADMINISTRADOR", "CAJERO", "MESERO", "COCINERO")
-                .requestMatchers("/cliente/**").hasAnyRole("ADMINISTRADOR", "CAJERO")
-                .requestMatchers("/compra/**").hasRole("ADMINISTRADOR")
-                .requestMatchers("/documentos-fiscales/**").hasAnyRole("ADMINISTRADOR", "CAJERO")
-                .requestMatchers("/movimientos/**").hasAnyRole("ADMINISTRADOR", "CAJERO")
-                .requestMatchers("/movimientos/**").hasAnyRole("ADMINISTRADOR", "CAJERO")
-                .requestMatchers("/producto/**").hasAnyRole("ADMINISTRADOR", "MESERO", "CAJERO", "COCINERO")
-                .requestMatchers("/proveedor/**").hasRole("ADMINISTRADOR")
-                .requestMatchers("/stats/**").hasRole("ADMINISTRADOR")
+                .requestMatchers("/caja/**").hasAnyRole("ADMINISTRADOR", "PROPIETARIO", "CAJERO", "MESERO", "COCINERO")
+                .requestMatchers("/cliente/**").hasAnyRole("ADMINISTRADOR", "PROPIETARIO","CAJERO")
+                .requestMatchers("/compra/**").hasAnyRole("ADMINISTRADOR", "PROPIETARIO")
+                .requestMatchers("/documentos-fiscales/**").hasAnyRole("ADMINISTRADOR", "PROPIETARIO","CAJERO")
+                .requestMatchers("/movimientos/**").hasAnyRole("ADMINISTRADOR", "PROPIETARIO","CAJERO")
+                .requestMatchers("/movimientos/**").hasAnyRole("ADMINISTRADOR", "PROPIETARIO","CAJERO")
+                .requestMatchers("/producto/**").hasAnyRole("ADMINISTRADOR", "PROPIETARIO","MESERO", "CAJERO", "COCINERO")
+                .requestMatchers("/proveedor/**").hasAnyRole("ADMINISTRADOR", "PROPIETARIO")
+                .requestMatchers("/stats/**").hasAnyRole("ADMINISTRADOR", "PROPIETARIO")
                 .anyRequest().authenticated()
         );
         http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
