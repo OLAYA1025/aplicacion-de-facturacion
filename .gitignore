@@ -1,0 +1,31 @@
+# Local secrets and environment files
+.env
+.env.*
+!.env.example
+**/.env
+**/.env.*
+!**/.env.example
+**/secrets/
+**/*.p12
+**/*.pfx
+**/*.key
+**/*.pem
+**/*.jks
+**/*.keystore
+
+# Build output and local tooling
+**/target/
+**/build/
+**/dist/
+**/node_modules/
+**/.angular/
+**/coverage/
+.idea/
+.vscode/
+*.iml
+.DS_Store
+Thumbs.db
+
+# Graphify generated data is local unless explicitly selected for publication
+/graphify-out/
+/AGENTS.md

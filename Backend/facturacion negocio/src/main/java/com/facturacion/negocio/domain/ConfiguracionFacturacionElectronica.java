@@ -16,14 +16,6 @@ import java.util.List;
         }
 )
 public class ConfiguracionFacturacionElectronica extends BaseTenantEntity{
-    /*
-    factus.base-url=https://api-sandbox.factus.com.co
-    factus.username=***REMOVED***
-    factus.password=***REMOVED***
-    factus.client-id=***REMOVED***
-    factus.client-secret=***REMOVED***
-    factus.prefijo-code=***REMOVED***
-     */
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;

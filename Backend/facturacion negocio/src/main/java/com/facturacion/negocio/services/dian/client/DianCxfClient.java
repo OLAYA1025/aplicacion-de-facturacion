@@ -18,6 +18,7 @@ import org.apache.cxf.ws.security.SecurityConstants;
 import org.apache.cxf.ws.security.wss4j.WSS4JOutInterceptor;
 import org.apache.wss4j.common.ConfigurationConstants;
 import org.springframework.http.*;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import jakarta.xml.soap.SOAPBody;
 
@@ -28,6 +29,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Properties;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
@@ -35,6 +37,24 @@ import static java.lang.System.out;
 
 @Component
 public class DianCxfClient {
+
+    private final DianKeystorePasswordCallback passwordCallback;
+    private final String certificatePath;
+    private final String certificateAlias;
+
+    private static final String KEYSTORE_ALIAS_PROPERTY = "org.apache.wss4j.crypto.merlin.keystore.alias";
+    private static final String KEYSTORE_FILE_PROPERTY = "org.apache.wss4j.crypto.merlin.keystore.file";
+    private static final String KEYSTORE_TYPE_PROPERTY = "org.apache.wss4j.crypto.merlin.keystore.type";
+
+    public DianCxfClient(
+            DianKeystorePasswordCallback passwordCallback,
+            @Value("${DIAN_CERTIFICATE_PATH:}") String certificatePath,
+            @Value("${DIAN_CERTIFICATE_ALIAS:}") String certificateAlias
+    ) {
+        this.passwordCallback = passwordCallback;
+        this.certificatePath = certificatePath;
+        this.certificateAlias = certificateAlias;
+    }
 
 
 
@@ -62,9 +82,13 @@ public class DianCxfClient {
                 "http://www.w3.org/2001/04/xmldsig-more#rsa-sha256"
         );
 
-        bp.getRequestContext().put(SecurityConstants.SIGNATURE_PROPERTIES, "***REMOVED***");
-        bp.getRequestContext().put(SecurityConstants.SIGNATURE_USERNAME, "***REMOVED***");
-        bp.getRequestContext().put(SecurityConstants.CALLBACK_HANDLER, new DianKeystorePasswordCallback());
+        Properties signatureProperties = new Properties();
+        signatureProperties.setProperty(KEYSTORE_TYPE_PROPERTY, "pkcs12");
+        signatureProperties.setProperty(KEYSTORE_FILE_PROPERTY, certificatePath);
+        signatureProperties.setProperty(KEYSTORE_ALIAS_PROPERTY, certificateAlias);
+        bp.getRequestContext().put(SecurityConstants.SIGNATURE_PROPERTIES, signatureProperties);
+        bp.getRequestContext().put(SecurityConstants.SIGNATURE_USERNAME, certificateAlias);
+        bp.getRequestContext().put(SecurityConstants.CALLBACK_HANDLER, passwordCallback);
 
         bp.getRequestContext().put("ws-security.signature.parts",
                 "{Element}{http://www.w3.org/2003/05/soap-envelope}Body;" +
